@@ -1,0 +1,55 @@
+.piano-roll {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  background: color-mix(in srgb, currentColor 5%, transparent);
+  border-radius: 6px;
+}
+
+.piano-roll__lanelabel {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  fill: color-mix(in srgb, currentColor 75%, transparent);
+  dominant-baseline: central;
+}
+
+.piano-roll__note {
+  stroke: color-mix(in srgb, black 25%, transparent);
+  stroke-width: 1;
+}
+
+.piano-roll__note--matched {
+  stroke: #e91e8c;
+  stroke-width: 3;
+}
+
+.piano-roll__duration {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  fill: #ffffff;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.piano-roll__barline {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.18;
+}
+
+.piano-roll__barline--edge {
+  opacity: 0.4;
+}
+
+.piano-roll__barnumber {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  fill: color-mix(in srgb, currentColor 60%, transparent);
+}
+
+.piano-roll__playhead {
+  stroke: #e0483e;
+  stroke-width: 2;
+}
