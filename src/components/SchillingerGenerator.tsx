@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { generateResultant, generatorPulse, BINARY_SYNCHRONIZATION_CASES } from "../core/resultant";
-import { generateFractionedResultant, computeFractionedGroupings } from "../core/fractioning";
+import { generatorPulse, BINARY_SYNCHRONIZATION_CASES } from "../core/resultant";
+import { computeFractionedGroupings } from "../core/fractioning";
 import { computeGroupings } from "../core/grouping";
-import { buildExpansion, buildContraction, buildBalance, computePairGrouping } from "../core/groupsByPairs";
-import { computeTimeSignatureOptions } from "../core/timeSignature";
+import { computePairGrouping } from "../core/groupsByPairs";
+import { computeTimeSignatureOptions, computeLoopTimeSignatureOptions } from "../core/timeSignature";
+import { buildResultantForTechnique, type Technique } from "../core/technique";
 import { SCALE_PRESETS } from "../core/scales";
 import { buildMelody, applyStrata, type Contour, type NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
@@ -13,6 +14,7 @@ import {
   notesToRhythmPattern,
   findPatternOccurrences,
   findMatchingCases,
+  findMatchingResultants,
 } from "../core/rhythmAnalysis";
 import { pitchClassesFromMidiNotes, classifyScaleGroup, twoUnitScaleLabel } from "../core/pitchClassification";
 import SchillingerPianoRoll, { type PianoRollLane } from "./SchillingerPianoRoll";
@@ -56,8 +58,6 @@ const HARMONY_PRESETS: { label: string; intervals: number[] }[] = [
 
 const PULSE_VOICE_NOTE = 36; // low "click" register for the raw generator pulses
 
-type Technique = "plain" | "fractioned" | "expansion" | "contraction" | "balance";
-
 const TECHNIQUE_OPTIONS: { label: string; value: Technique }[] = [
   { label: "Plain (Ch. 2A)", value: "plain" },
   { label: "Fractioned (Ch. 4)", value: "fractioned" },
@@ -82,6 +82,7 @@ export default function SchillingerGenerator() {
   const [manualPatternText, setManualPatternText] = useState("");
   const [analysisNotes, setAnalysisNotes] = useState<ImportedNote[] | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [loopSelection, setLoopSelection] = useState<{ start: number; length: number } | null>(null);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const playTokenRef = useRef(0);
@@ -154,21 +155,54 @@ export default function SchillingerGenerator() {
     [selectedCase],
   );
 
-  const resultant = useMemo(() => generateResultant(generators), [generators]);
-  const activeResultant = useMemo(() => {
-    switch (technique) {
-      case "fractioned":
-        return generateFractionedResultant(selectedCase.a, selectedCase.b);
-      case "expansion":
-        return buildExpansion(selectedCase.a, selectedCase.b);
-      case "contraction":
-        return buildContraction(selectedCase.a, selectedCase.b);
-      case "balance":
-        return buildBalance(selectedCase.a, selectedCase.b);
-      default:
-        return resultant;
-    }
-  }, [technique, resultant, selectedCase]);
+  const activeResultant = useMemo(
+    () => buildResultantForTechnique(technique, selectedCase.a, selectedCase.b),
+    [technique, selectedCase],
+  );
+
+  // The resultant's own segment count changes shape whenever the case or
+  // technique changes, so a previously selected loop range may no longer
+  // make sense -- clear it rather than risk it silently pointing at the
+  // wrong segments.
+  useEffect(() => {
+    setLoopSelection(null);
+  }, [technique, selectedCase]);
+
+  // A loop is a contiguous, non-wrapping run of adjacent segments within
+  // the active resultant -- "c.d." increments, in Schillinger's own
+  // abbreviation for the finest common-denominator grid a resultant's
+  // attack points fall on.
+  const loopDurations = useMemo(() => {
+    if (!loopSelection) return null;
+    return activeResultant.segments
+      .slice(loopSelection.start, loopSelection.start + loopSelection.length)
+      .map((s) => s.duration);
+  }, [activeResultant, loopSelection]);
+
+  const loopStartUnits = useMemo(() => {
+    if (!loopSelection) return 0;
+    return activeResultant.segments.slice(0, loopSelection.start).reduce((sum, s) => sum + s.duration, 0);
+  }, [activeResultant, loopSelection]);
+
+  const loopTotalUnits = loopDurations
+    ? loopDurations.reduce((sum, d) => sum + d, 0)
+    : activeResultant.cycleLength;
+
+  const loopTimeSignatureOptions = useMemo(
+    () => (loopDurations ? computeLoopTimeSignatureOptions(loopTotalUnits) : []),
+    [loopDurations, loopTotalUnits],
+  );
+
+  // Where else this exact loop pattern occurs, across every case and
+  // technique -- a possible pivot or modulation point. Excludes the
+  // source itself, which trivially "matches."
+  const loopMatches = useMemo(() => {
+    if (!loopDurations) return null;
+    return findMatchingResultants(loopDurations).filter(
+      (m) => !(m.case.label === selectedCase.label && m.technique === technique),
+    );
+  }, [loopDurations, selectedCase, technique]);
+
   const groupings = useMemo(
     () => computeGroupings(selectedCase.a, selectedCase.b),
     [selectedCase],
@@ -249,10 +283,11 @@ export default function SchillingerGenerator() {
         duration: s.duration,
         accent: s.sources.length > 1,
         matched: matchedIndices.has(index),
+        looped: loopSelection != null && index >= loopSelection.start && index < loopSelection.start + loopSelection.length,
       })),
     });
     return lanes;
-  }, [activeResultant, selectedCase, technique, patternOccurrences, analysisPattern]);
+  }, [activeResultant, selectedCase, technique, patternOccurrences, analysisPattern, loopSelection]);
 
   const scale = useMemo(() => SCALE_PRESETS[scaleIndex].build(), [scaleIndex]);
 
@@ -304,16 +339,29 @@ export default function SchillingerGenerator() {
   ]);
 
   const secondsPerUnit = (ticksPerUnit / 480) * (60 / bpm);
-  const cycleSeconds = activeResultant.cycleLength * secondsPerUnit;
+  const cycleSeconds = loopTotalUnits * secondsPerUnit;
+
+  // Restricts playback to the selected loop range when one is active: the
+  // full note list, sliced to the loop's time window and shifted so it
+  // starts at 0. Export (Download MIDI) deliberately ignores this and
+  // always writes the complete resultant -- looping is a preview/analysis
+  // aid, not an export scope.
+  const playbackNotes = useMemo(() => {
+    if (!loopSelection) return notes;
+    const loopEndUnits = loopStartUnits + loopTotalUnits;
+    return notes
+      .filter((n) => n.startUnits >= loopStartUnits && n.startUnits < loopEndUnits)
+      .map((n) => ({ ...n, startUnits: n.startUnits - loopStartUnits }));
+  }, [notes, loopSelection, loopStartUnits, loopTotalUnits]);
 
   function scheduleLoopPass(token: number) {
     const context = audioContextRef.current;
-    if (!context || token !== playTokenRef.current || notes.length === 0) return;
+    if (!context || token !== playTokenRef.current || playbackNotes.length === 0) return;
 
     const harmonyVoiceCount = HARMONY_PRESETS[harmonyIndex].intervals.length;
     const cycleStart = context.currentTime;
     cycleStartRef.current = cycleStart;
-    for (const note of notes) {
+    for (const note of playbackNotes) {
       const oscillator = context.createOscillator();
       const gain = context.createGain();
       const isPulseVoice = note.voice > harmonyVoiceCount;
@@ -350,7 +398,7 @@ export default function SchillingerGenerator() {
       stopPlayback();
       return;
     }
-    if (notes.length === 0) return;
+    if (playbackNotes.length === 0) return;
     audioContextRef.current = new AudioContext();
     setIsPlaying(true);
     scheduleLoopPass(++playTokenRef.current);
@@ -362,20 +410,24 @@ export default function SchillingerGenerator() {
     };
   }, []);
 
-  // Restarts the loop from the top whenever the notes or timing change
-  // while playing, so the cycle reflects the latest controls instead of the
-  // stale closure captured when Play was first clicked.
+  // Restarts the loop from the top whenever the notes, loop selection, or
+  // timing change while playing, so the cycle reflects the latest controls
+  // instead of the stale closure captured when Play was first clicked.
   useEffect(() => {
     if (!isPlaying || !audioContextRef.current) return;
     audioContextRef.current.close();
     audioContextRef.current = new AudioContext();
     scheduleLoopPass(++playTokenRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes, secondsPerUnit, cycleSeconds]);
+  }, [playbackNotes, secondsPerUnit, cycleSeconds]);
 
   // Drives the visual playhead in ResultantBar from the AudioContext's own
   // clock rather than a separate timer, so it can't drift out of sync with
-  // what's actually sounding.
+  // what's actually sounding. When a loop is active, the audio clock only
+  // covers the loop's own (shorter) duration, so its fraction is remapped
+  // onto the loop's position within the full piano roll -- with no loop
+  // selected, loopStartUnits is 0 and loopTotalUnits is the full cycle
+  // length, so this reduces to the un-remapped fraction.
   useEffect(() => {
     if (!isPlaying) return;
 
@@ -384,14 +436,15 @@ export default function SchillingerGenerator() {
       const context = audioContextRef.current;
       if (context && cycleSeconds > 0) {
         const elapsed = (context.currentTime - cycleStartRef.current) % cycleSeconds;
-        setPlayheadFraction(elapsed / cycleSeconds);
+        const loopFraction = elapsed / cycleSeconds;
+        setPlayheadFraction((loopStartUnits + loopFraction * loopTotalUnits) / activeResultant.cycleLength);
       }
       frame = requestAnimationFrame(tick);
     }
     frame = requestAnimationFrame(tick);
 
     return () => cancelAnimationFrame(frame);
-  }, [isPlaying, cycleSeconds]);
+  }, [isPlaying, cycleSeconds, loopStartUnits, loopTotalUnits, activeResultant.cycleLength]);
 
   function timeSignatureFor(unitsPerBar: number): string {
     const unit = UNIT_NOTE_OPTIONS.find((option) => option.value === ticksPerUnit);
@@ -508,6 +561,118 @@ export default function SchillingerGenerator() {
           units · durations {activeResultant.segments.map((s) => s.duration).join(" ")} · coincidence points{" "}
           {activeResultant.segments.filter((s) => s.sources.length > 1).length}
         </div>
+
+        <div className="schillinger__row">
+          <label className="schillinger__checkbox">
+            <input
+              type="checkbox"
+              checked={loopSelection !== null}
+              disabled={activeResultant.segments.length < 2}
+              onChange={(e) =>
+                setLoopSelection(
+                  e.target.checked ? { start: 0, length: Math.min(2, activeResultant.segments.length) } : null,
+                )
+              }
+            />
+            Loop a range (c.d. increments)
+          </label>
+          {loopSelection && (
+            <>
+              <label>
+                Start
+                <button
+                  type="button"
+                  onClick={() => setLoopSelection({ ...loopSelection, start: Math.max(0, loopSelection.start - 1) })}
+                  disabled={loopSelection.start === 0}
+                >
+                  ◀
+                </button>
+                <input
+                  type="number"
+                  min={0}
+                  max={activeResultant.segments.length - loopSelection.length}
+                  value={loopSelection.start}
+                  onChange={(e) => {
+                    const maxStart = activeResultant.segments.length - loopSelection.length;
+                    const start = Math.max(0, Math.min(Number(e.target.value), maxStart));
+                    setLoopSelection({ ...loopSelection, start });
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLoopSelection({
+                      ...loopSelection,
+                      start: Math.min(activeResultant.segments.length - loopSelection.length, loopSelection.start + 1),
+                    })
+                  }
+                  disabled={loopSelection.start + loopSelection.length >= activeResultant.segments.length}
+                >
+                  ▶
+                </button>
+              </label>
+              <label>
+                Length
+                <button
+                  type="button"
+                  onClick={() => setLoopSelection({ ...loopSelection, length: Math.max(2, loopSelection.length - 1) })}
+                  disabled={loopSelection.length <= 2}
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min={2}
+                  max={activeResultant.segments.length - loopSelection.start}
+                  value={loopSelection.length}
+                  onChange={(e) => {
+                    const maxLength = activeResultant.segments.length - loopSelection.start;
+                    const length = Math.max(2, Math.min(Number(e.target.value), maxLength));
+                    setLoopSelection({ ...loopSelection, length });
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLoopSelection({
+                      ...loopSelection,
+                      length: Math.min(
+                        activeResultant.segments.length - loopSelection.start,
+                        loopSelection.length + 1,
+                      ),
+                    })
+                  }
+                  disabled={loopSelection.start + loopSelection.length >= activeResultant.segments.length}
+                >
+                  +
+                </button>
+              </label>
+            </>
+          )}
+        </div>
+
+        {loopSelection && loopDurations && (
+          <div className="schillinger__readout">
+            Loop {loopDurations.join(" ")} ({loopTotalUnits} units) · reads as{" "}
+            {loopTimeSignatureOptions.length > 0
+              ? loopTimeSignatureOptions.map((o) => o.label).join(", ")
+              : "no clean signature"}
+            {loopMatches && (
+              <>
+                {" · "}
+                {loopMatches.length > 0
+                  ? `also occurs in ${loopMatches.length} other resultant${loopMatches.length === 1 ? "" : "s"} ` +
+                    `(possible pivot/modulation): ` +
+                    loopMatches
+                      .slice(0, 12)
+                      .map((m) => `${m.case.label} ${m.technique}`)
+                      .join(", ") +
+                    (loopMatches.length > 12 ? `, +${loopMatches.length - 12} more` : "")
+                  : "no other resultant contains this exact pattern"}
+              </>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="schillinger__section schillinger__section--wide">
@@ -650,7 +815,7 @@ export default function SchillingerGenerator() {
         </div>
 
         <div className="schillinger__actions">
-          <button type="button" onClick={togglePlayback} disabled={notes.length === 0 && !isPlaying}>
+          <button type="button" onClick={togglePlayback} disabled={playbackNotes.length === 0 && !isPlaying}>
             {isPlaying ? "Stop" : "Play"}
           </button>
           <button type="button" onClick={downloadMidi} disabled={notes.length === 0}>

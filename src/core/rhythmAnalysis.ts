@@ -6,6 +6,7 @@
 
 import { generateResultant, BINARY_SYNCHRONIZATION_CASES, type BinarySynchronizationCase } from "./resultant.ts";
 import type { ImportedNote } from "./midiImport.ts";
+import { buildResultantForTechnique, ALL_TECHNIQUES, type Technique } from "./technique.ts";
 
 function gcd(a: number, b: number): number {
   return b === 0 ? a : gcd(b, a % b);
@@ -69,6 +70,35 @@ export function findMatchingCases(pattern: readonly number[]): PatternMatch[] {
     const resultant = generateResultant([binaryCase.a, binaryCase.b]);
     const occurrences = findPatternOccurrences(pattern, resultant.segments.map((s) => s.duration));
     if (occurrences.length > 0) matches.push({ case: binaryCase, occurrences });
+  }
+  return matches;
+}
+
+export interface ResultantMatch {
+  case: BinarySynchronizationCase;
+  technique: Technique;
+  occurrences: number[];
+}
+
+/**
+ * Searches every one of the 19 canonical cases across every technique
+ * (plain, fractioned, expansion, contraction, balance) for the given
+ * pattern — the full "all resultants" search, not just Ch. 2A. Used for
+ * cross-resultant matches within a selected loop range, where a pattern
+ * found in one case/technique may recur in a completely different one
+ * (a potential pivot or modulation point).
+ */
+export function findMatchingResultants(
+  pattern: readonly number[],
+  techniques: readonly Technique[] = ALL_TECHNIQUES,
+): ResultantMatch[] {
+  const matches: ResultantMatch[] = [];
+  for (const binaryCase of BINARY_SYNCHRONIZATION_CASES) {
+    for (const technique of techniques) {
+      const resultant = buildResultantForTechnique(technique, binaryCase.a, binaryCase.b);
+      const occurrences = findPatternOccurrences(pattern, resultant.segments.map((s) => s.duration));
+      if (occurrences.length > 0) matches.push({ case: binaryCase, technique, occurrences });
+    }
   }
   return matches;
 }

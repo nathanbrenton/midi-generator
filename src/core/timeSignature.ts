@@ -16,7 +16,8 @@
  * beat doubled and the count halved.
  */
 
-export type Technique = "plain" | "fractioned" | "expansion" | "contraction" | "balance";
+import type { Technique } from "./technique.ts";
+export type { Technique };
 
 export type TimeSignatureDenominator = 2 | 4 | 8;
 
@@ -69,6 +70,27 @@ function optionsForUnitsPerBeat(
   }));
 }
 
+function withCutTimeAndDedupe(options: TimeSignatureOption[]): TimeSignatureOption[] {
+  const withCutTime = [...options];
+  for (const source of options.filter((o) => o.denominator === 4 && o.beatsPerBar === 4)) {
+    withCutTime.push({
+      label: labelFor(source.bars, 2, 2),
+      bars: source.bars,
+      beatsPerBar: 2,
+      unitsPerBeat: source.unitsPerBeat * 2,
+      denominator: 2,
+    });
+  }
+
+  const seen = new Set<string>();
+  return withCutTime.filter((option) => {
+    const key = `${option.bars}x${option.beatsPerBar}/${option.denominator}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function computeTimeSignatureOptions(params: TimeSignatureParams): TimeSignatureOption[] {
   const { technique, a, b, cycleLength } = params;
 
@@ -81,21 +103,16 @@ export function computeTimeSignatureOptions(params: TimeSignatureParams): TimeSi
     options.push(...optionsForUnitsPerBeat(cycleLength, b, 4));
   }
 
-  for (const source of options.filter((o) => o.denominator === 4 && o.beatsPerBar === 4)) {
-    options.push({
-      label: labelFor(source.bars, 2, 2),
-      bars: source.bars,
-      beatsPerBar: 2,
-      unitsPerBeat: source.unitsPerBeat * 2,
-      denominator: 2,
-    });
-  }
+  return withCutTimeAndDedupe(options);
+}
 
-  const seen = new Set<string>();
-  return options.filter((option) => {
-    const key = `${option.bars}x${option.beatsPerBar}/${option.denominator}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+/**
+ * Time-signature readings for an arbitrary loop window's own total
+ * duration — a selected contiguous run of segments within a resultant
+ * isn't tied to that resultant's a/b, so only the raw (1-unit-per-beat)
+ * reading applies, under the same curation rules (denominator 8, capped
+ * 2-15, broken into multiple bars, cut time) as the full-resultant case.
+ */
+export function computeLoopTimeSignatureOptions(totalUnits: number): TimeSignatureOption[] {
+  return withCutTimeAndDedupe(optionsForUnitsPerBeat(totalUnits, 1, 8));
 }

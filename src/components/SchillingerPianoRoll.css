@@ -24,6 +24,12 @@
   stroke-width: 3;
 }
 
+.piano-roll__note--looped {
+  stroke: #29b6d8;
+  stroke-width: 3;
+  stroke-dasharray: 4 2;
+}
+
 .piano-roll__duration {
   font-family: ui-monospace, monospace;
   font-size: 11px;

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { computeTimeSignatureOptions } from "../src/core/timeSignature.ts";
+import { computeTimeSignatureOptions, computeLoopTimeSignatureOptions } from "../src/core/timeSignature.ts";
 
 test("denominator 16 is never offered", () => {
   for (const [a, b] of [[3, 2], [4, 3], [9, 8]]) {
@@ -76,4 +76,19 @@ test("no duplicate options even when different unitsPerBeat sources coincide", (
 test("fractioned technique does not offer a by-b reading", () => {
   const options = computeTimeSignatureOptions({ technique: "fractioned", a: 4, b: 3, cycleLength: 16 });
   assert.ok(!options.some((o) => o.unitsPerBeat === 3));
+});
+
+test("computeLoopTimeSignatureOptions offers the raw view of an arbitrary loop total, capped and broken down the same way", () => {
+  // A [2,1,1] loop totals 4 units: one bar of 4/8, or 2 bars of 2/8.
+  const options = computeLoopTimeSignatureOptions(4);
+  assert.deepEqual(options.map((o) => o.label).sort(), ["4/8", "2 × 2/8"].sort());
+});
+
+test("computeLoopTimeSignatureOptions never exceeds beatsPerBar 15 and never uses denominator 16", () => {
+  for (const total of [4, 9, 16, 25, 37]) {
+    for (const option of computeLoopTimeSignatureOptions(total)) {
+      assert.ok(option.beatsPerBar >= 2 && option.beatsPerBar <= 15, `${total} -> ${option.label}`);
+      assert.notEqual(option.denominator, 16);
+    }
+  }
 });

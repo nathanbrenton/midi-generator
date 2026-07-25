@@ -6,6 +6,8 @@ export interface PianoRollSegment {
   accent?: boolean;
   /** Highlights an occurrence of a searched-for rhythmic pattern (analysis mode). */
   matched?: boolean;
+  /** Highlights a segment within the currently selected loop/cycle range. */
+  looped?: boolean;
 }
 
 export interface PianoRollLane {
@@ -106,7 +108,13 @@ export default function SchillingerPianoRoll({
                 height={LANE_HEIGHT}
                 rx={3}
                 fill={fill}
-                className={segment.matched ? "piano-roll__note piano-roll__note--matched" : "piano-roll__note"}
+                className={[
+                  "piano-roll__note",
+                  segment.matched && "piano-roll__note--matched",
+                  segment.looped && "piano-roll__note--looped",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               />
               <rect x={x} y={y + 3} width={Math.max(width - 1, 0)} height={4} rx={2} fill={highlight} />
               {width >= MIN_LABEL_WIDTH && (

@@ -5,7 +5,9 @@ import {
   notesToRhythmPattern,
   findPatternOccurrences,
   findMatchingCases,
+  findMatchingResultants,
 } from "../src/core/rhythmAnalysis.ts";
+import { generateFractionedResultant } from "../src/core/fractioning.ts";
 
 test("reduceToUnits divides out the greatest common divisor", () => {
   assert.deepEqual(reduceToUnits([480, 240, 240]), [2, 1, 1]);
@@ -46,4 +48,35 @@ test("an unreduced but proportional sousta pattern (4,2,2) finds the same cases 
   const matches = findMatchingCases(reduceToUnits([4, 2, 2]));
   const labels = matches.map((m) => m.case.label).sort();
   assert.deepEqual(labels, ["3 : 2", "5 : 2", "7 : 2", "9 : 2"]);
+});
+
+test("findMatchingResultants finds [2,1,1] in 4:3 fractioned at index 2, matching the user's own worked example", () => {
+  // 4:3 fractioned is 3,1,2,1,1,1,1,2,1,3 -- "3 1 [2 1 1] 1 1 2 1 3"
+  const fractioned = generateFractionedResultant(4, 3).segments.map((s) => s.duration);
+  assert.deepEqual(fractioned, [3, 1, 2, 1, 1, 1, 1, 2, 1, 3]);
+
+  const matches = findMatchingResultants([2, 1, 1]);
+  const hit = matches.find((m) => m.case.label === "4 : 3" && m.technique === "fractioned");
+  assert.ok(hit, "expected a 4:3 fractioned match");
+  assert.deepEqual(hit.occurrences, [2]);
+});
+
+test("findMatchingResultants also finds [2,1,1] in 5:2 plain, matching the user's cross-resultant example", () => {
+  // 5:2 plain is 2,2,1,1,2,2 -- "2 [2 1 1] 2 2"
+  const matches = findMatchingResultants([2, 1, 1]);
+  const hit = matches.find((m) => m.case.label === "5 : 2" && m.technique === "plain");
+  assert.ok(hit, "expected a 5:2 plain match");
+  assert.deepEqual(hit.occurrences, [1]);
+});
+
+test("findMatchingResultants can be restricted to a subset of techniques", () => {
+  const matches = findMatchingResultants([2, 1, 1], ["fractioned"]);
+  assert.ok(matches.every((m) => m.technique === "fractioned"));
+  assert.ok(matches.some((m) => m.case.label === "4 : 3"));
+});
+
+test("findMatchingResultants covers strictly more ground than the plain-only findMatchingCases", () => {
+  const plainOnly = findMatchingCases([2, 1, 1]).length;
+  const allTechniques = findMatchingResultants([2, 1, 1]).length;
+  assert.ok(allTechniques > plainOnly);
 });
