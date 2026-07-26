@@ -48,7 +48,7 @@ export default function PermutationsPanel() {
     () => (values.length < 2 ? [] : mode === "circular" ? circularPermutations(values) : generalPermutations(values)),
     [values, mode],
   );
-  const rows = allRows.slice(0, MAX_LANES);
+  const rows = useMemo(() => allRows.slice(0, MAX_LANES), [allRows]);
   const truncated = allRows.length > rows.length;
 
   const cycleLength = values.reduce((sum, v) => sum + v, 0);
