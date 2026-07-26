@@ -75,7 +75,7 @@ const TECHNIQUE_OPTIONS: { label: string; value: Technique }[] = [
   { label: "Balance (Ch. 5)", value: "balance" },
 ];
 
-export default function SchillingerGenerator() {
+export default function SchillingerGenerator({ children }: { children?: React.ReactNode }) {
   const [caseIndex, setCaseIndex] = useState(0); // defaults to 3 : 2
   const [scaleIndex, setScaleIndex] = useState(0);
   const [rootMidiNote, setRootMidiNote] = useState(60);
@@ -728,6 +728,44 @@ export default function SchillingerGenerator() {
         </div>
       </section>
 
+      <section className="schillinger__section schillinger__section--wide">
+        <h3>Percussion mapping</h3>
+        <p className="schillinger__hint">
+          Assign any of the resultant's own structural components to a drum voice — each becomes its
+          own track on the General MIDI percussion channel.
+        </p>
+        <div className="schillinger__row">
+          {PERCUSSION_SOURCES.map((source) => {
+            const available = segmentsForSource(source, activeResultant, selectedCase.a, selectedCase.b) != null;
+            return (
+              <label key={source}>
+                {PERCUSSION_SOURCE_LABELS[source]}
+                <select
+                  value={percussionAssignments[source] ?? ""}
+                  disabled={!available}
+                  onChange={(e) =>
+                    setPercussionAssignments((prev) => ({
+                      ...prev,
+                      [source]: e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                >
+                  <option value="">None</option>
+                  {PERCUSSION_VOICE_OPTIONS.map((voice) => (
+                    <option key={voice.label} value={voice.midiNote}>
+                      {voice.label}
+                    </option>
+                  ))}
+                </select>
+                {!available && " (unavailable for this technique)"}
+              </label>
+            );
+          })}
+        </div>
+      </section>
+
+      {children}
+
       <section className="schillinger__section">
         <h3>Pitch scale (Theory of Pitch Scales)</h3>
         <div className="schillinger__row">
@@ -796,43 +834,7 @@ export default function SchillingerGenerator() {
       </section>
 
       <section className="schillinger__section schillinger__section--wide">
-        <h3>Percussion mapping</h3>
-        <p className="schillinger__hint">
-          Assign any of the resultant's own structural components to a drum voice — each becomes its
-          own track on the General MIDI percussion channel.
-        </p>
-        <div className="schillinger__row">
-          {PERCUSSION_SOURCES.map((source) => {
-            const available = segmentsForSource(source, activeResultant, selectedCase.a, selectedCase.b) != null;
-            return (
-              <label key={source}>
-                {PERCUSSION_SOURCE_LABELS[source]}
-                <select
-                  value={percussionAssignments[source] ?? ""}
-                  disabled={!available}
-                  onChange={(e) =>
-                    setPercussionAssignments((prev) => ({
-                      ...prev,
-                      [source]: e.target.value === "" ? null : Number(e.target.value),
-                    }))
-                  }
-                >
-                  <option value="">None</option>
-                  {PERCUSSION_VOICE_OPTIONS.map((voice) => (
-                    <option key={voice.label} value={voice.midiNote}>
-                      {voice.label}
-                    </option>
-                  ))}
-                </select>
-                {!available && " (unavailable for this technique)"}
-              </label>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="schillinger__section schillinger__section--wide">
-        <h3>Playback</h3>
+        <h3>Playback (melody / percussion)</h3>
         <div className="schillinger__row">
           <label>
             Tempo

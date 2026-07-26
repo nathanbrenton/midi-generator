@@ -303,6 +303,10 @@ general case Book II Ch. 2 covers, rather than declining to answer.
 
 ## Controls
 
+Laid out in the order each topic appears across the two books — every
+Book I (rhythm) control before any Book II (pitch) control, each with its
+own Playback section immediately after the controls it plays back:
+
 - **Case** — one of the 19 canonical binary-synchronization generator
   pairs, narrowed to only the matches when a rhythm pattern is active.
 - **Technique** — Plain (Ch. 2A), Fractioned (Ch. 4), or one of Expansion /
@@ -311,10 +315,6 @@ general case Book II Ch. 2 covers, rather than declining to answer.
   minor generator no longer fits those longer, composed grids.
 - **Time signature** — every exact beats-per-bar reading of the current
   cycle (see "Time signatures" above).
-- **Scale** — a symmetric-division or interval-cell preset.
-- **Register** — which octave the scale's root anchors to.
-- **Contour** — how successive notes move through the scale.
-- **Harmony (strata)** — optional parallel voices at fixed intervals.
 - **Percussion mapping** — assigns any of the five structural components
   the piano roll already shows (C.D., Generator A, Generator B, the
   Resultant, C.P.) to a General MIDI drum voice (kick, snare, hi-hat,
@@ -322,6 +322,14 @@ general case Book II Ch. 2 covers, rather than declining to answer.
   percussion channel, so the polyrhythm underneath the resultant is
   audible directly as an actual drum part instead of only implied by the
   merged rhythm — see "Percussion mapping" below.
+- **Three or More Generators (Ch. 6)** — its own Case (one of the book's
+  four combinations) and Bar grouping, with its own "Playback (theme /
+  countertheme)" section right after — see "Three or more generators"
+  above.
+- **Scale** — a symmetric-division or interval-cell preset (Book II).
+- **Register** — which octave the scale's root anchors to.
+- **Contour** — how successive notes move through the scale.
+- **Harmony (strata)** — optional parallel voices at fixed intervals.
 - **Tempo / unit note value** — maps the resultant's abstract duration units
   onto real time (e.g. "1 unit = a sixteenth note" at a given bpm).
 

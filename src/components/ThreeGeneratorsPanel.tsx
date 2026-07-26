@@ -189,7 +189,7 @@ export default function ThreeGeneratorsPanel() {
   }
 
   return (
-    <div className="schillinger">
+    <>
       <section className="schillinger__section schillinger__section--wide">
         <h3>Three or More Generators (Book I, Ch. 6)</h3>
         <p className="schillinger__hint">
@@ -239,7 +239,7 @@ export default function ThreeGeneratorsPanel() {
       </section>
 
       <section className="schillinger__section schillinger__section--wide">
-        <h3>Playback</h3>
+        <h3>Playback (theme / countertheme)</h3>
         <div className="schillinger__row">
           <label>
             Tempo
@@ -266,6 +266,6 @@ export default function ThreeGeneratorsPanel() {
           </button>
         </div>
       </section>
-    </div>
+    </>
   );
 }

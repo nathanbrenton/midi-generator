@@ -9,8 +9,9 @@ export default function App() {
         Generates rhythm from Joseph Schillinger's interference of periodicities and
         melody from his symmetric pitch scales.
       </p>
-      <SchillingerGenerator />
-      <ThreeGeneratorsPanel />
+      <SchillingerGenerator>
+        <ThreeGeneratorsPanel />
+      </SchillingerGenerator>
     </main>
   );
 }
