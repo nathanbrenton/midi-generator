@@ -145,6 +145,42 @@ of the book's own tables in `tests/permutations.test.mjs`, plus a general
 check that the count always matches the standard multiset-permutation
 formula `n! / ∏(repeated-value factorials)`.
 
+Chapter 10 (**Generalization of Variation Techniques**) grows two seed
+elements through successive "orders": Figure 120's own formula states
+`a2 = a1+b1`, `b2 = b1+a1`, then `a3 = a2+b2`, `b3 = b2+a2`, and so on —
+each order concatenates the *previous* order's own (already-grown) a and b,
+so the pair keeps exactly 2 simultaneous voices forever while their length
+doubles every order. `higherOrderElements` (`src/core/higherOrderPermutations.ts`)
+generalizes this to any number of seeds — element *i* at order *k* is the
+concatenation of element *i* and element *(i+1 mod n)* from order *k-1* —
+and reproduces the book's own exact numbers for two seeds `[2],[1]` at
+every order in `tests/higherOrderPermutations.test.mjs` (`a3=[2,1,1,2]`,
+`b3=[1,2,2,1]`, `a4=[2,1,1,2,1,2,2,1]`, ...). One honest flag: the book's
+own prose separately claims the *element count* itself grows ("3 elements
+→ 9 on the second order, 27 on the third... through circular
+permutations"), which doesn't square with Figure 120's own formula (which
+keeps the count fixed, only the length grows) or even with itself (9 fits
+"square of 3," but 27 doesn't fit "square of 9"=81) — this implementation
+follows the formula, which is unambiguous and directly verifiable, over
+the prose claim, which isn't internally consistent.
+
+Chapter 11 (**Composition of Homogeneous Rhythmic Continuity**) splits a
+rhythmic group into n equal pieces (its simplest divisor, or its
+individual segments) and grows n *parts* from them: part *p* is every
+circular rotation of the pieces concatenated in turn, starting at rotation
+*p* and wrapping around — a canon where every part eventually states every
+rotation, each one entering a rotation later than the last. The book's own
+Figure 124 (p. 67, 4 pieces `a1,b1,c1,d1`) spells out all 4 parts in full —
+part 0 reads `a,b,c,d,b,c,d,a,c,d,a,b,d,a,b,c` and part 1 reads
+`b,c,d,a,c,d,a,b,d,a,b,c,a,b,c,d` (rotations 0,1,2,3 vs. 1,2,3,0) — both
+reproduced exactly by `homogeneousContinuityParts`
+(`src/core/homogeneousContinuity.ts`), which reuses Ch. 9's
+`circularPermutations` unchanged via an index-permutation trick (permute
+`[0..n-1]`, then map each row back to the actual pieces) rather than
+duplicating any combinatorial logic. Also confirmed against the book's
+smaller 2-piece example ("8-bar, 2-part continuity," p. 66) in
+`tests/homogeneousContinuity.test.mjs`.
+
 Book II builds symmetric pitch scales the same way Book I builds
 rhythms — dividing the octave into equal (or as-equal-as-possible) parts.
 Dividing by 3, 4, or 6 reproduces the augmented, diminished, and whole-tone
@@ -220,6 +256,13 @@ octave using the same math as the rhythm side.
 - `src/core/permutations.ts` — Ch. 9: `generalPermutations` (every distinct
   reordering of a duration-group's values) and `circularPermutations` (its
   n rotations). Zero dependencies.
+- `src/core/higherOrderPermutations.ts` — Ch. 10: `higherOrderElements`
+  (grows n seed elements through successive orders via circular
+  concatenation, generalizing Figure 120's a/b formula). Zero dependencies.
+- `src/core/homogeneousContinuity.ts` — Ch. 11: `chunkIntoPieces`,
+  `divisorsOf`, and `homogeneousContinuityParts` (the canon-of-rotations
+  construction, built on Ch. 9's `circularPermutations`). Depends only on
+  `permutations.ts`.
 - `src/components/SchillingerGenerator.tsx` — the React component (generator
   inputs, scale/register/contour/harmony controls, Web Audio playback, MIDI
   download). Depends only on the core modules above and its co-located CSS
@@ -319,6 +362,33 @@ the page is *continuity*, stacking them as separate simultaneous parts is
 each row's own sequence = continuity). Verified against the book's own
 `2,1,1` (3 circular permutations) and `3,1,2` (6 general permutations, all
 distinct) examples directly in the browser, matching `tests/permutations.test.mjs`.
+
+## Higher-order variation
+
+A sixth panel (`HigherOrderPermutationsPanel.tsx`, right after Ch. 9) covers
+Ch. 10 — also fully self-contained. Enter two seed patterns (default `2`
+and `1`, the book's own Figure 120 example) and an order (1-6); each seed
+grows into an ever-longer variation of itself through the book's own
+recursive formula, shown as 2 piano-roll lanes (labeled `a3`/`b3` etc. for
+the chosen order) that double in length every order while staying at
+exactly 2 simultaneous voices. Verified directly in the browser against the
+book's own numbers at orders 3 and 4 (`a3=2,1,1,2` / `b3=1,2,2,1`, then
+`a4=2,1,1,2,1,2,2,1` / `b4=1,2,2,1,2,1,1,2`), matching
+`tests/higherOrderPermutations.test.mjs`.
+
+## Homogeneous rhythmic continuity
+
+A seventh panel (`HomogeneousContinuityPanel.tsx`, right after Ch. 10)
+covers Ch. 11 — like Ch. 7/8, it reads the *active* resultant's own
+segments rather than a separately-typed pattern. Pick a divisor of the
+segment count (its "simplest divisor," or the segments themselves) and the
+panel splits them into that many equal pieces, then renders one piano-roll
+lane per resulting *part* — each part a canon-of-rotations of the pieces,
+per `homogeneousContinuityParts` above. Verified directly in the browser
+against the default 3:2 case's 4 segments: split into 2 pieces gave
+`Part 1 = 2,1,1,2,1,2,2,1` / `Part 2 = 1,2,2,1,2,1,1,2`; split into 4
+individual segments gave 4 parts of 16 units each, matching
+`tests/homogeneousContinuity.test.mjs` and the book's own Figure 124.
 
 ## Percussion mapping
 
@@ -456,6 +526,10 @@ own Playback section immediately after the controls it plays back:
 - **Permutations (Ch. 9)** — a duration pattern and Circular/General
   permutation type, fully self-contained — see "Permutations (rhythmic
   variation)" above.
+- **Higher-order variation (Ch. 10)** — two seed patterns and an order,
+  fully self-contained — see "Higher-order variation" above.
+- **Homogeneous continuity (Ch. 11)** — a divisor of the active
+  resultant's segment count — see "Homogeneous rhythmic continuity" above.
 - **Scale** — a symmetric-division or interval-cell preset (Book II).
 - **Register** — which octave the scale's root anchors to.
 - **Contour** — how successive notes move through the scale.
