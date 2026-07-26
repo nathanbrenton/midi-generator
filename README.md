@@ -77,6 +77,26 @@ extended 5:2 case for Balance) in `tests/groupsByPairs.test.mjs`. The book
 states "grouping for such pairs is through a only" — one clean bar count
 of `a` units, always exact, unlike Chapter 4's "by b" grouping.
 
+Chapter 6 (**Utilization of Three or More Generators**) extends binary
+synchronization past two generators by drawing three at once from one of
+Schillinger's "series of growth" — summation series (Fibonacci-style: each
+value after the first two is the sum of the two before it) that "all
+generators pertaining to one family of rhythm belong to." Synchronizing
+2:3:5 (the book's own worked example) gives a common product of 30 and
+complementary factors 15, 10, 6 — the book states "generators produce r,
+and the complementary factors produce r'," so the **theme** (r) is the
+resultant of the three generators themselves and the **countertheme** (r')
+is the resultant of their complementary factors, both sharing the common
+product as their cycle length so they loop together. Both sequences are
+confirmed against the book's own numbers (theme `6 4 2 3 3 2 4 6`,
+countertheme's 22-term sequence) in `tests/threeGenerators.test.mjs`. One
+honest flag: the worked example's own figure, at the scan quality
+available, appears to attach its two duration formulas to r/r' the
+opposite way from that prose sentence — both duration sequences are
+independently re-derivable from first principles and check out either way,
+so only the *label* is uncertain; the prose is what this app follows. See
+the docstring in `src/core/threeGenerators.ts` for the full account.
+
 Book II builds symmetric pitch scales the same way Book I builds
 rhythms — dividing the octave into equal (or as-equal-as-possible) parts.
 Dividing by 3, 4, or 6 reproduces the augmented, diminished, and whole-tone
@@ -110,17 +130,35 @@ octave using the same math as the rhythm side.
   at fixed interval offsets (Schillinger's "harmonization by strata").
 - `src/core/midi.ts` — a minimal Standard MIDI File (format 1) writer with
   one track per voice, so polyrhythm and harmony voices play back
-  simultaneously. Zero dependencies — no MIDI library involved.
+  simultaneously. A voice's channel is normally derived from its track
+  position, but `NoteEvent.channel` can pin it to a fixed channel instead
+  (percussion uses this for GM's channel 10). Zero dependencies — no MIDI
+  library involved.
+- `src/core/percussion.ts` — `segmentsForSource` (the attack pattern for
+  any of C.D./Generator A/Generator B/Resultant/C.P.) and
+  `buildPercussionVoices` (turns an assignment map into `NoteEvent`s on
+  the GM drum channel). Zero dependencies beyond `resultant.ts`.
 - `src/core/midiImport.ts` — the inverse: a minimal SMF *reader* (format
   0/1, running status, meta/sysex skipped), picking the track with the
   most notes for monophonic analysis. Zero dependencies.
+- `src/core/quantize.ts` — `quantizeGaps(...)`: snaps raw MIDI tick gaps
+  onto the coarsest standard grid (with triplets) that explains them
+  within tolerance, reporting the chosen grid and how much timing
+  deviation it absorbed. Zero dependencies.
 - `src/core/timeSignature.ts` — `computeTimeSignatureOptions(...)`: every
   exact beats-per-bar reading of a cycle for the active technique.
-- `src/core/rhythmAnalysis.ts` — `notesToRhythmPattern`, `reduceToUnits`,
-  `findPatternOccurrences` (cyclic match), `findMatchingCases` (searches
-  all 19 plain resultants). Zero dependencies beyond `resultant.ts`.
-- `src/core/pitchClassification.ts` — `classifyScaleGroup` and
-  `twoUnitScaleLabel` (Book II Ch. 1-2). Zero dependencies.
+- `src/core/rhythmAnalysis.ts` — `notesToRhythmPattern` (quantizes then
+  reduces), `reduceToUnits`, `findPatternOccurrences` (cyclic match),
+  `findMatchingCases` (searches all 19 plain resultants).
+- `src/core/pitchClassification.ts` — `classifyScaleGroup` (all 4 groups,
+  from actual MIDI note range plus symmetric-scale matching against
+  `scales.ts`), `matchesSymmetricDivision`, and `twoUnitScaleLabel`
+  (Book II Ch. 1-2).
+- `src/core/threeGenerators.ts` — Ch. 6: `GROWTH_SERIES`,
+  `THREE_GENERATOR_CASES`, `commonProduct`, `complementaryFactors`,
+  `buildTheme`/`buildCountertheme` (each just `generateResultant` applied
+  to the generators or their complementary factors), and
+  `threeGeneratorGroupings`. Depends only on `resultant.ts`.
 - `src/components/SchillingerGenerator.tsx` — the React component (generator
   inputs, scale/register/contour/harmony controls, Web Audio playback, MIDI
   download). Depends only on the core modules above and its co-located CSS
@@ -140,10 +178,53 @@ deferred to a later pass.
 
 Under the Case/Technique controls, a DAW-style preview shows the actual
 construction before you commit to downloading anything: **C.P.** as one
-note spanning the whole cycle, **Generator A**'s own pulse, **Generator
-B**'s (Plain technique only — the other techniques' cycle lengths aren't
-generally multiples of b), and the **Resultant** with coincidence points
-highlighted in orange.
+note spanning the whole cycle, **C.D.** (the finest grid — one block per
+abstract unit), **Generator A**'s own pulse, **Generator B**'s (Plain
+technique only — the other techniques' cycle lengths aren't generally
+multiples of b), and the **Resultant** with coincidence points
+highlighted in orange. These five lanes are the same five rows Figure 6
+of the book draws (c.d., a, b, r, c.p.) — the "Percussion mapping" section
+below turns them from a picture into an actual drum part.
+
+## Three or more generators
+
+A separate panel (`ThreeGeneratorsPanel.tsx`, below the main generator)
+covers Book I Ch. 6 independently, since it works from three generators at
+once rather than the two the rest of the app is built around. Pick one of
+the book's four "important and practical combinations" (2:3:5, 3:5:8,
+3:4:7, 4:5:9), each drawn from one of the three growth series, and the
+panel shows the **theme** and **countertheme** as two piano-roll lanes
+sharing the common product as their cycle length, plus every bar grouping
+available (by any generator or any complementary factor — six divisors for
+three generators, same "group by any factor" rule Ch. 3 uses for two).
+Playback and MIDI download work the same way as the main generator (theme
+on one voice, countertheme on another, sine/triangle oscillators for
+preview). See "The theory, briefly" above for the r/r' naming caveat.
+
+## Percussion mapping
+
+Each of those five structural components can be assigned to a General
+MIDI percussion voice — kick, snare, rim, clap, closed/open hi-hat, ride,
+crash, low/mid/high tom, cowbell (`src/core/percussion.ts`). An assignment
+becomes its own track in the exported (and previewed) MIDI, pinned to
+channel 10 — General MIDI's dedicated percussion channel — regardless of
+how many other voices exist, via a `NoteEvent.channel` override the
+writer respects per-track (`src/core/midi.ts`). Each hit is a short
+staccato strike at the source's own attack points, not a held note — a
+drum voice doesn't sustain the way a generator's pulse does.
+
+Generator B is unavailable outside the Plain technique, same restriction
+as its piano-roll lane and for the same reason (the longer composed
+cycles aren't generally multiples of b). The other four — C.D., Generator
+A, the Resultant, and C.P. — are always available, since a divides every
+cycle length this app produces and c.d./resultant/c.p. are defined
+directly from the cycle itself.
+
+Assigning **Generator A → kick** and **Generator B → snare** (Plain
+technique) is the most direct way to literally hear a binary-synchronization
+case as the "N against M" polyrhythm it is — two independent, evenly-spaced
+pulses, exactly as Ch. 2A describes them, before they're even superimposed
+into the resultant.
 
 ## Time signatures
 
@@ -196,40 +277,57 @@ integer ratio so `4,2,2` and `2,1,1` are recognized as the same pattern.
 Uploaded MIDI files are parsed with a small dependency-free reader
 (`src/core/midiImport.ts`, the inverse of the writer in `midi.ts`) that
 picks the track with the most notes as "the" melody — analysis is
-monophonic-only for now, chords come later. If the file also carries pitch
-content, it's classified per Book II Ch. 1 (p. 101)'s four scale groups
-and, for exactly two pitch classes, the specific interval from Ch. 2B's
-eleven-entry table (`src/core/pitchClassification.ts`) — both confirmed
-verbatim against the book. **3+ pitch-class scales intentionally aren't
-classified into a group yet**: Group Three/Four's "range" isn't simply the
-pitch content's actual span (the whole-tone scale's real span is 10
-semitones, but should read "range=12" per Group Three), so it depends on
-scale-construction details this module doesn't have verified — it returns
-an honest "not yet determined" rather than guessing.
+monophonic-only for now, chords come later. Raw tick timing is real-world
+messy — performed or humanized MIDI rarely lands exactly on a subdivision
+— so `src/core/quantize.ts` snaps note-to-note gaps onto the coarsest
+standard grid (quarter/eighth/sixteenth/etc., including triplets) that
+explains them within a small tolerance before reducing to a duration
+pattern, rather than taking the GCD of raw ticks directly (which turns a
+few ticks of drift into a huge, meaningless pattern). The chosen grid and
+how much deviation it absorbed are both shown, so quantization stays
+visible rather than silent.
+
+Pitch content is classified per Book II Ch. 1 (p. 101)'s four scale
+groups and, for exactly two pitch classes, the specific interval from
+Ch. 2B's eleven-entry table (`src/core/pitchClassification.ts`) — both
+confirmed verbatim against the book. The One/Two split is decided from
+the music's *actual* performed range (not pitch class alone — two notes a
+ninth apart are Group Two even though they're "the same" pitch classes as
+two notes a second apart); the Three/Four split ("more than one
+root-tone") is decided by matching the pitch-class set against an exact
+equal division of the octave — the same symmetric scales `scales.ts`
+already generates — at any rotation, since that's literally what makes a
+scale read the same from more than one of its own notes. A collection
+that doesn't match any equal division defaults to Group One or Two, the
+general case Book II Ch. 2 covers, rather than declining to answer.
 
 ## Controls
 
 - **Case** — one of the 19 canonical binary-synchronization generator
   pairs, narrowed to only the matches when a rhythm pattern is active.
 - **Technique** — Plain (Ch. 2A), Fractioned (Ch. 4), or one of Expansion /
-  Contraction / Balance (Ch. 5). Anything but Plain disables the raw-pulse
-  voices below, since a single even pulse for the minor generator no
-  longer fits those longer, composed grids.
+  Contraction / Balance (Ch. 5). Disables Generator B in the percussion
+  mapping below for anything but Plain, since a single even pulse for the
+  minor generator no longer fits those longer, composed grids.
 - **Time signature** — every exact beats-per-bar reading of the current
   cycle (see "Time signatures" above).
 - **Scale** — a symmetric-division or interval-cell preset.
 - **Register** — which octave the scale's root anchors to.
 - **Contour** — how successive notes move through the scale.
 - **Harmony (strata)** — optional parallel voices at fixed intervals.
-- **Include raw generator pulses** — adds each generator's own even pulse as
-  a separate low-register voice, so the polyrhythm underneath the resultant
-  is audible directly, not just implied by the merged rhythm.
+- **Percussion mapping** — assigns any of the five structural components
+  the piano roll already shows (C.D., Generator A, Generator B, the
+  Resultant, C.P.) to a General MIDI drum voice (kick, snare, hi-hat,
+  ride, ...). Each assignment becomes its own track, pinned to the GM
+  percussion channel, so the polyrhythm underneath the resultant is
+  audible directly as an actual drum part instead of only implied by the
+  merged rhythm — see "Percussion mapping" below.
 - **Tempo / unit note value** — maps the resultant's abstract duration units
   onto real time (e.g. "1 unit = a sixteenth note" at a given bpm).
 
 `Play` loops the full resultant cycle via Web Audio oscillators (sine for
-the melody voice, triangle for harmony, square for the raw generator
-pulses) — it becomes `Stop` while playing. Changing any control while
+the melody voice, triangle for harmony, square for percussion voices) —
+it becomes `Stop` while playing. Changing any control while
 playing restarts the loop from the top with the new settings, rather than
 finishing out the old cycle first. `Download MIDI` writes an actual
 multi-track `.mid` file you can drag into a DAW, `midi-drum-composer`, or

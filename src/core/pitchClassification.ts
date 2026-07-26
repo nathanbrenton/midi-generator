@@ -1,23 +1,40 @@
 /**
- * Classifies a set of pitches into Schillinger's Theory of Pitch-Scales
+ * Classifies pitch content into Schillinger's Theory of Pitch-Scales
  * groups (Book II, Ch. 1, p.101) and, for two-unit scales, the specific
  * interval (Book II, Ch. 2B, p.103). Both tables confirmed verbatim
  * against the book (see project memory) — see tests/pitchClassification.test.mjs.
  *
- * Only 1- and 2-pitch-class inputs are classified with confidence. For 3+
- * pitch classes, Group Three/Four's "range" isn't simply the pitch
- * content's actual span (the whole-tone scale's actual span is 10
- * semitones, but reads as "range=12" per Group Three), so it depends on
- * scale-construction details this module doesn't yet have verified —
- * classifyScaleGroup returns null rather than guess.
+ * The book's Group One/Two split is about *actual performed range*
+ * (Group One: one root-tone, range ≤11; Group Two: one root-tone, range
+ * over an octave), not about how many distinct pitch classes are
+ * present — two pitch classes an octave-plus apart (e.g. C3 and D4) are
+ * still Group Two. Folding to pitch class before classifying (the
+ * earlier approach) throws that information away, so classifyScaleGroup
+ * now takes the actual MIDI note numbers.
+ *
+ * The Three/Four split ("more than one root-tone") is Schillinger's own
+ * term for a *symmetric* scale — one built from equal division of the
+ * octave, which by construction reads the same starting from more than
+ * one of its own pitches. That's exactly what scales.ts's
+ * symmetricDivisionScale already generates for the exact divisors of 12
+ * (2, 3, 4, 6, 12); a pitch-class set is classified as Group Three/Four
+ * when it matches one of those shapes at any rotation, and defaults to
+ * Group One/Two (the general, non-symmetric case Book II Ch.2 covers)
+ * otherwise. This is a reasonable, book-grounded default, not a
+ * guarantee — an unusual non-symmetric collection Schillinger would
+ * classify differently for reasons outside this table isn't ruled out.
  */
+
+import { symmetricDivisionScale } from "./scales.ts";
 
 export type ScaleGroup = 1 | 2 | 3 | 4;
 
 export interface ScaleGroupResult {
   group: ScaleGroup;
-  rootToneCount: 1;
+  rootToneCount: "one" | "more than one";
   range: number;
+  /** The equal-division count (3 = augmented, 4 = diminished, 6 = whole tone, ...) when the match is symmetric. */
+  symmetricDivision: number | null;
   label: string;
 }
 
@@ -35,30 +52,68 @@ const TWO_UNIT_INTERVAL_LABELS: Readonly<Record<number, string>> = {
   11: "major seventh (M7)",
 };
 
+/** Exact equal divisors of 12 — the unambiguous "symmetric" scale family (Book II's Third/Fourth Group). */
+const SYMMETRIC_DIVISIONS = [2, 3, 4, 6, 12];
+
 /** Reduces MIDI note numbers to their distinct pitch classes (0-11), sorted. */
 export function pitchClassesFromMidiNotes(midiNotes: readonly number[]): number[] {
   return [...new Set(midiNotes.map((note) => ((note % 12) + 12) % 12))].sort((a, b) => a - b);
 }
 
-/**
- * Classifies a 1- or 2-pitch-class scale into one of the four groups.
- * Both are always "one root-tone" constructions (Book II confirms this
- * explicitly for two-unit scales — "the two forms become a1 and b1" from
- * a single cell), so the group is decided purely by range vs. the
- * Group One/Two boundary (11 vs. over 12). Returns null for 3+ pitch
- * classes — see the module docstring.
- */
-export function classifyScaleGroup(pitchClasses: readonly number[]): ScaleGroupResult | null {
-  if (pitchClasses.length === 0 || pitchClasses.length > 2) return null;
+function intervalsFromRoot(pitchClasses: readonly number[], root: number): number[] {
+  return pitchClasses.map((pc) => ((pc - root + 12) % 12)).sort((a, b) => a - b);
+}
 
-  const range = pitchClasses.length === 1 ? 0 : Math.max(...pitchClasses) - Math.min(...pitchClasses);
+/**
+ * Checks whether `pitchClasses` is an exact equal division of the octave
+ * (Book II's symmetric scale family) at any rotation — a symmetric
+ * scale's defining property is that it reads the same shape starting
+ * from more than one of its own pitches, so every pitch class is tried
+ * as a candidate root.
+ */
+export function matchesSymmetricDivision(pitchClasses: readonly number[]): number | null {
+  for (const division of SYMMETRIC_DIVISIONS) {
+    if (pitchClasses.length !== division) continue;
+    const target = symmetricDivisionScale(division).degrees;
+    for (const root of pitchClasses) {
+      if (intervalsFromRoot(pitchClasses, root).every((value, i) => value === target[i])) {
+        return division;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Classifies pitch content into one of the four scale groups, from the
+ * actual MIDI note numbers (not pre-folded pitch classes, so real range
+ * beyond one octave is preserved).
+ */
+export function classifyScaleGroup(midiNotes: readonly number[]): ScaleGroupResult | null {
+  if (midiNotes.length === 0) return null;
+
+  const pitchClasses = pitchClassesFromMidiNotes(midiNotes);
+  const range = Math.max(...midiNotes) - Math.min(...midiNotes);
+  const symmetricDivision = matchesSymmetricDivision(pitchClasses);
+
+  if (symmetricDivision != null) {
+    const group: ScaleGroup = range <= 12 ? 3 : 4;
+    return {
+      group,
+      rootToneCount: "more than one",
+      range,
+      symmetricDivision,
+      label: `Group ${group === 3 ? "Three" : "Four"}: more than one root-tone (symmetric ÷${symmetricDivision}), range ${range}`,
+    };
+  }
+
   const group: ScaleGroup = range <= 11 ? 1 : 2;
-  const groupName = group === 1 ? "One" : "Two";
   return {
     group,
-    rootToneCount: 1,
+    rootToneCount: "one",
     range,
-    label: `Group ${groupName}: one root-tone, range ${range}`,
+    symmetricDivision: null,
+    label: `Group ${group === 1 ? "One" : "Two"}: one root-tone, range ${range}`,
   };
 }
 

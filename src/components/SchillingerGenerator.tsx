@@ -17,11 +17,22 @@ import {
   findMatchingResultants,
 } from "../core/rhythmAnalysis";
 import { pitchClassesFromMidiNotes, classifyScaleGroup, twoUnitScaleLabel } from "../core/pitchClassification";
+import { DIVISION_LABELS } from "../core/quantize";
+import {
+  PERCUSSION_SOURCES,
+  PERCUSSION_SOURCE_LABELS,
+  PERCUSSION_VOICE_OPTIONS,
+  buildPercussionVoices,
+  emptyPercussionAssignments,
+  segmentsForSource,
+  type PercussionSource,
+} from "../core/percussion";
 import SchillingerPianoRoll, { type PianoRollLane } from "./SchillingerPianoRoll";
 import "./SchillingerGenerator.css";
 
 const LANE_COLORS = {
   cp: { color: "#c9932f", highlight: "#e8b95c" },
+  cd: { color: "#8a6fb0", highlight: "#b09bd6" },
   generator: { color: "#3c8a5c", highlight: "#5fb884" },
   resultant: { color: "#3a6ea8", highlight: "#6a9bd6" },
 };
@@ -56,8 +67,6 @@ const HARMONY_PRESETS: { label: string; intervals: number[] }[] = [
   { label: "Triad + octave below", intervals: [-12, 4, 7] },
 ];
 
-const PULSE_VOICE_NOTE = 36; // low "click" register for the raw generator pulses
-
 const TECHNIQUE_OPTIONS: { label: string; value: Technique }[] = [
   { label: "Plain (Ch. 2A)", value: "plain" },
   { label: "Fractioned (Ch. 4)", value: "fractioned" },
@@ -75,12 +84,13 @@ export default function SchillingerGenerator() {
   const [bpm, setBpm] = useState(120);
   const [ticksPerUnit, setTicksPerUnit] = useState(120);
   const [harmonyIndex, setHarmonyIndex] = useState(0);
-  const [includePulseVoices, setIncludePulseVoices] = useState(true);
+  const [percussionAssignments, setPercussionAssignments] = useState(emptyPercussionAssignments());
   const [technique, setTechnique] = useState<Technique>("plain");
   const [isPlaying, setIsPlaying] = useState(false);
   const [playheadFraction, setPlayheadFraction] = useState(0);
   const [manualPatternText, setManualPatternText] = useState("");
   const [analysisNotes, setAnalysisNotes] = useState<ImportedNote[] | null>(null);
+  const [analysisTicksPerQuarter, setAnalysisTicksPerQuarter] = useState(480);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [loopSelection, setLoopSelection] = useState<{ start: number; length: number } | null>(null);
 
@@ -88,14 +98,19 @@ export default function SchillingerGenerator() {
   const playTokenRef = useRef(0);
   const cycleStartRef = useRef(0);
 
-  const analysisPattern = useMemo(() => {
-    if (analysisNotes && analysisNotes.length > 0) return notesToRhythmPattern(analysisNotes);
+  const analysisResult = useMemo(() => {
+    if (analysisNotes && analysisNotes.length > 0) {
+      return notesToRhythmPattern(analysisNotes, analysisTicksPerQuarter);
+    }
     const parsed = manualPatternText
       .split(",")
       .map((token) => Number(token.trim()))
       .filter((value) => Number.isFinite(value) && value > 0);
-    return parsed.length > 0 ? reduceToUnits(parsed) : null;
-  }, [analysisNotes, manualPatternText]);
+    return parsed.length > 0
+      ? { pattern: reduceToUnits(parsed), divisionsPerQuarter: null, errorRatio: null }
+      : null;
+  }, [analysisNotes, analysisTicksPerQuarter, manualPatternText]);
+  const analysisPattern = analysisResult?.pattern ?? null;
 
   const matchingCases = useMemo(
     () => (analysisPattern ? findMatchingCases(analysisPattern) : null),
@@ -116,10 +131,11 @@ export default function SchillingerGenerator() {
 
   const pitchAnalysis = useMemo(() => {
     if (!analysisNotes || analysisNotes.length === 0) return null;
-    const pitchClasses = pitchClassesFromMidiNotes(analysisNotes.map((note) => note.midiNote));
+    const midiNotes = analysisNotes.map((note) => note.midiNote);
+    const pitchClasses = pitchClassesFromMidiNotes(midiNotes);
     return {
       pitchClasses,
-      group: classifyScaleGroup(pitchClasses),
+      group: classifyScaleGroup(midiNotes),
       twoUnitLabel: twoUnitScaleLabel(pitchClasses),
     };
   }, [analysisNotes]);
@@ -135,6 +151,7 @@ export default function SchillingerGenerator() {
         setAnalysisError("No notes found in that file's busiest track.");
         return;
       }
+      setAnalysisTicksPerQuarter(imported.ticksPerQuarterNote);
       setAnalysisNotes(imported.notes);
       setManualPatternText("");
       setAnalysisError(null);
@@ -257,6 +274,11 @@ export default function SchillingerGenerator() {
         segments: [{ duration: cycleLength }],
       },
       {
+        label: "C.D.",
+        ...LANE_COLORS.cd,
+        segments: Array.from({ length: cycleLength }, () => ({ duration: 1 })),
+      },
+      {
         label: `Generator A (${selectedCase.a})`,
         ...LANE_COLORS.generator,
         segments: generatorPulse(selectedCase.a, cycleLength).map((s) => ({ duration: s.duration })),
@@ -307,25 +329,16 @@ export default function SchillingerGenerator() {
         ? applyStrata(melody, { intervals: harmonyPreset.intervals })
         : melody;
 
-    if (!includePulseVoices || technique !== "plain") return harmonized;
-
     const voiceOffset = harmonyPreset.intervals.length + 1;
-    const pulseVoices: NoteEvent[] = generators.flatMap((value, index) => {
-      let cursor = 0;
-      return generatorPulse(value, activeResultant.cycleLength).map((segment) => {
-        const note: NoteEvent = {
-          midiNote: PULSE_VOICE_NOTE + index * 5,
-          startUnits: cursor,
-          durationUnits: segment.duration * 0.5,
-          velocity: 70,
-          voice: voiceOffset + index,
-        };
-        cursor += segment.duration;
-        return note;
-      });
-    });
+    const percussionVoices = buildPercussionVoices(
+      percussionAssignments,
+      activeResultant,
+      selectedCase.a,
+      selectedCase.b,
+      voiceOffset,
+    );
 
-    return [...harmonized, ...pulseVoices];
+    return [...harmonized, ...percussionVoices];
   }, [
     activeResultant,
     scale,
@@ -333,9 +346,8 @@ export default function SchillingerGenerator() {
     contour,
     span,
     harmonyIndex,
-    includePulseVoices,
-    technique,
-    generators,
+    percussionAssignments,
+    selectedCase,
   ]);
 
   const secondsPerUnit = (ticksPerUnit / 480) * (60 / bpm);
@@ -497,6 +509,12 @@ export default function SchillingerGenerator() {
           )}
         </div>
         {analysisError && <div className="schillinger__readout schillinger__readout--error">{analysisError}</div>}
+        {analysisResult?.divisionsPerQuarter != null && (
+          <div className="schillinger__readout">
+            Quantized to {DIVISION_LABELS[analysisResult.divisionsPerQuarter] ?? `1/${analysisResult.divisionsPerQuarter}`}{" "}
+            grid · {((analysisResult.errorRatio ?? 0) * 100).toFixed(1)}% timing deviation absorbed
+          </div>
+        )}
         {analysisPattern && (
           <div className="schillinger__readout">
             Pattern {analysisPattern.join(" ")} found in {matchingCases?.length ?? 0} of 19 canonical cases
@@ -505,8 +523,7 @@ export default function SchillingerGenerator() {
         )}
         {pitchAnalysis && (
           <div className="schillinger__readout">
-            Pitch classes {pitchAnalysis.pitchClasses.join(", ")} ·{" "}
-            {pitchAnalysis.group ? pitchAnalysis.group.label : "3+ pitch classes: group not yet determined"}
+            Pitch classes {pitchAnalysis.pitchClasses.join(", ")} · {pitchAnalysis.group?.label}
             {pitchAnalysis.twoUnitLabel && ` · ${pitchAnalysis.twoUnitLabel}`}
           </div>
         )}
@@ -776,16 +793,42 @@ export default function SchillingerGenerator() {
             </select>
           </label>
         </div>
-        <label className="schillinger__checkbox">
-          <input
-            type="checkbox"
-            checked={includePulseVoices}
-            disabled={technique !== "plain"}
-            onChange={(e) => setIncludePulseVoices(e.target.checked)}
-          />
-          Include raw generator pulses as separate polyrhythm voices
-          {technique !== "plain" && " (binary synchronization only)"}
-        </label>
+      </section>
+
+      <section className="schillinger__section schillinger__section--wide">
+        <h3>Percussion mapping</h3>
+        <p className="schillinger__hint">
+          Assign any of the resultant's own structural components to a drum voice — each becomes its
+          own track on the General MIDI percussion channel.
+        </p>
+        <div className="schillinger__row">
+          {PERCUSSION_SOURCES.map((source) => {
+            const available = segmentsForSource(source, activeResultant, selectedCase.a, selectedCase.b) != null;
+            return (
+              <label key={source}>
+                {PERCUSSION_SOURCE_LABELS[source]}
+                <select
+                  value={percussionAssignments[source] ?? ""}
+                  disabled={!available}
+                  onChange={(e) =>
+                    setPercussionAssignments((prev) => ({
+                      ...prev,
+                      [source]: e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                >
+                  <option value="">None</option>
+                  {PERCUSSION_VOICE_OPTIONS.map((voice) => (
+                    <option key={voice.label} value={voice.midiNote}>
+                      {voice.label}
+                    </option>
+                  ))}
+                </select>
+                {!available && " (unavailable for this technique)"}
+              </label>
+            );
+          })}
+        </div>
       </section>
 
       <section className="schillinger__section schillinger__section--wide">

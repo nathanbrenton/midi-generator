@@ -54,3 +54,9 @@
   flex-wrap: wrap;
   gap: 0.6rem;
 }
+
+.schillinger__hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: color-mix(in srgb, currentColor 70%, transparent);
+}

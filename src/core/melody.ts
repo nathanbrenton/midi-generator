@@ -17,6 +17,8 @@ export interface NoteEvent {
   durationUnits: number;
   velocity: number;
   voice: number;
+  /** Fixed MIDI channel override (0-indexed) — e.g. General MIDI's percussion channel. Omit to let the writer derive one from `voice`. */
+  channel?: number;
 }
 
 export interface MelodyOptions {

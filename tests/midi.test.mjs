@@ -44,3 +44,17 @@ test("throws nothing for an empty note list (tempo-only file)", () => {
   const trackCount = (bytes[10] << 8) | bytes[11];
   assert.equal(trackCount, 1);
 });
+
+test("a voice with a channel override uses that channel instead of one derived from track position", () => {
+  const drumNote = { midiNote: 36, startUnits: 0, durationUnits: 1, velocity: 100, voice: 5, channel: 9 };
+  const bytes = buildMidiFile([drumNote]);
+  // Track layout: tempo track (14-byte header + its own MTrk), then the one voice track.
+  let offset = 14;
+  const tempoTrackLength =
+    (bytes[offset + 4] << 24) | (bytes[offset + 5] << 16) | (bytes[offset + 6] << 8) | bytes[offset + 7];
+  offset += 8 + tempoTrackLength;
+  // The voice track's event bytes start right after its own 8-byte MTrk header.
+  const noteOnStatusByte = bytes[offset + 8 + 1]; // delta-time varint is 1 byte (0x00) for the first event
+  assert.equal(noteOnStatusByte & 0x0f, 9); // channel nibble
+  assert.equal(noteOnStatusByte & 0xf0, 0x90); // still a note-on
+});

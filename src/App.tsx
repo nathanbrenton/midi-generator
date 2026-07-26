@@ -1,4 +1,5 @@
 import SchillingerGenerator from "./components/SchillingerGenerator";
+import ThreeGeneratorsPanel from "./components/ThreeGeneratorsPanel";
 
 export default function App() {
   return (
@@ -9,6 +10,7 @@ export default function App() {
         melody from his symmetric pitch scales.
       </p>
       <SchillingerGenerator />
+      <ThreeGeneratorsPanel />
     </main>
   );
 }

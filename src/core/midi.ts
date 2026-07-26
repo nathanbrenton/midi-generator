@@ -1,7 +1,10 @@
 /**
  * Minimal Standard MIDI File (format 1) writer — no dependencies. Groups
  * note events by voice into separate tracks so polyrhythmic generator
- * voices and strata harmony voices can play back simultaneously.
+ * voices and strata harmony voices can play back simultaneously. A
+ * voice's channel is normally derived from its position among the other
+ * voices, but any note can pin its whole voice to a fixed channel (e.g.
+ * General MIDI's percussion channel) via `NoteEvent.channel`.
  */
 
 import type { NoteEvent } from "./melody.ts";
@@ -64,9 +67,10 @@ function tempoTrack(bpm: number): number[] {
   ]);
 }
 
-function noteTrack(notes: readonly NoteEvent[], ticksPerUnit: number, channel: number): number[] {
+function noteTrack(notes: readonly NoteEvent[], ticksPerUnit: number, defaultChannel: number): number[] {
   const events: number[] = [];
   let clock = 0;
+  const channel = notes[0]?.channel ?? defaultChannel;
 
   const sorted = [...notes].sort((a, b) => a.startUnits - b.startUnits);
 

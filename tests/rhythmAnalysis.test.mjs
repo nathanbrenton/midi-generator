@@ -25,7 +25,21 @@ test("notesToRhythmPattern measures gaps to the next attack, not each note's own
     { midiNote: 67, startTicks: 480, durationTicks: 240, velocity: 100 },
     { midiNote: 67, startTicks: 720, durationTicks: 240, velocity: 100 },
   ];
-  assert.deepEqual(notesToRhythmPattern(notes), [2, 1, 1]);
+  const result = notesToRhythmPattern(notes, 480);
+  assert.deepEqual(result.pattern, [2, 1, 1]);
+  assert.equal(result.errorRatio, 0);
+});
+
+test("notesToRhythmPattern absorbs humanized timing drift instead of producing a huge unreduced GCD pattern", () => {
+  // Same sousta rhythm, performed with a few ticks of human drift on each note.
+  const notes = [
+    { midiNote: 60, startTicks: 0, durationTicks: 470, velocity: 90 },
+    { midiNote: 67, startTicks: 478, durationTicks: 235, velocity: 100 },
+    { midiNote: 67, startTicks: 715, durationTicks: 245, velocity: 100 },
+  ];
+  const result = notesToRhythmPattern(notes, 480);
+  assert.deepEqual(result.pattern, [2, 1, 1]);
+  assert.ok(result.errorRatio > 0 && result.errorRatio < 0.06);
 });
 
 test("findPatternOccurrences matches cyclically, including wraparound past the end", () => {
