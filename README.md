@@ -200,6 +200,22 @@ against two more of the book's own worked numbers: `9·(2+1) = 18+9 = 27`
 same synchronization rule, they always total the same duration and play
 in sync, exactly like Ch. 6's theme/countertheme.
 
+Chapter 13 (**Evolution of Rhythm Styles**) is mostly historical/cultural
+commentary — which world musical traditions favor which "determinant"
+series, an analysis of "swing" — deliberately left unimplemented. Two
+crisp formulas survive that commentary: the **interference-group size
+sequence** `i_n = 2·i_(n-1) − 1` (the book's own five terms: 2, 3, 5, 9,
+17), and **tracing a binomial's origin** back to the two-generator
+resultant it came from — "take the greater number-value of the binomial
+and assign it as a minor generator (b); the sum of the binomial is the
+major generator [a]." The book's own example (a `5+3` fragment traces to
+`r(8:5)`) is reproduced exactly by `traceOrigin` — and verified as a
+*general* fact, not just that one case: for any coprime `x,y`, feeding
+`traceOrigin(x,y)`'s `{a,b}` straight into the existing `generateResultant`
+always reproduces `(x,y)` as the resultant's own first two segments,
+confirmed in `tests/rhythmStyleEvolution.test.mjs` across six different
+binomials.
+
 Book II builds symmetric pitch scales the same way Book I builds
 rhythms — dividing the octave into equal (or as-equal-as-possible) parts.
 Dividing by 3, 4, or 6 reproduces the augmented, diminished, and whole-tone
@@ -285,6 +301,10 @@ octave using the same math as the rhythm side.
 - `src/core/distributivePowers.ts` — Ch. 12: `distributivePower` (the
   flattened multiplication-table expansion) and `synchronizeToPower` (the
   theme/countertheme scaling rule). Zero dependencies.
+- `src/core/rhythmStyleEvolution.ts` — Ch. 13: `interferenceGroupSizes`
+  and `traceOrigin` (recovers the `{a,b}` generator pair behind a short
+  2-attack fragment). Zero dependencies — pairs naturally with
+  `resultant.ts`'s `generateResultant` but doesn't import it.
 - `src/components/SchillingerGenerator.tsx` — the React component (generator
   inputs, scale/register/contour/harmony controls, Web Audio playback, MIDI
   download). Depends only on the core modules above and its co-located CSS
@@ -425,6 +445,21 @@ directly in the browser against the book's own numbers at power 2
 (`Theme=6,3` / `Countertheme=4,2,2,1`, both totaling 9) and power 3
 (`Theme=18,9` / `Countertheme=8,4,4,2,4,2,2,1`, both totaling 27), matching
 `tests/distributivePowers.test.mjs` exactly.
+
+## Evolution of rhythm styles
+
+A ninth panel (`RhythmStyleEvolutionPanel.tsx`, right after Ch. 12) covers
+Ch. 13's two implementable formulas — fully self-contained. Enter any two
+durations (default `5, 3`, the book's own example) and the panel traces
+them back to the `{a, b}` generator pair via `traceOrigin`, then builds
+and shows the *actual* resultant those generators produce — reusing the
+core `generateResultant`/`generatorPulse` engine directly, with Generator
+A/B pulse lanes alongside the Resultant lane, exactly like the main
+generator's own piano roll. A small readout also lists the
+interference-group size sequence (2, 3, 5, 9, 17, ...). Verified directly
+in the browser against the book's own example: `5, 3` traces to `a=8,
+b=5`, and `r(8:5)` really does open with segments `5, 3`, confirming the
+round-trip live, not just in `tests/rhythmStyleEvolution.test.mjs`.
 
 ## Percussion mapping
 
@@ -568,6 +603,9 @@ own Playback section immediately after the controls it plays back:
   resultant's segment count — see "Homogeneous rhythmic continuity" above.
 - **Distributive powers (Ch. 12)** — terms and a power, fully
   self-contained — see "Distributive powers" above.
+- **Evolution of rhythm styles (Ch. 13)** — two durations to trace to
+  their generator pair, fully self-contained — see "Evolution of rhythm
+  styles" above.
 - **Scale** — a symmetric-division or interval-cell preset (Book II).
 - **Register** — which octave the scale's root anchors to.
 - **Contour** — how successive notes move through the scale.
