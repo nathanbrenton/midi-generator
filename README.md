@@ -181,6 +181,25 @@ duplicating any combinatorial logic. Also confirmed against the book's
 smaller 2-piece example ("8-bar, 2-part continuity," p. 66) in
 `tests/homogeneousContinuity.test.mjs`.
 
+Chapter 12 (**Distributive Powers**, Section B: "Composition of Rhythmic
+Counterthemes") keeps every product term separate rather than collapsing
+like terms the way an algebraic power would — the book's own footnote:
+"the algebraic square of a+b is a²+2ab+b². But the distributive square
+would be a²+ab+ab+b²." For an actual duration-group this is a genuine
+numeric multiplication table flattened into a sequence: `(2+1)² = 4+2+2+1`
+and `(2+1)³ = 8+4+4+2+4+2+2+1` (p. 75, 77), both reproduced exactly by
+`distributivePower` (`src/core/distributivePowers.ts`), which always has
+`terms.length ** power` entries summing to `sum(terms) ** power`. The book
+pairs the original terms (the "theme") with this distributive power (the
+"countertheme") via an explicit synchronization rule — multiply the
+lower-power group by `sum(terms) ** (toPower - fromPower)` — confirmed
+against two more of the book's own worked numbers: `9·(2+1) = 18+9 = 27`
+(synchronizing the first power with the cube) and `3·(4+2+2+1) = 12+6+6+3
+= 27` (synchronizing the square with the cube), both in
+`tests/distributivePowers.test.mjs`. Because both sides are built from the
+same synchronization rule, they always total the same duration and play
+in sync, exactly like Ch. 6's theme/countertheme.
+
 Book II builds symmetric pitch scales the same way Book I builds
 rhythms — dividing the octave into equal (or as-equal-as-possible) parts.
 Dividing by 3, 4, or 6 reproduces the augmented, diminished, and whole-tone
@@ -263,6 +282,9 @@ octave using the same math as the rhythm side.
   `divisorsOf`, and `homogeneousContinuityParts` (the canon-of-rotations
   construction, built on Ch. 9's `circularPermutations`). Depends only on
   `permutations.ts`.
+- `src/core/distributivePowers.ts` — Ch. 12: `distributivePower` (the
+  flattened multiplication-table expansion) and `synchronizeToPower` (the
+  theme/countertheme scaling rule). Zero dependencies.
 - `src/components/SchillingerGenerator.tsx` — the React component (generator
   inputs, scale/register/contour/harmony controls, Web Audio playback, MIDI
   download). Depends only on the core modules above and its co-located CSS
@@ -389,6 +411,20 @@ against the default 3:2 case's 4 segments: split into 2 pieces gave
 `Part 1 = 2,1,1,2,1,2,2,1` / `Part 2 = 1,2,2,1,2,1,1,2`; split into 4
 individual segments gave 4 parts of 16 units each, matching
 `tests/homogeneousContinuity.test.mjs` and the book's own Figure 124.
+
+## Distributive powers
+
+An eighth panel (`DistributivePowersPanel.tsx`, right after Ch. 11) covers
+Ch. 12 — fully self-contained, like Ch. 9/10. Enter terms (default `2,1`,
+the book's own binomial example) and a power (2 and up, capped per input
+size so the countertheme never exceeds 64 terms); the panel shows the
+**Theme** (the terms scaled up via `synchronizeToPower`) and
+**Countertheme** (the raw `distributivePower` expansion) as two piano-roll
+lanes that always total the same duration by construction. Verified
+directly in the browser against the book's own numbers at power 2
+(`Theme=6,3` / `Countertheme=4,2,2,1`, both totaling 9) and power 3
+(`Theme=18,9` / `Countertheme=8,4,4,2,4,2,2,1`, both totaling 27), matching
+`tests/distributivePowers.test.mjs` exactly.
 
 ## Percussion mapping
 
@@ -530,6 +566,8 @@ own Playback section immediately after the controls it plays back:
   fully self-contained — see "Higher-order variation" above.
 - **Homogeneous continuity (Ch. 11)** — a divisor of the active
   resultant's segment count — see "Homogeneous rhythmic continuity" above.
+- **Distributive powers (Ch. 12)** — terms and a power, fully
+  self-contained — see "Distributive powers" above.
 - **Scale** — a symmetric-division or interval-cell preset (Book II).
 - **Register** — which octave the scale's root anchors to.
 - **Contour** — how successive notes move through the scale.
