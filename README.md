@@ -241,6 +241,24 @@ Dividing by 3, 4, or 6 reproduces the augmented, diminished, and whole-tone
 scales exactly; other divisors spread the remainder evenly across the
 octave using the same math as the rhythm side.
 
+Book II Chapter 3 (**Evolution of Pitch-Scale Styles**) makes that
+rhythm/pitch kinship completely literal: "PITCH-SCALES, like time-scales
+(rhythms), are subject to serial development." **Section A** splits a
+two-unit scale's interval into a binomial (a,b) and synchronizes it with
+its own reverse (b,a) — unioning both orderings' attack points, exactly
+Book I's interference-of-periodicities operation (Ch. 2A), just applied to
+pitch intervals — producing a resultant trinomial (`5=3+2` synchronized
+with `2+3` gives `2+1+2`, matching the book exactly); every permutation of
+that resultant is "one family," which is just Ch. 9's `generalPermutations`
+applied directly, no new code needed. **Section B**'s "displacement
+scales" (d0, d1, d2, ...) are Ch. 9's `circularPermutations` applied to a
+scale's own interval sequence — confirmed against the book's own
+`c-d-e-g-a` example. **Sections C/D** slide a window across the interval
+sequence, either summing it in place (C) or just selecting it (D) — both
+confirmed against the book's own 6-interval worked example digit-for-digit
+in `tests/pitchScaleEvolution.test.mjs`. Section E (historical commentary)
+has no formula and isn't implemented.
+
 ## What's portable
 
 - `src/core/resultant.ts` — the interference-of-periodicities engine:
@@ -328,6 +346,12 @@ octave using the same math as the rhythm side.
   scaling by a named series), `shiftBalance` (Rubato's τ-shift), plus
   `NATURAL_HARMONIC_SERIES`/`SUMMATION_SERIES`/`PRIME_NUMBER_SERIES`. Zero
   dependencies.
+- `src/core/pitchScaleEvolution.ts` — Book II Ch. 3:
+  `intervalInterferenceResultant` (Section A), `slidingWindowMerge`/
+  `slidingWindowSelect` (Sections C/D), and `intervalsToMidiNotes`. Zero
+  dependencies — Sections A/B lean on `permutations.ts`'s
+  `generalPermutations`/`circularPermutations` directly from the UI layer
+  rather than reimplementing them here.
 - `src/components/SchillingerGenerator.tsx` — the React component (generator
   inputs, scale/register/contour/harmony controls, Web Audio playback, MIDI
   download). Depends only on the core modules above and its co-located CSS
@@ -500,6 +524,24 @@ numbers: `(3,1,2)` scaled by `1,2,3` gave exactly `3,1,2,6,2,4,9,3,6`
 (36 units total), and `(2,2)` shifted by τ=1 gave exactly `(3,1)` (both
 totaling 4) — matching `tests/variableVelocity.test.mjs`.
 
+## Evolution of pitch-scale styles
+
+`PitchScaleEvolutionPanel.tsx`, appended inside the main generator right
+after "Melody & harmony," covers Book II Ch. 3 — the first Book II chapter
+beyond the pitch-scale-group/two-unit-scale material already in "Pitch
+scale"/"Melody & harmony" above. Unlike the rhythm-side panels, results
+here are shown as plain text (interval spellings + the MIDI notes they
+produce) rather than forced into the time-based piano roll, since a pitch
+interval isn't a duration — a shared "Preview" button per row loads that
+row into one small playback control at the bottom (a plain ascending run).
+Section A shows the interval-interference resultant and its full
+permutation family; Section B shows the circular-permutation displacement
+scales (d0, d1, ...); Sections C/D show every sliding-window
+summation/selection. Verified directly in the browser against the book's
+own numbers: interval 5 split 3+2 gave resultant `2+1+2` with family
+`1+2+2`/`2+1+2`/`2+2+1`; the `2,2,3,2,3` displacement sequence's `d1` came
+out as `2+3+2+3+2`, matching the book exactly.
+
 ## Percussion mapping
 
 Each of those five structural components can be assigned to a General
@@ -652,6 +694,10 @@ own Playback section immediately after the controls it plays back:
 - **Register** — which octave the scale's root anchors to.
 - **Contour** — how successive notes move through the scale.
 - **Harmony (strata)** — optional parallel voices at fixed intervals.
+- **Evolution of pitch-scale styles (Book II Ch. 3)** — interval/split,
+  displacement-scale sequence, and summation/selection window controls,
+  each with a "Preview" button — see "Evolution of pitch-scale styles"
+  above.
 - **Tempo / unit note value** — maps the resultant's abstract duration units
   onto real time (e.g. "1 unit = a sixteenth note" at a given bpm).
 
