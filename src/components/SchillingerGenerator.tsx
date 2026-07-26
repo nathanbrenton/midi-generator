@@ -35,6 +35,7 @@ import HigherOrderPermutationsPanel from "./HigherOrderPermutationsPanel";
 import HomogeneousContinuityPanel from "./HomogeneousContinuityPanel";
 import DistributivePowersPanel from "./DistributivePowersPanel";
 import RhythmStyleEvolutionPanel from "./RhythmStyleEvolutionPanel";
+import VariableVelocityPanel from "./VariableVelocityPanel";
 import "./SchillingerGenerator.css";
 
 const LANE_COLORS = {
@@ -786,6 +787,8 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
       <DistributivePowersPanel />
 
       <RhythmStyleEvolutionPanel />
+
+      <VariableVelocityPanel />
 
       <section className="schillinger__section">
         <h3>Pitch scale (Theory of Pitch Scales)</h3>

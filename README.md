@@ -216,6 +216,25 @@ always reproduces `(x,y)` as the resultant's own first two segments,
 confirmed in `tests/rhythmStyleEvolution.test.mjs` across six different
 binomials.
 
+Chapter 14 (**Rhythms of Variable Velocities**) is Book I's last chapter.
+Section D (Fermata) is left to notational judgment in the book rather than
+a fixed formula, so isn't implemented; the rest is crisp. **Section B**
+(acceleration in non-uniform groups) repeats a duration-group, scaling
+each repetition by the next term of a named series — the book's own
+example, `(3+1+2)` scaled by the natural harmonic series `1, 2, 3`, gives
+`(3+1+2)+(6+2+4)+(9+3+6)`, reproduced exactly by `accelerateGroup`.
+**Section C** (Rubato) shifts a "unit of deviation" (τ) from one term of a
+binomial to the other — unbalancing Chopin's `(2,2)` by τ=1 gives `(3,1)`;
+balancing a swung `(3,1)` by τ=−1 gives back `(2,2)` — both the same
+`shiftBalance` operation, confirmed in `tests/variableVelocity.test.mjs`
+along with a cross-check that the book's own "Summation Series" list
+(Section A) matches Ch. 6's `GROWTH_SERIES` values exactly.
+
+**Book I (Theory of Rhythm) is now covered chapter by chapter, Ch. 1
+through Ch. 14** — every chapter either has its own dedicated panel or is
+folded into "The theory, briefly" above with its unimplemented parts
+explicitly flagged rather than silently skipped.
+
 Book II builds symmetric pitch scales the same way Book I builds
 rhythms — dividing the octave into equal (or as-equal-as-possible) parts.
 Dividing by 3, 4, or 6 reproduces the augmented, diminished, and whole-tone
@@ -305,6 +324,10 @@ octave using the same math as the rhythm side.
   and `traceOrigin` (recovers the `{a,b}` generator pair behind a short
   2-attack fragment). Zero dependencies — pairs naturally with
   `resultant.ts`'s `generateResultant` but doesn't import it.
+- `src/core/variableVelocity.ts` — Ch. 14: `accelerateGroup` (progressive
+  scaling by a named series), `shiftBalance` (Rubato's τ-shift), plus
+  `NATURAL_HARMONIC_SERIES`/`SUMMATION_SERIES`/`PRIME_NUMBER_SERIES`. Zero
+  dependencies.
 - `src/components/SchillingerGenerator.tsx` — the React component (generator
   inputs, scale/register/contour/harmony controls, Web Audio playback, MIDI
   download). Depends only on the core modules above and its co-located CSS
@@ -461,6 +484,22 @@ in the browser against the book's own example: `5, 3` traces to `a=8,
 b=5`, and `r(8:5)` really does open with segments `5, 3`, confirming the
 round-trip live, not just in `tests/rhythmStyleEvolution.test.mjs`.
 
+## Rhythms of variable velocities
+
+A tenth and final book-chapter panel (`VariableVelocityPanel.tsx`, right
+after Ch. 13) covers Ch. 14 — the last chapter of Book I — fully
+self-contained, in two parts. **Acceleration**: a duration-group, a named
+series (natural harmonic, one of the three summation series, or the
+prime-number series), a repeat count, and a Decelerando/Accelerando toggle
+(the latter just reverses the multiplier order); one piano-roll lane shows
+the result, with its own Playback/Download. **Rubato**: two durations and
+a τ (tau) value, shown as two small "Original"/"Shifted" lanes with no
+playback (a calculator like Ch. 8, since it's a two-note comparison, not a
+loopable pattern). Verified directly in the browser against the book's own
+numbers: `(3,1,2)` scaled by `1,2,3` gave exactly `3,1,2,6,2,4,9,3,6`
+(36 units total), and `(2,2)` shifted by τ=1 gave exactly `(3,1)` (both
+totaling 4) — matching `tests/variableVelocity.test.mjs`.
+
 ## Percussion mapping
 
 Each of those five structural components can be assigned to a General
@@ -606,6 +645,9 @@ own Playback section immediately after the controls it plays back:
 - **Evolution of rhythm styles (Ch. 13)** — two durations to trace to
   their generator pair, fully self-contained — see "Evolution of rhythm
   styles" above.
+- **Rhythms of variable velocities (Ch. 14)** — a group/series/repeats/
+  direction for Acceleration, plus x/y/τ for Rubato, fully self-contained
+  — see "Rhythms of variable velocities" above.
 - **Scale** — a symmetric-division or interval-cell preset (Book II).
 - **Register** — which octave the scale's root anchors to.
 - **Contour** — how successive notes move through the scale.
