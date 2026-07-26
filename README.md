@@ -97,6 +97,54 @@ independently re-derivable from first principles and check out either way,
 so only the *label* is uncertain; the prose is what this app follows. See
 the docstring in `src/core/threeGenerators.ts` for the full account.
 
+Chapter 7 (**Resultants Applied to Instrumental Forms**) synchronizes a
+rhythmic resultant's own attack count against a fixed "instrumental group"
+— a set of drums, a melodic motif, or one of the book's own named
+accompaniment figures (the 2-attack polka: bass, chord; the 4-attack
+fox-trot: bass, chord, bass, chord; the 6-attack rhumba: three bass/chord
+pairs) — cycled one place per attack. Since the two counts are usually not
+equal, the pairing doesn't realign until their least common multiple: the
+resultant repeats `placeCount / gcd` times while the instrumental group
+repeats `attackCount / gcd` times, exactly the same gcd/LCM reduction Ch.
+2A already uses for binary synchronization, just applied to (attack count,
+place count) instead of (generator a, generator b). Confirmed against both
+of the book's own worked examples (4 attacks vs. 2 places → resultant×1,
+instrument×2; 7 attacks vs. 2 places → resultant×2, instrument×7) in
+`tests/instrumentalInterference.test.mjs`.
+
+Chapter 8 (**Coordination of Time Structures**) chains that same gcd/LCM
+reduction three levels deep: an instrumental group (`pli` places) against
+an attack-group (`pla` places) produces a reduced place count; that
+attack-group's own attack count (`aa`) against a duration-group's attack
+count (`aT`) produces a synchronized attack total and a scaled duration
+(`T'`); and `T'` against a chosen final duration (`T''`, e.g. a bar length)
+produces the number of repeats needed to close evenly. The book's own full
+worked example (`pli=4, pla=3, aa=8, aT=6, T=10t, T''=8t`) lands on a
+genuinely fractional intermediate result — `T'=160/3t`, then `T'/T''=20/3`
+— resolved by scaling the *entire* chain by the leftover denominator (3)
+to clear it into a whole number of repeats (20). `coordinateTimeStructures`
+carries exact fractions (plain `{numerator, denominator}` pairs, gcd-reduced
+at each step) rather than floating point, and reproduces every one of the
+book's own intermediate numbers exactly — `32`, `16/3`, `160/3`, `20/3 → 20`
+— confirmed in `tests/timeStructureCoordination.test.mjs`.
+
+Chapter 9 (**Homogeneous Simultaneity and Continuity — Variations**) treats
+every reordering of a duration-group's own values as a "variation" of it.
+**General permutations** are every distinct reordering — n!, or fewer when
+values repeat (a trinomial like 2+1+1 produces only 3 distinct orderings,
+not 3!=6; a quadrinomial with two identical pairs like 2+1+1+2 produces
+4!/(2!2!)=6, not 4!=24 — both confirmed against the book's own listed rows
+exactly). **Circular permutations** are always exactly n — the group's own
+n rotations, regardless of repeats. The book applies this same combinatorics
+to several different musical parameters in turn (durations, rests, accents,
+split-unit groups, whole named sub-groups — Figures 76-105), but the
+underlying primitive is identical every time, so `generalPermutations` and
+`circularPermutations` (`src/core/permutations.ts`) implement just that one
+primitive rather than every presentational variant. Confirmed against seven
+of the book's own tables in `tests/permutations.test.mjs`, plus a general
+check that the count always matches the standard multiset-permutation
+formula `n! / ∏(repeated-value factorials)`.
+
 Book II builds symmetric pitch scales the same way Book I builds
 rhythms — dividing the octave into equal (or as-equal-as-possible) parts.
 Dividing by 3, 4, or 6 reproduces the augmented, diminished, and whole-tone
@@ -159,6 +207,19 @@ octave using the same math as the rhythm side.
   `buildTheme`/`buildCountertheme` (each just `generateResultant` applied
   to the generators or their complementary factors), and
   `threeGeneratorGroupings`. Depends only on `resultant.ts`.
+- `src/core/instrumentalInterference.ts` — Ch. 7: `synchronizeInstrumentalGroup`
+  (gcd/LCM-based repeat counts), `assignPlaces` (round-robin place index per
+  attack), `segmentsFromAttackTimes` (reduces a place's own attack times to
+  `generatorPulse`-style `{duration}` segments), and `ACCOMPANIMENT_FIGURES`
+  (the book's named polka/fox-trot/rhumba bass-chord figures). Zero
+  dependencies.
+- `src/core/timeStructureCoordination.ts` — Ch. 8: `synchronizeAttackWithDuration`
+  (Section A), `repeatsToCloseFinalDuration` (Section B), and
+  `coordinateTimeStructures` (Section C: the full three-stage chain, exact
+  `Fraction` arithmetic throughout). Zero dependencies.
+- `src/core/permutations.ts` — Ch. 9: `generalPermutations` (every distinct
+  reordering of a duration-group's values) and `circularPermutations` (its
+  n rotations). Zero dependencies.
 - `src/components/SchillingerGenerator.tsx` — the React component (generator
   inputs, scale/register/contour/harmony controls, Web Audio playback, MIDI
   download). Depends only on the core modules above and its co-located CSS
@@ -200,6 +261,64 @@ three generators, same "group by any factor" rule Ch. 3 uses for two).
 Playback and MIDI download work the same way as the main generator (theme
 on one voice, countertheme on another, sine/triangle oscillators for
 preview). See "The theory, briefly" above for the r/r' naming caveat.
+
+## Resultants applied to instrumental forms
+
+A third panel (`InstrumentalInterferencePanel.tsx`, rendered right after
+the Ch. 6 panel) covers Ch. 7 — it takes the *active* resultant from the
+main Case/Technique controls above it (not a separate case picker) and
+cycles a fixed "instrumental group" one place per attack against it. Pick
+either **Custom places** (2-6 generic places, one color-coded piano-roll
+lane per place, useful for something like the book's own two-kettle-drum
+example) or one of the book's three named **accompaniment figures** — the
+2-attack polka (bass, chord), 4-attack fox-trot (bass, chord, bass, chord),
+or 6-attack rhumba (three bass/chord pairs). Each lane shows that place's
+own attacks reduced to `generatorPulse`-style segments (spanning until its
+own next attack, wrapping around the full realigned cycle) — mechanically
+identical to how a generator's own pulse lane already works elsewhere in
+the app, just applied to an irregular (resultant-driven) attack sequence
+instead of an even one. The readout states the exact repeat counts (e.g.
+"4 resultant attacks against 2 places · resultant repeats 1× ·
+instrumental group repeats 2×") straight from `synchronizeInstrumentalGroup`,
+matching the book's own two worked examples exactly. Its own Playback
+section exports the full realigned cycle as a multi-track MIDI file — one
+track per place, bass/chord roles mapped to distinct pitches for the named
+figures.
+
+## Coordination of time structures
+
+A fourth panel (`TimeStructureCoordinationPanel.tsx`, right after Ch. 7)
+covers Ch. 8 as a plain numeric calculator — no piano roll or playback,
+since its output is a set of repeat counts rather than a new playable
+pattern. It also reads the *active* resultant for its `aT`/`T` inputs, and
+lets you set the three remaining quantities the book's own chain needs:
+instrumental places (`pli`), attack-group places (`pla`), attack-group
+attacks (`aa`), and a final duration (`T''`, e.g. a bar length). The
+readout walks through the book's own five numbered steps verbatim (pli
+reduced against pla → A = aa·pli′ → A′ = A/aT → T′ = T·A′ → N(T″) = T′/T″),
+stating each result as an exact fraction when it isn't a whole number, and
+flags plainly when the whole system needs scaling to clear a fraction into
+a final integer repeat count — reproducing the book's own worked example
+(`pli=4, pla=3, aa=8`, against a resultant supplying `aT=6, T=10`, into
+`T''=8`) exactly: steps `32 → 16/3 → 160/3 → 20/3`, then "scaling ×3 clears
+the fraction: repeats 20 times."
+
+## Permutations (rhythmic variation)
+
+A fifth panel (`PermutationsPanel.tsx`, right after Ch. 8) covers Ch. 9 —
+unlike Ch. 7/8, it's fully self-contained (no dependency on the active
+resultant), since it works from any duration-group you type in directly.
+Enter a comma-separated pattern (up to 6 values, e.g. the book's own `2,1,1`
+trinomial) and pick **Circular** (always exactly n rotations) or **General**
+(every distinct reordering — capped at 24 displayed rows, since an
+all-distinct 5-element group already has 120). Each resulting row becomes
+its own piano-roll lane and its own MIDI track, playing back together —
+Schillinger's own "bi-coordinate" framing: a sequence of variations down
+the page is *continuity*, stacking them as separate simultaneous parts is
+*simultaneity*, and this panel shows both at once (rows = simultaneity,
+each row's own sequence = continuity). Verified against the book's own
+`2,1,1` (3 circular permutations) and `3,1,2` (6 general permutations, all
+distinct) examples directly in the browser, matching `tests/permutations.test.mjs`.
 
 ## Percussion mapping
 
@@ -326,6 +445,17 @@ own Playback section immediately after the controls it plays back:
   four combinations) and Bar grouping, with its own "Playback (theme /
   countertheme)" section right after — see "Three or more generators"
   above.
+- **Resultants Applied to Instrumental Forms (Ch. 7)** — Instrumental
+  group (custom place count or a named accompaniment figure), synced
+  against the *active* resultant above, with its own "Playback
+  (instrumental interference)" section — see "Resultants applied to
+  instrumental forms" above.
+- **Coordination of Time Structures (Ch. 8)** — a plain calculator: pli,
+  pla, aa, and a final duration, synced against the *active* resultant's
+  own aT/T — see "Coordination of time structures" above.
+- **Permutations (Ch. 9)** — a duration pattern and Circular/General
+  permutation type, fully self-contained — see "Permutations (rhythmic
+  variation)" above.
 - **Scale** — a symmetric-division or interval-cell preset (Book II).
 - **Register** — which octave the scale's root anchors to.
 - **Contour** — how successive notes move through the scale.

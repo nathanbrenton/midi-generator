@@ -28,6 +28,9 @@ import {
   type PercussionSource,
 } from "../core/percussion";
 import SchillingerPianoRoll, { type PianoRollLane } from "./SchillingerPianoRoll";
+import InstrumentalInterferencePanel from "./InstrumentalInterferencePanel";
+import TimeStructureCoordinationPanel from "./TimeStructureCoordinationPanel";
+import PermutationsPanel from "./PermutationsPanel";
 import "./SchillingerGenerator.css";
 
 const LANE_COLORS = {
@@ -765,6 +768,12 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
       </section>
 
       {children}
+
+      <InstrumentalInterferencePanel resultant={activeResultant} />
+
+      <TimeStructureCoordinationPanel resultant={activeResultant} />
+
+      <PermutationsPanel />
 
       <section className="schillinger__section">
         <h3>Pitch scale (Theory of Pitch Scales)</h3>
