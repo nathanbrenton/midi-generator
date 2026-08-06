@@ -8,6 +8,8 @@ export interface PianoRollSegment {
   matched?: boolean;
   /** Highlights a segment within the currently selected loop/cycle range. */
   looped?: boolean;
+  /** Marks this segment as silence rather than a sounding note — rendered hollow instead of filled. */
+  rest?: boolean;
 }
 
 export interface PianoRollLane {
@@ -46,13 +48,16 @@ export default function SchillingerPianoRoll({
   const totalHeight = laneY(lanes.length) - LANE_GAP;
   const { beatsPerBar, unitsPerBeat } = timeSignature;
   const barLength = beatsPerBar * unitsPerBeat;
-  const barCount = Math.max(1, Math.round(cycleLength / barLength));
+  // Guards against a transient cycleLength of 0 (e.g. one render before an
+  // async effect populates real data) producing NaN positions below.
+  const safeCycleLength = cycleLength > 0 ? cycleLength : 1;
+  const barCount = Math.max(1, Math.round(safeCycleLength / barLength));
 
   const ruler = [];
   for (let bar = 0; bar < barCount; bar++) {
     for (let beat = 0; beat < beatsPerBar; beat++) {
       const unit = bar * barLength + beat * unitsPerBeat;
-      const x = LABEL_WIDTH + (unit / cycleLength) * ROLL_WIDTH;
+      const x = LABEL_WIDTH + (unit / safeCycleLength) * ROLL_WIDTH;
       const isBarStart = beat === 0;
       ruler.push(
         <line
@@ -94,10 +99,11 @@ export default function SchillingerPianoRoll({
         const y = laneY(laneIndex);
         let cursor = 0;
         const blocks = lane.segments.map((segment, segmentIndex) => {
-          const x = LABEL_WIDTH + (cursor / cycleLength) * ROLL_WIDTH;
-          const width = (segment.duration / cycleLength) * ROLL_WIDTH;
+          const x = LABEL_WIDTH + (cursor / safeCycleLength) * ROLL_WIDTH;
+          const width = (segment.duration / safeCycleLength) * ROLL_WIDTH;
           cursor += segment.duration;
-          const fill = segment.accent ? "#d98c2b" : lane.color;
+          const isRest = segment.rest ?? false;
+          const fill = isRest ? "transparent" : segment.accent ? "#d98c2b" : lane.color;
           const highlight = segment.accent ? "#f2b25c" : lane.highlight;
           return (
             <g key={segmentIndex}>
@@ -108,18 +114,24 @@ export default function SchillingerPianoRoll({
                 height={LANE_HEIGHT}
                 rx={3}
                 fill={fill}
+                stroke={isRest ? lane.color : undefined}
                 className={[
                   "piano-roll__note",
+                  isRest && "piano-roll__note--rest",
                   segment.matched && "piano-roll__note--matched",
                   segment.looped && "piano-roll__note--looped",
                 ]
                   .filter(Boolean)
                   .join(" ")}
               />
-              <rect x={x} y={y + 3} width={Math.max(width - 1, 0)} height={4} rx={2} fill={highlight} />
+              {!isRest && <rect x={x} y={y + 3} width={Math.max(width - 1, 0)} height={4} rx={2} fill={highlight} />}
               {width >= MIN_LABEL_WIDTH && (
-                <text x={x + width / 2} y={y + LANE_HEIGHT / 2 + 5} className="piano-roll__duration">
-                  {segment.duration}
+                <text
+                  x={x + width / 2}
+                  y={y + LANE_HEIGHT / 2 + 5}
+                  className={isRest ? "piano-roll__duration piano-roll__duration--rest" : "piano-roll__duration"}
+                >
+                  {isRest ? "rest" : segment.duration}
                 </text>
               )}
             </g>

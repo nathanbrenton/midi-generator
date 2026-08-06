@@ -352,6 +352,16 @@ has no formula and isn't implemented.
   dependencies — Sections A/B lean on `permutations.ts`'s
   `generalPermutations`/`circularPermutations` directly from the UI layer
   rather than reimplementing them here.
+- `src/core/sampleAnalysis.ts` — `notesToSignedSegments` (rest-aware
+  decomposition), `findSmallestPeriod` (archetype auto-detection),
+  `buildNoteEventsFromSignedSegments` (skips rests as true silence), and
+  `restCombinations` (every way of choosing a fixed number of rest
+  positions). Depends only on `quantize.ts` and `midiImport.ts`'s
+  `ImportedNote` type.
+- `src/components/SampleAnalysisPanel.tsx` — standalone top-level panel
+  (upload → archetype → matching resultants → variations → preview),
+  reusing `permutations.ts`, `rhythmAnalysis.ts`'s `findMatchingCases`, and
+  `SchillingerPianoRoll` directly.
 - `src/components/SchillingerGenerator.tsx` — the React component (generator
   inputs, scale/register/contour/harmony controls, Web Audio playback, MIDI
   download). Depends only on the core modules above and its co-located CSS
@@ -378,6 +388,11 @@ multiples of b), and the **Resultant** with coincidence points
 highlighted in orange. These five lanes are the same five rows Figure 6
 of the book draws (c.d., a, b, r, c.p.) — the "Percussion mapping" section
 below turns them from a picture into an actual drum part.
+
+`PianoRollSegment` also takes an optional `rest` flag (added for sample
+analysis, below) — a rest segment renders hollow with a dashed outline and
+the label "rest" instead of its duration, so silence reads as visually
+distinct from a played note without needing a second visualization.
 
 ## Three or more generators
 
@@ -599,6 +614,66 @@ Three curation rules, straight from how real notation is actually used:
 Switching the **Time signature** control changes the piano roll's bar-line
 ruler and its "bar.beat" labels live — `1.1 1.2 1.3 2.1 2.2 2.3 3.1 3.2
 3.3` for a `3 × 3/4` reading, for instance, not just `1.1 1.2 1.3`.
+
+## Sample analysis: rests included, plus variations
+
+The main "Identify a rhythm" tool below measures durations start-to-start
+between attacks — which means a quarter note followed by an eighth rest
+and an eighth note reads the same as a dotted-quarter followed by an
+eighth (both reduce to the onset-to-onset gaps `3, 1`), since gap
+measurement can't distinguish a *sustained* note from a shorter note plus
+silence. `SampleAnalysisPanel.tsx` (a standalone top-level panel, rendered
+above the main generator) is built for exactly that distinction: it
+decomposes an uploaded sample into a **signed** duration sequence — positive
+units for a sounding note, negative units for the rest that follows it —
+so that same quarter-eighth-eighth figure reads as `2, −1, 1`, not `3, 1`.
+`notesToSignedSegments` (`src/core/sampleAnalysis.ts`) builds this by
+quantizing each note's own duration *and* any gap to the next note-on
+together on one shared grid (reusing `quantize.ts`'s grid-fitting
+directly), rather than reducing to onset gaps the way `rhythmAnalysis.ts`
+does for the simpler tool.
+
+Real loops usually repeat a short figure many times over a longer clip, so
+`findSmallestPeriod` auto-detects the shortest prefix that, repeated,
+reproduces the whole imported sequence exactly — the natural "archetype"
+length — with an editable override underneath. Verified against a real
+1-bar bass loop (`Bass_Driving_01.mid`, 8 notes, 2 identical 2-beat
+repeats): the full signed sequence decodes to `2,2,−1,1,2,2,2,−1,1,2`, and
+`findSmallestPeriod` correctly detects the period as 5 (exactly the first
+2 beats), all with 0% quantization error.
+
+The archetype is then searched against all 19 canonical resultants using
+only its **absolute** values (`findMatchingCases`, unchanged) — a
+resultant has no rest concept of its own, so silence only matters for what
+you hear and export, not for identifying which interference pattern
+produced the rhythm. The sample above matches exactly three cases: 5:2,
+7:2, and 9:2.
+
+**Variations** cover both kinds the user asked for: *reordering* the
+archetype's own segments (Circular = its rotations, General = every
+distinct reordering — both reusing Ch. 9's `circularPermutations`/
+`generalPermutations` completely unchanged, since a rest is just a
+negative integer to that combinatorial code, not a special case — a
+5-element archetype with three equal-magnitude notes and two singleton
+rest/note values correctly yields exactly `5!/3!=20` general permutations,
+confirmed live against the real sample), and *rest combinations*
+(`restCombinations`, new) — holding every duration's position and
+magnitude fixed and trying every way of choosing a chosen number of them
+to be silent instead, i.e. literally "every combination of rests" at a
+fixed rest count, defaulting to the archetype's own actual rest count.
+Click any row to load it into a dedicated preview lane with its own
+playback and MIDI export.
+
+**Rests are exported as true silence, not zero-velocity note-on events**
+— `buildNoteEventsFromSignedSegments` simply emits no note for a negative
+segment, advancing the cursor without a sounding event. This was a
+deliberate choice over the zero-velocity convention some step-sequencers
+use: the MIDI spec treats a note-on with velocity 0 as equivalent to a
+note-off, so many synths and DAWs would just collapse it back into
+silence anyway, making it an unreliable way to mark a "muted step" rather
+than a meaningfully different signal. If a specific downstream workflow
+actually needs literal zero-velocity events, that would need to be a
+separate, explicit export mode.
 
 ## Identify a rhythm and pitch scale
 

@@ -30,6 +30,16 @@
   stroke-dasharray: 4 2;
 }
 
+.piano-roll__note--rest {
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
+.piano-roll__duration--rest {
+  fill: color-mix(in srgb, currentColor 55%, transparent);
+  font-size: 9px;
+}
+
 .piano-roll__duration {
   font-family: ui-monospace, monospace;
   font-size: 11px;

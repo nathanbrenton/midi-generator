@@ -1,5 +1,6 @@
 import SchillingerGenerator from "./components/SchillingerGenerator";
 import ThreeGeneratorsPanel from "./components/ThreeGeneratorsPanel";
+import SampleAnalysisPanel from "./components/SampleAnalysisPanel";
 
 export default function App() {
   return (
@@ -9,6 +10,7 @@ export default function App() {
         Generates rhythm from Joseph Schillinger's interference of periodicities and
         melody from his symmetric pitch scales.
       </p>
+      <SampleAnalysisPanel />
       <SchillingerGenerator>
         <ThreeGeneratorsPanel />
       </SchillingerGenerator>
