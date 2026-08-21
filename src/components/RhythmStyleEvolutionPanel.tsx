@@ -195,8 +195,16 @@ export default function RhythmStyleEvolutionPanel() {
             />
             <div className="schillinger__readout">
               Traced origin: a = {origin.a}, b = {origin.b} · r({origin.a}:{origin.b}) opens with{" "}
-              {resultant.segments[0]?.duration}, {resultant.segments[1]?.duration} — confirming the input
-              fragment {x}, {y}
+              {resultant.segments[0]?.duration}, {resultant.segments[1]?.duration} — confirming the{" "}
+              {origin.reducedX === x && origin.reducedY === y ? "input" : "reduced"} fragment{" "}
+              {origin.reducedX}, {origin.reducedY}
+              {(origin.reducedX !== x || origin.reducedY !== y) && (
+                <>
+                  {" "}
+                  (input {x}, {y} isn't coprime — a resultant is only ever defined up to a common
+                  factor, so it was reduced first)
+                </>
+              )}
             </div>
             <div className="schillinger__readout">
               Interference-group sizes (i₁..i₅, i_n = 2·i_(n-1) − 1): {groupSizes.join(", ")}

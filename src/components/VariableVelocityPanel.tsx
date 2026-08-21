@@ -182,6 +182,7 @@ export default function VariableVelocityPanel() {
   }
 
   const [shiftedX, shiftedY] = shiftBalance(rubatoX, rubatoY, tau);
+  const rubatoValid = shiftedX > 0 && shiftedY > 0;
   const rubatoLanes: PianoRollLane[] = [
     { label: "Original", ...RUBATO_COLORS[0], segments: [{ duration: rubatoX }, { duration: rubatoY }] },
     { label: "Shifted", ...RUBATO_COLORS[1], segments: [{ duration: shiftedX }, { duration: shiftedY }] },
@@ -287,25 +288,45 @@ export default function VariableVelocityPanel() {
         <div className="schillinger__row">
           <label>
             x
-            <input type="number" value={rubatoX} onChange={(e) => setRubatoX(Number(e.target.value))} />
+            <input
+              type="number"
+              min={1}
+              value={rubatoX}
+              onChange={(e) => setRubatoX(Math.max(1, Number(e.target.value)))}
+            />
           </label>
           <label>
             y
-            <input type="number" value={rubatoY} onChange={(e) => setRubatoY(Number(e.target.value))} />
+            <input
+              type="number"
+              min={1}
+              value={rubatoY}
+              onChange={(e) => setRubatoY(Math.max(1, Number(e.target.value)))}
+            />
           </label>
           <label>
             τ (tau)
             <input type="number" step={0.5} value={tau} onChange={(e) => setTau(Number(e.target.value))} />
           </label>
         </div>
-        <SchillingerPianoRoll
-          lanes={rubatoLanes}
-          cycleLength={rubatoCycleLength}
-          timeSignature={{ beatsPerBar: rubatoCycleLength || 1, unitsPerBeat: 1 }}
-        />
-        <div className="schillinger__readout">
-          ({rubatoX}, {rubatoY}) shifted by τ={tau} → ({shiftedX}, {shiftedY}) · both total {rubatoCycleLength}
-        </div>
+        {rubatoValid ? (
+          <>
+            <SchillingerPianoRoll
+              lanes={rubatoLanes}
+              cycleLength={rubatoCycleLength}
+              timeSignature={{ beatsPerBar: rubatoCycleLength || 1, unitsPerBeat: 1 }}
+            />
+            <div className="schillinger__readout">
+              ({rubatoX}, {rubatoY}) shifted by τ={tau} → ({shiftedX}, {shiftedY}) · both total{" "}
+              {rubatoCycleLength}
+            </div>
+          </>
+        ) : (
+          <div className="schillinger__readout schillinger__readout--error">
+            τ={tau} is too large for ({rubatoX}, {rubatoY}) — it would push a duration to zero or
+            negative ({shiftedX}, {shiftedY}). Try a smaller |τ|.
+          </div>
+        )}
       </section>
     </>
   );
