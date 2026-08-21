@@ -578,6 +578,24 @@ Verified directly against the book's own worked examples: `c-d-e-g-a`
 `d2 = c-eb-f-ab-bb`, `d3 = c-d-f-g-a`, `d4 = c-eb-f-g-bb`, all matching
 exactly; retransposing `2,2,3,2` to root d gave `d-e-f#-a-b`, also exact.
 
+## Scales in expansion
+
+`ScalesInExpansionPanel.tsx` (`src/core/scalesInExpansion.ts`) covers
+Book II Ch. 5. The first expansion (E1) of an N-unit scale walks its
+units in a circle stepping by 2 positions each time; E_k steps by k+1.
+When that step doesn't divide the scale evenly, the walk splits into
+several passes — "the recurring unit is omitted," and the next pass
+restarts from the smallest not-yet-visited unit (p. 132-133). There are
+always N-1 expansions total, including the unchanged original (E0).
+Sections B-D (translating melodies between expansions, modulation via
+common tones or identical motifs) are workflow guidance built on this
+one primitive, not additional formulas, so aren't implemented. Verified
+against the book's own two worked examples, confirmed against the
+rendered page image since the odd-count example's figure wasn't in the
+OCR text layer: the 5-unit `c-d-e-f-g` gives E1 = `c-e-g-d-f`; the
+6-unit `c-d-e-f-g-b` gives E1 = `c-e-g-d-f-b` (the second cycle
+restarting at `d` once `c` recurs) — both exact.
+
 ## Percussion mapping
 
 Each of those five structural components can be assigned to a General
