@@ -557,6 +557,27 @@ own numbers: interval 5 split 3+2 gave resultant `2+1+2` with family
 `1+2+2`/`2+1+2`/`2+2+1`; the `2,2,3,2,3` displacement sequence's `d1` came
 out as `2+3+2+3+2`, matching the book exactly.
 
+## Melodic modulation and variable pitch axes
+
+`MelodicModulationPanel.tsx` (`src/core/melodicModulation.ts`), appended
+right after pitch-scale evolution, covers Book II Ch. 4. Sections C
+(axis-relation forms), E (chromatic alteration), and F (identical
+motifs) are compositional guidance rather than formulas, so aren't
+implemented — the same scoping call made for Book I's own judgment-call
+sections. Section A (Primary Axis) is new: `findPrimaryAxis` finds the
+pitch-unit with the greatest *total summed duration* in a melody, not
+merely the most frequent attack (p. 125). Sections B and D need no new
+combinatorial math — they're `circularPermutations` (Ch. 9) and
+`intervalsToMidiNotes` (Ch. 3) composed for a new purpose:
+`modalRotationsAtTonic` transposes every rotation of a scale's interval
+sequence to one *common* tonic instead of letting each rotate onto its
+own root (Section B, p. 127); Section D retransposes the scale's own
+(un-rotated) intervals onto each of its own other degrees (p. 129).
+Verified directly against the book's own worked examples: `c-d-e-g-a`
+(intervals `2,2,3,2,3`) transposed to tonic c gave `d1 = c-d-f-g-bb`,
+`d2 = c-eb-f-ab-bb`, `d3 = c-d-f-g-a`, `d4 = c-eb-f-g-bb`, all matching
+exactly; retransposing `2,2,3,2` to root d gave `d-e-f#-a-b`, also exact.
+
 ## Percussion mapping
 
 Each of those five structural components can be assigned to a General
