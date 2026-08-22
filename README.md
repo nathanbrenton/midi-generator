@@ -751,6 +751,61 @@ matching the book's own "3 permutations each"). Verified live: the
 default sequence `a2,b1,a3,b1` from axis c4 produces exactly
 `c#4-d4-c4-c#4-d4-d#4-c4`, matching hand-derivation note for note.
 
+## Book IV, Chapter 4 (no core module)
+
+Chapter 4 ("Melody: Climax and Resistance") contributes no code, checked
+with the same grep-for-numeric-claims rigor as everywhere else — no
+hidden formula turned up. It's a psychological/aesthetic framework: a
+climax is defined as "a pt (pitch-time) maximum with respect to the
+primary axis" (p.279), a circle of eight named psychological categories
+(abnormal → normal → supernormal → ..., 45° apart) maps trajectory shape
+to listener reaction, and a catalog of "forms of resistance" (repetition,
+a backswing-like contrary motion before a leap, trills/mordents, and
+"variable amplitude" — simultaneous centrifugal/centripetal combinations
+of two or three secondary axes) builds tension toward a climax or release
+toward balance. The "variable amplitude" forms reuse the exact a/b/c/d
+vocabulary from Ch. 3 unchanged, just layered as simultaneous voices
+instead of one sequential melody. Section B's climax-distribution
+guidance ("use a decreasing time-ratio... material from the summation or
+power series") is a compositional direction pointing at already-built
+Book I generators (`SUMMATION_SERIES`, `GROWTH_SERIES`,
+`distributivePower`), not a new formula with a checkable numeric output.
+
+## Composition of melodic continuity (Book IV, Ch. 5-6)
+
+`MelodicContinuityPanel.tsx` (`src/core/melodicContinuity.ts`) covers
+Book IV Ch. 5-6. Chapter 6 opens with an 8-item list of ways an
+axis-built melody (Ch. 3) can be varied — permuting the axes' own order,
+geometrically inverting the whole melody or individual segments, tonally
+expanding the whole melody or individual segments with *different*
+coefficients per segment, and any combination of these (p.313). Every
+item turns out to be a thin composition of primitives already built and
+tested elsewhere: permuting segment order reuses `generalPermutationsOf`
+(the same tool as Book II Ch. 4's own fix); per-segment geometrical
+inversion reuses Book III Ch. 1's `geometricalPosition`; per-segment
+tonal expansion reuses Book III Ch. 2's `expandPitch`.
+`buildMelodicContinuity` composes all three per segment, then
+concatenates the results in time. The one genuinely new formula, found by
+rendering the actual page (the OCR text mangled it into noise): "each of
+the individual axes has four geometrical inversions... the number of
+combinations of the three axes... equals 4³ = 64" (p.313) —
+`axisInversionCombinationCount(N) = 4^N`, confirmed exactly. The book's
+own further claim ("if any axis appears in three forms of tonal
+expansion, the entire quantity will be 64³ = 262,144") isn't
+implemented — the derivation of cubing 64 again for expansion wasn't
+reconstructable from the surrounding text with confidence, unlike the
+first (verified) formula. Chapter 5's own worked example (p.299, also
+page-image verified) composes a segment's internal rhythm by citing
+already-built Book I machinery directly by name ("r4÷3, or (2+1+1)²... the
+permutations or the resultants" — Book I's resultants and Ch. 12's
+`distributivePower`), not a new formula. Section B's sin/cos "forms of
+trajectorial motion" and the "ascribed vs. inscribed" sine/cosine phase
+choice are vocabulary frameworks without a checkable numeric output, the
+same category as Chapter 4. Verified live: the default 4-segment sequence
+(`a2/a,b1/d*2,a3/a,b1/c`) from axis c4 produces exactly
+`c#4-d4-c4-c#4-d4-d#4-c4`, matching hand-derivation note for note, with
+`256` combinations (4⁴) and `24` orderings (4!) both exact.
+
 ## Percussion mapping
 
 Each of those five structural components can be assigned to a General
