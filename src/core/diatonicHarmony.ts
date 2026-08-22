@@ -57,11 +57,30 @@
  * a few semitones, precisely the "smooth" voice-leading the transformation
  * is meant to produce.
  *
- * Sections E-F (How Cycles and Transformations Are Related -- a
- * 4-category taxonomy of constant/variable choices, not a new formula;
- * The Negative Form -- chords built downward instead of upward) are
- * natural next steps not yet built, given Book V's own size (24
- * chapters, far larger than any prior book).
+ * Section E (How Cycles and Transformations Are Related, p.382-385) is a
+ * 4-category taxonomy of constant/variable cycle and transformation
+ * choices, not a new formula -- its two concrete-sounding sub-items both
+ * turn out to be reuses of primitives already built elsewhere: "24
+ * variations of 4 elements" for voice redistribution is `generalPermutations`
+ * again (4!=24, the same reuse already confirmed for Book III Ch.1's own
+ * "24 permutations of 4 elements" chord-voicing passage), and the
+ * "coefficients of recurrence" applied to transformation sequencing is
+ * free compositional choice, the same category as every other
+ * coefficients-of-recurrence passage in this project.
+ *
+ * Section F (The Negative Form, p.386-388): chord-structures are built
+ * *downward* instead of upward -- "in order to construct a negative S(5),
+ * it is necessary to take the next pitch-unit downward, which becomes the
+ * negative third (-3), and the next unit downward from the latter, which
+ * becomes the negative fifth (-5)." Confirmed by hand before coding: "if
+ * we start from c as -1, a is -3 and f is -5" -- with C=60 in the natural
+ * major scale, stepping two scale-degrees downward twice gives A (57, a
+ * minor third below C) then F (53, a perfect fifth below C), exactly
+ * matching the book's own example. This is the exact mirror of the
+ * positive `stackedTriad` (offsets 0,+2,+4), just with offsets 0,-2,-4.
+ * Negative-form voice-leading ("if everything is read downward, the C and
+ * O transformations correspond" -- i.e. clockwise/counterclockwise swap
+ * meaning) is a natural next step, not yet built.
  */
 
 import { midiNoteForDegree, type PitchScale } from "./scales.ts";
@@ -90,6 +109,11 @@ export function trinomialCycle(first: CycleType, second: CycleType, third: Cycle
 /** Stacks a root-position triad (S(5)) on `scale` at `rootDegree`: root, third, fifth -- "root-chord: S(5)" (p.211). */
 export function stackedTriad(scale: PitchScale, rootMidiNote: number, rootDegree: number): number[] {
   return [0, 2, 4].map((offset) => midiNoteForDegree(scale, rootMidiNote, rootDegree + offset));
+}
+
+/** Section F: the negative form's triad, built downward instead of upward -- root, negative third, negative fifth (p.386). */
+export function negativeStackedTriad(scale: PitchScale, rootMidiNote: number, rootDegree: number): number[] {
+  return [0, -2, -4].map((offset) => midiNoteForDegree(scale, rootMidiNote, rootDegree + offset));
 }
 
 /** Builds the actual triad progression for a sequence of root-degrees (e.g. from `diatonicCycle`/`binomialCycle`). */

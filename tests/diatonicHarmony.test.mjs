@@ -5,6 +5,7 @@ import {
   binomialCycle,
   trinomialCycle,
   stackedTriad,
+  negativeStackedTriad,
   chordProgression,
   nearestPitch,
   transformVoicing,
@@ -160,4 +161,24 @@ test("voiceLeadProgression produces one voicing per root-degree, each voice movi
       assert.ok(closest <= 6);
     }
   }
+});
+
+// Section F, The Negative Form (p.386-388): chords built downward.
+test("negativeStackedTriad matches the book's own worked example exactly: starting from c as -1, a is -3 and f is -5 (p.386)", () => {
+  const triad = negativeStackedTriad(MAJOR, 60, 0); // root=C4=60
+  assert.deepEqual(triad, [60, 57, 53]); // C4, A3 (minor 3rd below), F3 (perfect 5th below)
+});
+
+test("negativeStackedTriad is the exact mirror of stackedTriad -- same root, intervals reflected downward instead of upward", () => {
+  const positive = stackedTriad(MAJOR, 60, 0);
+  const negative = negativeStackedTriad(MAJOR, 60, 0);
+  assert.equal(positive[0], negative[0]); // shared root
+  assert.equal(positive[0] - negative[1], 60 - 57); // third is equidistant below vs above (though not necessarily same magnitude in a diatonic scale)
+  assert.ok(negative[1] < negative[0] && negative[2] < negative[1]); // strictly descending
+});
+
+test("negativeStackedTriad wraps octaves correctly for a root degree near the bottom of the scale (degree 1 = D)", () => {
+  const triad = negativeStackedTriad(MAJOR, 60, 1); // D4=62
+  // D, and going down two more scale-degrees each time: B3, G3
+  assert.deepEqual(triad, [62, 59, 55]);
 });

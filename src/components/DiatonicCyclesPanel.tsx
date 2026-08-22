@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   diatonicCycle,
   binomialCycle,
-  chordProgression,
+  stackedTriad,
+  negativeStackedTriad,
   voiceLeadProgression,
   type CycleType,
   type TransformDirection,
@@ -40,6 +41,7 @@ export default function DiatonicCyclesPanel() {
   const [secondCycle, setSecondCycle] = useState<CycleType>(3);
   const [voiceLead, setVoiceLead] = useState(false);
   const [direction, setDirection] = useState<TransformDirection>("clockwise");
+  const [form, setForm] = useState<"positive" | "negative">("positive");
 
   const [bpm, setBpm] = useState(100);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -51,7 +53,13 @@ export default function DiatonicCyclesPanel() {
     () => (useBinomial ? binomialCycle(firstCycle, secondCycle) : diatonicCycle(firstCycle)),
     [useBinomial, firstCycle, secondCycle],
   );
-  const stackedProgression = useMemo(() => chordProgression(MAJOR_SCALE, root, rootDegrees), [root, rootDegrees]);
+  const stackedProgression = useMemo(
+    () =>
+      rootDegrees.map((degree) =>
+        form === "negative" ? negativeStackedTriad(MAJOR_SCALE, root, degree) : stackedTriad(MAJOR_SCALE, root, degree),
+      ),
+    [root, rootDegrees, form],
+  );
   const voiceLedProgression = useMemo(
     () => voiceLeadProgression(MAJOR_SCALE, root, rootDegrees, direction),
     [root, rootDegrees, direction],
@@ -161,7 +169,10 @@ export default function DiatonicCyclesPanel() {
         any code was written. A binomial progression concatenates two full cycles into 14 chords.
         Voice-leading (Sections C-D) reassigns each of the 3 upper voices to a new function in the
         next chord — clockwise sends root→third→fifth→root; counterclockwise sends root→fifth→third→
-        root — placed at the nearest octave, plus a constant bass doubling the root (p.376-381).
+        root — placed at the nearest octave, plus a constant bass doubling the root (p.376-381). The
+        negative form (Section F) builds triads downward instead of upward: from c as the root, the
+        third and fifth land a third and a fifth below it — a and f — not above (p.386); voice-leading
+        isn't yet extended to the negative form, so it's only available in stacked (non-voice-led) mode.
       </p>
       <div className="schillinger__row">
         <label>
@@ -199,7 +210,26 @@ export default function DiatonicCyclesPanel() {
       </div>
       <div className="schillinger__row">
         <label>
-          <input type="checkbox" checked={voiceLead} onChange={(e) => setVoiceLead(e.target.checked)} />
+          Form
+          <select
+            value={form}
+            onChange={(e) => {
+              const next = e.target.value as "positive" | "negative";
+              setForm(next);
+              if (next === "negative") setVoiceLead(false);
+            }}
+          >
+            <option value="positive">Positive (built upward)</option>
+            <option value="negative">Negative (built downward)</option>
+          </select>
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={voiceLead}
+            disabled={form === "negative"}
+            onChange={(e) => setVoiceLead(e.target.checked)}
+          />
           Voice-led (4-part: bass + 3 transformed upper voices)
         </label>
         {voiceLead && (

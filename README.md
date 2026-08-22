@@ -890,8 +890,25 @@ the browser. Building this surfaced a real bug (an unmemoized derived
 array feeding the playback effect, the same class of issue as the
 project's very first playback bug in Book I Ch. 9) — caught via the
 project's standard AudioContext-instrumentation check, fixed by wrapping
-the array in `useMemo`. Sections E-F (a 4-category cycle/transformation
-taxonomy; the Negative Form) are natural next steps not yet built.
+the array in `useMemo`. Section E (a 4-category cycle/transformation
+taxonomy) has no formula of its own — its two concrete-sounding sub-items
+("24 variations of 4 elements" for voice redistribution, coefficients of
+recurrence for transformation sequencing) both turn out to be reuses of
+primitives already built elsewhere, the same `generalPermutations`
+already confirmed for Book III Ch. 1's identical "24 permutations of 4
+elements" passage.
+
+Section F (The Negative Form, p.386-388): chords built *downward*
+instead of upward. "In order to construct a negative S(5)... the next
+pitch-unit downward becomes the negative third, and the next unit
+downward from that becomes the negative fifth" — confirmed by hand
+before coding: "if we start from c as -1, a is -3 and f is -5," and with
+C=60 in the natural major scale, stepping down by thirds twice gives A
+(57) then F (53), matching the book's own example exactly, verified
+again live in the browser. `negativeStackedTriad` is the exact mirror of
+`stackedTriad` (offsets 0,-2,-4 instead of 0,+2,+4). Negative-form
+voice-leading isn't yet built, so the panel's voice-leading option is
+only available for the positive form.
 
 ## Percussion mapping
 
