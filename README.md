@@ -910,6 +910,29 @@ again live in the browser. `negativeStackedTriad` is the exact mirror of
 voice-leading isn't yet built, so the panel's voice-leading option is
 only available for the positive form.
 
+## The symmetric system of harmony (Book V, Ch. 3)
+
+`SymmetricHarmonyPanel.tsx` (`src/core/symmetricHarmony.ts`). Unlike
+diatonic harmony (Ch. 2), symmetric chord structures are pre-selected
+independent of any scale — "scale is the result... the consequence of
+chords in motion" (p.388). Restricting a triad's two intervals to 3 or 4
+semitones each gives exactly four structures, built directly from
+semitones rather than scale degrees: S1=4+3 (major), S2=3+4 (minor),
+S3=4+4 (augmented), S4=3+3 (diminished). All sharing one common root is
+Section B's "symmetric zero cycle" (C0). Section A's own combinatorics
+table (badly garbled by OCR, but every one of its 8 counts confirmed by
+hand) turns out to be nothing more than `generalPermutations`/
+`generalPermutationsOf` (Book I Ch. 9) applied to these 4 structure
+labels — e.g. all 4 different gives 4!=24 forms, matching the book's own
+number exactly, and every other repeat-pattern (one pair, two pairs,
+3-same-1-different, and so on) checks out the same way. Another
+cross-book confirmation: "the general number of three-unit scales from
+one axis" (55) is exactly `compositionCount(12, 3)` from Book II Ch. 7.
+Section B's full zero-cycle mechanic (coefficients of recurrence driving
+position-cycling through Ch. 2's open/closed voicings) needs an
+enumerable "positions" utility that Ch. 2's voice-leading work skipped
+over (it only built chord-to-chord transformation) — a natural next step.
+
 ## Percussion mapping
 
 Each of those five structural components can be assigned to a General
