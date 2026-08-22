@@ -690,6 +690,38 @@ and coefficients-of-recurrence sequencing are compositional workflow
 built on these primitives, not additional formulas, so aren't implemented
 separately. This closes out Book III end to end.
 
+## The axes of melody (Book IV)
+
+`MelodicAxesPanel.tsx` (`src/core/melodicAxes.ts`) opens Book IV (Theory
+of Melody) at Chapter 3 — Chapters 1-2 are pure philosophy/semantics and
+notational conventions with no formula of their own. Section A's Primary
+Axis ("a pitch-time maximum," p.246) is exactly Book II Ch.4's
+`findPrimaryAxis`, reused directly. Section C defines five directional
+axes relative to that primary axis (p.252-253): `0` stays at it; `a`
+ascends away from it; `d` descends away from it; `b` and `c` always
+return fully to it, from above and below respectively — the same a/b/c/d
+vocabulary as Book III Ch.1's geometrical positions, reused here to
+classify melodic *direction*. `buildAxialMelody` turns a sequence of
+these terms into an actual melody, reverse-engineered from Figures 16 and
+19 (p.262-263), which needed rendering and zooming into as page images
+since the OCR text layer didn't capture them at all: `a`/`d` start at the
+axis and move away using their own duration as the climb (by default,
+though Section H's more general notation, p.275, allows an independent
+pitch distance); `b`/`c` always travel *all the way* back to the axis —
+confirmed by comparing "a2T+bT," "a3T+bT," and "a5T+b2T," where the
+return always lands exactly on the axis regardless of how far the climb
+went, using only whatever time is given. A reset between two `a`/`d`/`0`
+terms (when the melody isn't already at the axis) is instantaneous,
+matching how the figures don't spend any extra grid-width on it. Section
+D's massive worked enumeration of axial combinations (monomial through
+quintinomial, p.253-258) turns out to be nothing more than
+`generalPermutations` (Book I Ch.9) applied to the 5-symbol alphabet —
+verified directly against several of the book's own stated counts (e.g.
+a 3-term pattern with one repeated pair has exactly 3 permutations,
+matching the book's own "3 permutations each"). Verified live: the
+default sequence `a2,b1,a3,b1` from axis c4 produces exactly
+`c#4-d4-c4-c#4-d4-d#4-c4`, matching hand-derivation note for note.
+
 ## Percussion mapping
 
 Each of those five structural components can be assigned to a General
