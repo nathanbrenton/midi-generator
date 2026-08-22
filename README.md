@@ -849,6 +849,33 @@ patterns, not additional formulas, so aren't implemented separately.
 Verified live: the confirmed book example (First series, index 3) plays
 back as `c4-f4-c#5-e3`, matching hand-derivation exactly.
 
+## Diatonic cycles (Book V — Special Theory of Harmony begins)
+
+`DiatonicCyclesPanel.tsx` (`src/core/diatonicHarmony.ts`) opens Book V,
+a genuinely new domain for this project — chord structures and
+progressions, rather than single-voice melody/rhythm. Book V is far
+larger than any prior book (24 chapters), so this covers its foundational
+Chapter 1-2 machinery, which the rest of the book is expected to build
+on. A root-position triad, S(5), stacks a scale's root, third, and fifth
+(p.211) — this is the first panel in the project with genuine
+simultaneous multi-voice playback, using the existing `NoteEvent.voice`
+field (already proven by `applyStrata`'s parallel harmony). A "diatonic
+cycle" steps the chord root by a constant scale-degree interval through
+all 7 degrees of a 7-unit scale before repeating — confirmed against real
+music theory before any code was written: the cycle of the fifth (step 4)
+is exactly the circle of fifths, C-G-D-A-E-B-F; the cycle of the third
+(step 2) gives C-E-G-B-D-F-A; the cycle of the seventh (step 6, i.e. -1)
+is purely descending stepwise motion, matching the book's own description
+of its "purely contrapuntal derivation" from leading-tone resolution
+(p.363-369). A binomial progression concatenates two full cycles into 14
+chords, matching the book's own stated count exactly. Chapter 1 also
+gives a nice cross-book confirmation: "the total number of seven-unit
+scales equals 462" is exactly `compositionCount(12, 7)` from Book II
+Ch. 7 (p.206). Section B (historical cycle-style commentary — Bach,
+Wagner, Palestrina) has no formula, so isn't implemented. Sections C-F
+(chord inversions, voice-leading, the negative form) are natural next
+steps not yet built.
+
 ## Percussion mapping
 
 Each of those five structural components can be assigned to a General
