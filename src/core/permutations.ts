@@ -50,3 +50,16 @@ export function generalPermutations(values: readonly number[]): number[][] {
 export function circularPermutations(values: readonly number[]): number[][] {
   return values.map((_, i) => [...values.slice(i), ...values.slice(0, i)]);
 }
+
+/**
+ * Every distinct reordering of arbitrary (non-number) items -- the same
+ * index-permutation trick already used by `homogeneousContinuityParts`
+ * (Ch. 11): permute the positional indices with `generalPermutations`,
+ * then map each index back to its item. Indices are always mutually
+ * distinct, so every one of the n! orderings is produced even if two
+ * items happen to be equal-valued -- positions are treated as labeled,
+ * matching how this project's own axis/scale combinatorics count them.
+ */
+export function generalPermutationsOf<T>(items: readonly T[]): T[][] {
+  return generalPermutations(items.map((_, i) => i)).map((row) => row.map((i) => items[i]));
+}

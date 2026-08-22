@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { generalPermutations, circularPermutations } from "../src/core/permutations.ts";
+import { generalPermutations, circularPermutations, generalPermutationsOf } from "../src/core/permutations.ts";
 
 function sorted(rows) {
   return rows.map((r) => r.join(",")).sort();
@@ -128,4 +128,23 @@ test("every circular permutation's values sum to the same total as the original 
   for (const row of circularPermutations(values)) {
     assert.equal(row.reduce((a, b) => a + b, 0), total);
   }
+});
+
+test("generalPermutationsOf treats non-number items as labeled positions -- 5 distinct string items give exactly 5! = 120 rows", () => {
+  const rows = generalPermutationsOf(["d0", "d1", "d2", "d3", "d4"]);
+  assert.equal(rows.length, 120);
+});
+
+test("generalPermutationsOf does NOT dedupe equal-valued items -- two identical strings still give the full n! (positions are labeled, not values)", () => {
+  const rows = generalPermutationsOf(["x", "x", "y"]);
+  assert.equal(rows.length, 6); // 3!, not 3 -- unlike generalPermutations on numbers, which would dedupe
+});
+
+test("generalPermutationsOf preserves each item's own identity/reference (works on arrays, not just primitives)", () => {
+  const a = [1, 2];
+  const b = [3, 4];
+  const rows = generalPermutationsOf([a, b]);
+  assert.equal(rows.length, 2);
+  assert.ok(rows.some((row) => row[0] === a && row[1] === b));
+  assert.ok(rows.some((row) => row[0] === b && row[1] === a));
 });

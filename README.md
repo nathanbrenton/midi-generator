@@ -557,26 +557,55 @@ own numbers: interval 5 split 3+2 gave resultant `2+1+2` with family
 `1+2+2`/`2+1+2`/`2+2+1`; the `2,2,3,2,3` displacement sequence's `d1` came
 out as `2+3+2+3+2`, matching the book exactly.
 
+Section A also *chains*, which was missed on first read: re-interfering
+each stage's own resultant using its circular rotations (not every
+general permutation) produces a longer resultant each time — binomial →
+trinomial → quintinomial → 9-term, "the modified forms... fall into
+synchronization" (p.114). `circularIntervalInterference` generalizes
+`intervalInterferenceResultant` from exactly 2 terms to any N;
+`intervalInterferenceChain` repeats it. Verified against the book's own
+worked stages: interfering the trinomial `4,4,3` gives the quintinomial
+`1,3,3,1,3` (matching the book's own listed row as a multiset); interfering
+that again gives exactly 9 terms — not 11, which unioning *every* general
+permutation instead of just the circular ones incorrectly produces. The
+term-count growth (2→3→5→9→17...) is exactly Book I Ch.13's own
+interference-group recurrence, `i_n = 2·i_(n-1) − 1`.
+
 ## Melodic modulation and variable pitch axes
 
 `MelodicModulationPanel.tsx` (`src/core/melodicModulation.ts`), appended
-right after pitch-scale evolution, covers Book II Ch. 4. Sections C
-(axis-relation forms), E (chromatic alteration), and F (identical
-motifs) are compositional guidance rather than formulas, so aren't
-implemented — the same scoping call made for Book I's own judgment-call
-sections. Section A (Primary Axis) is new: `findPrimaryAxis` finds the
-pitch-unit with the greatest *total summed duration* in a melody, not
-merely the most frequent attack (p. 125). Sections B and D need no new
-combinatorial math — they're `circularPermutations` (Ch. 9) and
-`intervalsToMidiNotes` (Ch. 3) composed for a new purpose:
-`modalRotationsAtTonic` transposes every rotation of a scale's interval
-sequence to one *common* tonic instead of letting each rotate onto its
-own root (Section B, p. 127); Section D retransposes the scale's own
-(un-rotated) intervals onto each of its own other degrees (p. 129).
-Verified directly against the book's own worked examples: `c-d-e-g-a`
-(intervals `2,2,3,2,3`) transposed to tonic c gave `d1 = c-d-f-g-bb`,
-`d2 = c-eb-f-ab-bb`, `d3 = c-d-f-g-a`, `d4 = c-eb-f-g-bb`, all matching
-exactly; retransposing `2,2,3,2` to root d gave `d-e-f#-a-b`, also exact.
+right after pitch-scale evolution, covers Book II Ch. 4. Sections E
+(chromatic alteration) and F (identical motifs) are compositional
+guidance rather than formulas, so aren't implemented — the same scoping
+call made for Book I's own judgment-call sections. Section A (Primary
+Axis) is new: `findPrimaryAxis` finds the pitch-unit with the greatest
+*total summed duration* in a melody, not merely the most frequent attack
+(p. 125). Sections B and D need no new combinatorial math — they're
+`circularPermutations` (Ch. 9) and `intervalsToMidiNotes` (Ch. 3)
+composed for a new purpose: `modalRotationsAtTonic` transposes every
+rotation of a scale's interval sequence to one *common* tonic instead of
+letting each rotate onto its own root (Section B, p. 127); Section D
+retransposes the scale's own (un-rotated) intervals onto each of its own
+other degrees (p. 129). Verified directly against the book's own worked
+examples: `c-d-e-g-a` (intervals `2,2,3,2,3`) transposed to tonic c gave
+`d1 = c-d-f-g-bb`, `d2 = c-eb-f-ab-bb`, `d3 = c-d-f-g-a`, `d4 = c-eb-f-g-bb`,
+all matching exactly; retransposing `2,2,3,2` to root d gave `d-e-f#-a-b`,
+also exact.
+
+Section C (Four Forms of Axis-Relations) was initially scoped out
+entirely as compositional guidance — correct for its four qualitative
+categories, but a closer re-read turned up two clean formulas hiding in
+the worked U-U example (p.125-128): `axisRelationCount(N) = N²` for an
+N-unit scale (5²=25, 7²=49, both stated directly), and permuting the N
+*already-transposed* scales from Section B into a longer continuity via
+`axialContinuityPermutations` — reusing the same general-permutations
+machinery as Book I Ch. 9 (5!=120, "five elements produce 120
+permutations," also stated directly). The panel's default arrangement
+(`3,2,1,4,0`) matches the book's own Figure 20 example exactly. A nice
+cross-chapter find alongside these: "330, the number of all five-unit
+scales" is exactly `compositionCount(12, 5)` from Book II Ch. 7 (dividing
+the 12-semitone octave into 5 ordered parts) = C(11,4) = 330 — built
+later in this project than this chapter, never connected back until now.
 
 ## Scales in expansion
 

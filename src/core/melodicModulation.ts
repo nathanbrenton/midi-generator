@@ -1,11 +1,41 @@
 /**
  * Book II, Chapter 4: Melodic Modulation and Variable Pitch Axes.
  *
- * Sections C (Four Forms of Axis-Relations), E (chromatic alteration), and
- * F (identical motifs) are compositional guidance -- named categories and
- * technique descriptions, not deterministic formulas -- so they're left
- * unimplemented, the same scoping choice made for the judgment-call
- * sections in Book I (Ch.13's historical commentary, Ch.14's Fermata).
+ * Section C (Four Forms of Axis-Relations) was originally scoped out
+ * entirely as compositional guidance -- correct for its four qualitative
+ * categories (U-U, U-P, P-U, P-P) and for the "common tones/chromatic
+ * alteration/identical motifs" transition techniques (those really are
+ * judgment calls, no formula). But a closer re-read turned up two clean,
+ * missed formulas hiding in the U-U worked example (p.125-128):
+ *
+ *   - "The number of axis-relations between a melody and harmony equals
+ *     the number of derivative scales (from one d0, including d0). Any
+ *     five-unit scale offers 25 axis-relations... any seven-unit scale
+ *     offers 49" -- i.e. axisRelationCount(N) = N^2 (an N-unit scale has N
+ *     possible melody P.A. positions times N possible harmony key-axis
+ *     positions). Confirmed exactly: 5^2=25, 7^2=49.
+ *   - "These five different axes [the displacement scales d0..d4, each
+ *     transposed to a common tonic] become elements of continuity. Five
+ *     elements produce 120 permutations. Any of these 120 forms may be
+ *     used" -- i.e. permuting the N *already-transposed* scales from
+ *     `modalRotationsAtTonic` into a longer melodic continuity, via the
+ *     same general-permutations machinery as Book I Ch.9 (5!=120,
+ *     confirmed exactly). The book's own Figure 20 shows one such
+ *     arrangement (d3-d2-d1-d4-d0) as a worked example.
+ *
+ * A nice cross-chapter confirmation found alongside these: "by varying the
+ * key signatures... we can multiply the number of possible compositions
+ * by 330, the number of all five-unit scales" is exactly
+ * `compositionCount(12, 5)` from Book II Ch.7's `symmetricScales.ts`
+ * (dividing the 12-semitone octave into 5 ordered parts) = C(11,4) = 330 --
+ * a function built later in this project than this chapter, never
+ * connected back until now.
+ *
+ * Sections E (chromatic alteration) and F (identical motifs) really are
+ * compositional guidance -- re-read in full and confirmed to describe a
+ * creative *process* (find non-common units, insert a passing tone; pick
+ * a motif, adapt it to the new key) rather than a deterministic formula
+ * with a checkable numeric output, unlike Section C's worked example.
  *
  * Section A (Primary Axis): "the P.A. of a melody is defined as the
  * maximum of an occurrence of a given pitch-unit within any portion of a
@@ -34,7 +64,7 @@
  * root already does exactly this.
  */
 
-import { circularPermutations } from "./permutations.ts";
+import { circularPermutations, generalPermutationsOf } from "./permutations.ts";
 import { intervalsToMidiNotes } from "./pitchScaleEvolution.ts";
 
 export interface PrimaryAxisResult {
@@ -70,4 +100,20 @@ export function findPrimaryAxis(
  */
 export function modalRotationsAtTonic(intervals: readonly number[], tonic: number): number[][] {
   return circularPermutations([...intervals]).map((rotation) => intervalsToMidiNotes(tonic, rotation));
+}
+
+/** The number of melody/harmony axis-relations for an N-unit scale: N possible melody P.A. positions x N possible harmony key-axis positions (p.125). */
+export function axisRelationCount(unitsPerScale: number): number {
+  return unitsPerScale * unitsPerScale;
+}
+
+/**
+ * Every ordering of `transposedScales` (e.g. `modalRotationsAtTonic`'s own
+ * output) as elements of one melodic continuity -- N! total arrangements,
+ * "five elements produce 120 permutations" (p.128). Each result row is one
+ * arrangement of the N scales in sequence; concatenate a row to get the
+ * actual continuity melody.
+ */
+export function axialContinuityPermutations(transposedScales: readonly number[][]): number[][][] {
+  return generalPermutationsOf(transposedScales);
 }
