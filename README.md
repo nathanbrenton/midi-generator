@@ -626,6 +626,30 @@ the Fourth Group's 3-tonic (2-octave) system with 4 units shows 35
 compositions and 13,824 melodic forms, both matching hand-derivation
 exactly.
 
+## Book II, Chapters 6 and 9 (no core module)
+
+Two Book II chapters contribute no code, for different reasons. Chapter 6
+(Symmetric Distribution of Pitch-Units) is entirely historical/cultural
+commentary on tuning traditions — Javanese and Siamese systems, why 12
+became the standard division of the octave, its influence on Bach through
+Debussy — with no deterministic formula of its own; it's the frame Ch. 7
+formalizes. Chapter 9 (Melody-Harmony Relationship in Symmetric Systems)
+was read in full, including rendering its central table (Figure 55, book
+p. 173) as a page image once the OCR text proved too garbled to trust.
+That table turned out to be a **notation catalog**, not a formula with a
+checkable numeric output like every other chapter built here: it
+enumerates every way an `a`-tonic window (melody) can pair against a
+`b`-tonic window (harmony) around a tonic cycle — the same
+cyclic-sliding-window idea as `slidingWindowMerge`/`slidingWindowSelect`
+(Ch. 3), just relabeled for tonics instead of intervals, with no worked
+example to verify against. The rest of the chapter (building harmonic
+groups via tonal expansion of a sectional scale, voice-leading by
+nearest tone, a tension framework tied to specific composers' eras) is
+compositional workflow built on primitives this project already
+implements (`tonalExpansion`, Ch. 5), not additional math. This closes
+out Book II end to end: Ch. 1-2 (pre-existing), Ch. 3-5 and Ch. 7-8 have
+their own panels above; Ch. 6 and Ch. 9 are pure prose.
+
 ## Percussion mapping
 
 Each of those five structural components can be assigned to a General
