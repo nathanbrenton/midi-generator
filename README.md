@@ -806,6 +806,49 @@ same category as Chapter 4. Verified live: the default 4-segment sequence
 `c#4-d4-c4-c#4-d4-d#4-c4`, matching hand-derivation note for note, with
 `256` combinations (4⁴) and `24` orderings (4!) both exact.
 
+## Book IV, Chapter 7 (no core module)
+
+Chapter 7 ("Additional Melodic Techniques") contributes no code — checked
+with the same grep, no hidden formula. Section A describes how a
+symmetric scale's multiple tonics (Book II Ch. 7-8) share overlapping
+secondary axes with their neighbors (the b-axis of one tonic's group is
+the c-axis of the tonic above it, and so on), and works through a full
+melody plotted with all three Book II Ch. 4 modulation techniques
+(common tones, chromatic alterations, identical motifs) at once. Section
+B ("Technique of Plotting Modulations") is a step-by-step notation
+procedure for a human composer, not an algorithm. Both sections are
+narrative applications of primitives already built elsewhere, not new
+formulas.
+
+## Use of organic forms in melody (Book IV, Ch. 8 — Book IV complete)
+
+`OrganicMelodyPanel.tsx` (`src/core/organicMelody.ts`) closes out Book IV.
+The chapter's historical/geometric discussion of the Fibonacci/summation
+series is already covered by `SUMMATION_SERIES` (Book I Ch. 14) —
+confirmed the book's own three named series match exactly when extended
+with the same recurrence: First (Fibonacci) to 11 terms gives
+`1,2,3,5,8,13,21,34,55,89,144` (p.330, stated directly); Second gives
+`1,3,4,7,11,18,29`; Third gives `1,4,5,9,14,23,37` (p.333). The chapter's
+genuinely new content is three "spiral sequence" patterns for turning a
+summation series into a signed-interval motif, each precisely described
+in prose and confirmed against the book's own figure numbers (rendered
+as a page image, since OCR mangled the formula notation into noise):
+Basic (`t[i], t[i+1], -t[i+3]`, omitting `t[i+2]`) matches Figure 120/121
+exactly — starting the First series at index 3 gives `5, 8, -21`, at
+index 4 gives `8, 13, -34`, both exact; Developed adds one more summed
+term before the flip (`t[i], t[i+1], t[i+2], -t[i+4]`); Extended adds two
+(`t[i], t[i+1], t[i+2], -t[i+5]`). "Melody may start at different points
+of one summation series" (p.340) — the panel shows four starting indices
+per series/pattern combination. The chapter's closing list of nine
+further "harmonic relations" (natural harmonic series, progressions,
+logarithmic series, etc.) is a naming list, not new worked formulas —
+several are already implemented (`NATURAL_HARMONIC_SERIES`,
+`PRIME_NUMBER_SERIES`, Book I Ch. 14). Bilateral symmetry and
+range-readjustment are compositional variations on the same three
+patterns, not additional formulas, so aren't implemented separately.
+Verified live: the confirmed book example (First series, index 3) plays
+back as `c4-f4-c#5-e3`, matching hand-derivation exactly.
+
 ## Percussion mapping
 
 Each of those five structural components can be assigned to a General
