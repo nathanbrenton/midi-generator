@@ -39,6 +39,7 @@ import VariableVelocityPanel from "./VariableVelocityPanel";
 import PitchScaleEvolutionPanel from "./PitchScaleEvolutionPanel";
 import MelodicModulationPanel from "./MelodicModulationPanel";
 import ScalesInExpansionPanel from "./ScalesInExpansionPanel";
+import SymmetricScalesPanel from "./SymmetricScalesPanel";
 import "./SchillingerGenerator.css";
 
 const LANE_COLORS = {
@@ -865,6 +866,8 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
       <MelodicModulationPanel />
 
       <ScalesInExpansionPanel />
+
+      <SymmetricScalesPanel />
 
       <section className="schillinger__section schillinger__section--wide">
         <h3>Playback (melody / percussion)</h3>

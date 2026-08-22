@@ -596,6 +596,36 @@ OCR text layer: the 5-unit `c-d-e-f-g` gives E1 = `c-e-g-d-f`; the
 6-unit `c-d-e-f-g-b` gives E1 = `c-e-g-d-f-b` (the second cycle
 restarting at `d` once `c` recurs) — both exact.
 
+## Symmetrical scales (third and fourth groups)
+
+`SymmetricScalesPanel.tsx` (`src/core/symmetricScales.ts`) covers Book II
+Ch. 7-8. The octave (Third Group, Ch. 7) or `tonicCount - 1` octaves
+(Fourth Group, Ch. 8) splits into an evenly-spaced tonic system — 2, 3,
+4, 6, or 12 tonics for the Third Group; 3, 4, 6, or 12 tonics for the
+Fourth, each paired with a fixed octave range the book states directly
+(2, 3, 5, 11 — always `tonicCount - 1`, giving an exact-integer semitone
+gap in all four cases: 8, 9, 10, 11). A "sectional scale" fills the gap
+between one tonic and the next with N positive-integer semitone steps —
+the book's own Arabic "string of pearls" example tiles `(2,1,2,1)` across
+a 2-tonic Third Group system's 6-semitone gap. Chapter 6 (Symmetric
+Distribution of Pitch-Units) contributes no core module — it's entirely
+historical/cultural commentary on tuning traditions, with no formula of
+its own.
+
+Section C's counting table (p.152-153) — badly garbled by OCR (exponents
+rendered as stray digits, e.g. "62 equals 36") — decodes exactly against
+two general combinatorial identities, confirmed against all 20 tabulated
+numbers across all 5 Third Group tonic systems: the number of distinct
+N-unit sectional scales for a gap `g` is `C(g-1, N-1)` (a composition
+count), and the number of melodic forms from independently permuting an
+N-unit sectional scale across `t` tonics is `(N!)^t`. Both identities are
+general enough that they apply unchanged to the Fourth Group's wider
+gaps too — verified live: the default Third Group view (2 tonics, 4
+units) shows exactly 10 compositions and 576 melodic forms; switching to
+the Fourth Group's 3-tonic (2-octave) system with 4 units shows 35
+compositions and 13,824 melodic forms, both matching hand-derivation
+exactly.
+
 ## Percussion mapping
 
 Each of those five structural components can be assigned to a General
