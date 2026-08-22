@@ -36,6 +36,33 @@
  * and closed voicings), which wasn't built when Ch.2's voice-leading was
  * implemented (only chord-to-chord transformation was) -- a natural next
  * step, not yet built.
+ *
+ * Book V, Chapter 5: The Symmetric System of Harmony (Type III), Section
+ * A (Two Tonics, p.396-397). Chapter 4 (Diatonic-Symmetric System, Type
+ * II) contributes no code of its own -- it's a worked example combining
+ * Ch.2's diatonic cycles with Ch.3's pre-selected structures directly, no
+ * new formula.
+ *
+ * Chapter 5's own tonic-count table -- "symmetric C0 represents one
+ * tonic; root 2 represents two tonics; cube-root 2 represents three...
+ * six... twelve" -- is exactly Book II Ch.7's own `TONIC_COUNTS`
+ * ([2,3,4,6,12], reused directly via `symmetricTonics`/`fourthGroupTonics`),
+ * plus the trivial one-tonic case.
+ *
+ * The chapter's genuinely new finding (rendered as a page image, since
+ * OCR mangled the formula notation): "the upper voice of harmony produces
+ * the following scale... c-db-e-f#-g-a#-(c)" from a 2-tonic system (C,
+ * F#) using the S1 (major) structure at each tonic. Decoded by hand: this
+ * is exactly the *sorted union of pitch classes* across every tonic's own
+ * triad -- confirmed against BOTH of the book's own worked examples: S1
+ * const. on tonics {C, F#} gives {C, Db, E, F#, G, Bb} (matching "c-db-e-
+ * f#-g-a#" exactly, enharmonic Bb/A#); S2 (minor) const. gives {C, Db,
+ * Eb, F#, G, A} (matching "c-db-eb-f#-g-a" exactly). This reuses Book II
+ * Ch.7's tonic machinery and this chapter's own `symmetricTriad` directly
+ * -- no new combinatorial primitive, just their union. The exact
+ * root-motion cycle labels connecting consecutive tonics (C5/C-5 for two
+ * tonics, C3/C-3 for three, C7/C-7 for six and twelve) aren't yet
+ * precisely modeled -- a natural next step.
  */
 
 export type StructureId = 1 | 2 | 3 | 4;
@@ -57,4 +84,22 @@ export function symmetricTriad(structure: StructureId, rootMidiNote: number): nu
 /** Builds a progression of symmetric triads sharing the same root -- Section B's "common root-tone" starting point, before position-cycling (p.391). */
 export function symmetricStructureProgression(structures: readonly StructureId[], rootMidiNote: number): number[][] {
   return structures.map((s) => symmetricTriad(s, rootMidiNote));
+}
+
+/**
+ * Ch.5 Section A: the pitch-scale produced by a symmetric harmony system
+ * -- the sorted union of pitch classes across every tonic's own triad
+ * (built with the same `structure` at each tonic). Confirmed exactly
+ * against the book's own two worked examples (p.397): S1 on a 2-tonic
+ * system gives c-db-e-f#-g-a#(bb); S2 gives c-db-eb-f#-g-a. `tonics` is
+ * typically Book II Ch.7's own `symmetricTonics`/`fourthGroupTonics`.
+ */
+export function symmetricHarmonyScale(tonics: readonly number[], structure: StructureId): number[] {
+  const pitchClasses = new Set<number>();
+  for (const tonic of tonics) {
+    for (const note of symmetricTriad(structure, tonic)) {
+      pitchClasses.add(((note % 12) + 12) % 12);
+    }
+  }
+  return [...pitchClasses].sort((a, b) => a - b);
 }

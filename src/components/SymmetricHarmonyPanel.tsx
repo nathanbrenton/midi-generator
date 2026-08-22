@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { S5_STRUCTURES, symmetricStructureProgression, type StructureId } from "../core/symmetricHarmony";
+import {
+  S5_STRUCTURES,
+  symmetricStructureProgression,
+  symmetricHarmonyScale,
+  type StructureId,
+} from "../core/symmetricHarmony";
+import { TONIC_COUNTS, symmetricTonics } from "../core/symmetricScales";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
 import "./SchillingerGenerator.css";
@@ -24,6 +30,8 @@ function parseStructures(text: string): StructureId[] {
 export default function SymmetricHarmonyPanel() {
   const [root, setRoot] = useState(60);
   const [structuresText, setStructuresText] = useState("1,2,3,4");
+  const [mode, setMode] = useState<"chords" | "scale">("chords");
+  const [tonicCount, setTonicCount] = useState(2);
 
   const [bpm, setBpm] = useState(100);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -32,7 +40,15 @@ export default function SymmetricHarmonyPanel() {
   const playTokenRef = useRef(0);
 
   const structures = useMemo(() => parseStructures(structuresText), [structuresText]);
-  const progression = useMemo(() => symmetricStructureProgression(structures, root), [structures, root]);
+  const chordProgression = useMemo(() => symmetricStructureProgression(structures, root), [structures, root]);
+
+  const tonics = useMemo(() => symmetricTonics(tonicCount, root), [tonicCount, root]);
+  const octaveBase = root - (((root % 12) + 12) % 12);
+  const scaleStructure = structures[0] ?? 1;
+  const scale = useMemo(() => symmetricHarmonyScale(tonics, scaleStructure), [tonics, scaleStructure]);
+  const scaleAsNotes = useMemo(() => scale.map((pc) => [octaveBase + pc]), [scale, octaveBase]);
+
+  const progression: number[][] = mode === "scale" ? scaleAsNotes : chordProgression;
 
   const notes: NoteEvent[] = useMemo(() => {
     return progression.flatMap((chord, i) =>
@@ -133,7 +149,10 @@ export default function SymmetricHarmonyPanel() {
         book's own combinatorics table (badly garbled by OCR, but every one of its 8 counts confirmed
         by hand) is just <code>generalPermutations</code> applied to these 4 structure-labels — e.g.
         all 4 different gives 4!=24 forms, matching exactly. "The general number of three-unit scales
-        from one axis" (55) is exactly Book II Ch. 7's <code>compositionCount(12,3)</code>.
+        from one axis" (55) is exactly Book II Ch. 7's <code>compositionCount(12,3)</code>. Ch. 5's own
+        tonic-count table reuses Book II Ch. 7's tonic systems directly; the "scale" mode below shows
+        the sorted union of pitch classes across every tonic's own triad — confirmed against the
+        book's own worked examples: S1 on 2 tonics gives c-db-e-f#-g-a#(bb); S2 gives c-db-eb-f#-g-a.
       </p>
       <div className="schillinger__row">
         <label>
@@ -141,18 +160,55 @@ export default function SymmetricHarmonyPanel() {
           <input type="number" min={0} max={96} value={root} onChange={(e) => setRoot(Number(e.target.value))} />
         </label>
         <label>
-          Structures (1=major, 2=minor, 3=augmented, 4=diminished)
-          <input type="text" value={structuresText} onChange={(e) => setStructuresText(e.target.value)} />
+          Mode
+          <select value={mode} onChange={(e) => setMode(e.target.value as "chords" | "scale")}>
+            <option value="chords">Chord progression (common root)</option>
+            <option value="scale">Symmetric scale (Ch. 5, multi-tonic)</option>
+          </select>
         </label>
       </div>
+      {mode === "chords" ? (
+        <div className="schillinger__row">
+          <label>
+            Structures (1=major, 2=minor, 3=augmented, 4=diminished)
+            <input type="text" value={structuresText} onChange={(e) => setStructuresText(e.target.value)} />
+          </label>
+        </div>
+      ) : (
+        <div className="schillinger__row">
+          <label>
+            Tonics
+            <select value={tonicCount} onChange={(e) => setTonicCount(Number(e.target.value))}>
+              {TONIC_COUNTS.map((t) => (
+                <option key={t} value={t}>
+                  {t} tonics
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Structure (1=major, 2=minor, 3=augmented, 4=diminished)
+            <input type="text" value={structuresText} onChange={(e) => setStructuresText(e.target.value)} />
+          </label>
+        </div>
+      )}
       <div className="schillinger__readout">
-        {progression.length > 0 ? (
-          <>
-            {progression.length} chords, common root {noteName(root)}:{" "}
-            {progression.map((triad, i) => `${S5_STRUCTURES[structures[i]].name}(${chordLabel(triad)})`).join(" · ")}
-          </>
+        {mode === "chords" ? (
+          chordProgression.length > 0 ? (
+            <>
+              {chordProgression.length} chords, common root {noteName(root)}:{" "}
+              {chordProgression
+                .map((triad, i) => `${S5_STRUCTURES[structures[i]].name}(${chordLabel(triad)})`)
+                .join(" · ")}
+            </>
+          ) : (
+            "Enter structure numbers 1-4 above."
+          )
         ) : (
-          "Enter structure numbers 1-4 above."
+          <>
+            {tonicCount}-tonic system, {S5_STRUCTURES[scaleStructure].name} structure: tonics{" "}
+            {tonics.map(noteName).join(", ")} → scale {scaleAsNotes.map((n) => noteName(n[0])).join("-")}
+          </>
         )}
       </div>
 

@@ -1,8 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { S5_STRUCTURES, symmetricTriad, symmetricStructureProgression } from "../src/core/symmetricHarmony.ts";
+import {
+  S5_STRUCTURES,
+  symmetricTriad,
+  symmetricStructureProgression,
+  symmetricHarmonyScale,
+} from "../src/core/symmetricHarmony.ts";
 import { generalPermutations, generalPermutationsOf } from "../src/core/permutations.ts";
-import { compositionCount } from "../src/core/symmetricScales.ts";
+import { compositionCount, symmetricTonics } from "../src/core/symmetricScales.ts";
 
 test("symmetricTriad matches the book's own table of S(5) structures exactly (p.389)", () => {
   assert.deepEqual(symmetricTriad(1, 60), [60, 64, 67]); // major: 4+3
@@ -120,4 +125,34 @@ test("quadrinomial all 4 different: 1 combination x 24 permutations = 24 forms; 
 
 test("the book's own 'the general number of three-unit scales from one axis' (55) matches compositionCount(12, 3) exactly (p.388)", () => {
   assert.equal(compositionCount(12, 3), 55);
+});
+
+// Book V Ch.5 Section A (Two Tonics, p.396-397), decoded by rendering the
+// actual page since OCR mangled the formula notation.
+test("symmetricHarmonyScale with S1 (major) on a 2-tonic system (C, F#) matches the book's own worked scale exactly: c-db-e-f#-g-a#(bb) (p.397)", () => {
+  const tonics = symmetricTonics(2, 0); // pitch classes [0, 6] = C, F#
+  const scale = symmetricHarmonyScale(tonics, 1);
+  assert.deepEqual(scale, [0, 1, 4, 6, 7, 10]); // C, Db, E, F#, G, Bb/A#
+});
+
+test("symmetricHarmonyScale with S2 (minor) on a 2-tonic system matches the book's own second worked scale exactly: c-db-eb-f#-g-a (p.397)", () => {
+  const tonics = symmetricTonics(2, 0);
+  const scale = symmetricHarmonyScale(tonics, 2);
+  assert.deepEqual(scale, [0, 1, 3, 6, 7, 9]); // C, Db, Eb, F#, G, A
+});
+
+test("symmetricHarmonyScale always belongs to the third group (its own tonics are among the scale's own pitch classes)", () => {
+  const tonics = symmetricTonics(3, 0);
+  for (const structure of [1, 2, 3, 4]) {
+    const scale = symmetricHarmonyScale(tonics, structure);
+    for (const tonic of tonics) {
+      assert.ok(scale.includes(((tonic % 12) + 12) % 12));
+    }
+  }
+});
+
+test("symmetricHarmonyScale never has more than tonics.length * 3 pitch classes (triads may share tones across tonics)", () => {
+  const tonics = symmetricTonics(4, 0);
+  const scale = symmetricHarmonyScale(tonics, 3); // augmented triads are especially prone to overlap
+  assert.ok(scale.length <= tonics.length * 3);
 });

@@ -933,6 +933,28 @@ position-cycling through Ch. 2's open/closed voicings) needs an
 enumerable "positions" utility that Ch. 2's voice-leading work skipped
 over (it only built chord-to-chord transformation) — a natural next step.
 
+## Book V, Chapter 4 (no core module) and Chapter 5 Section A
+
+Chapter 4 (Diatonic-Symmetric System of Harmony, Type II) contributes no
+code — it's a worked example combining Ch. 2's diatonic root-motion
+cycles with Ch. 3's pre-selected symmetric structures directly, no new
+formula.
+
+Chapter 5 (The Symmetric System of Harmony, Type III), Section A "Two
+Tonics": the panel's "scale" mode adds `symmetricHarmonyScale`. Its own
+tonic-count table ("root 2 represents two tonics, cube-root 2 represents
+three...") is exactly Book II Ch. 7's own tonic systems, reused directly
+via `symmetricTonics`. The genuinely new finding, decoded by rendering
+the actual page since OCR mangled the formula notation into noise: "the
+upper voice of harmony produces the scale... c-db-e-f#-g-a#" from a
+2-tonic system using the major structure at each tonic turns out to be
+exactly the *sorted union of pitch classes* across every tonic's own
+triad — confirmed against both of the book's own worked examples (major
+gives c-db-e-f#-g-a#/bb; minor gives c-db-eb-f#-g-a), and verified again
+live in the browser, byte for byte. The exact root-motion cycle labels
+connecting consecutive tonics aren't yet precisely modeled — a natural
+next step, along with Sections B-E (Three/Four/Six/Twelve Tonics).
+
 ## Percussion mapping
 
 Each of those five structural components can be assigned to a General
