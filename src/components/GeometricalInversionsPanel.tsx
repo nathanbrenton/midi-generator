@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { allFourPositions, type GeometricalPosition, type TimedNote } from "../core/geometricalInversions";
+import { geometricalExpansion } from "../core/geometricalExpansions";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
 import "./SchillingerGenerator.css";
@@ -42,6 +43,8 @@ function formatMelody(notes: readonly TimedNote[]): string {
 export default function GeometricalInversionsPanel() {
   const [melodyText, setMelodyText] = useState("60:0:2,64:2:1,67:4:2,74:7:3");
   const [axis, setAxis] = useState(67);
+  const [pitchCoefficient, setPitchCoefficient] = useState(1);
+  const [timeCoefficient, setTimeCoefficient] = useState(1);
 
   const [selectedLabel, setSelectedLabel] = useState<GeometricalPosition>("a");
   const [bpm, setBpm] = useState(120);
@@ -51,7 +54,11 @@ export default function GeometricalInversionsPanel() {
   const playTokenRef = useRef(0);
 
   const melody = useMemo(() => parseMelody(melodyText), [melodyText]);
-  const positions = useMemo(() => (melody.length > 0 ? allFourPositions(melody, axis) : null), [melody, axis]);
+  const expanded = useMemo(
+    () => (melody.length > 0 ? geometricalExpansion(melody, axis, pitchCoefficient, timeCoefficient) : []),
+    [melody, axis, pitchCoefficient, timeCoefficient],
+  );
+  const positions = useMemo(() => (expanded.length > 0 ? allFourPositions(expanded, axis) : null), [expanded, axis]);
 
   const selectedNotes = positions ? positions[selectedLabel] : [];
 
@@ -146,13 +153,16 @@ export default function GeometricalInversionsPanel() {
 
   return (
     <section className="schillinger__section schillinger__section--wide">
-      <h3>Geometrical Inversions (Book III, Ch. 1)</h3>
+      <h3>Geometrical Inversions and Expansions (Book III, Ch. 1-2)</h3>
       <p className="schillinger__hint">
         A melody has four "geometrical positions": (a) the original; (b) the same thing backwards
         (retrograde — time-reversed, pitches unchanged); (c) backwards and upside-down (retrograde
         inversion); (d) forwards and upside-down (inversion only). Pitch inversion reflects each note
-        around a chosen axis: invertedPitch = 2·axis − pitch (p.185-199). Click a position below to
-        load it into the shared playback.
+        around a chosen axis: invertedPitch = 2·axis − pitch (p.185-199). Geometrical expansion
+        (Ch. 2) stretches the pitch and/or time axes by a coefficient before that — the book's own
+        example, expanding c-d-e-f-g by 2p, gives c-e-g#-a#-d (p.208); a coefficient under 1
+        contracts instead. "All geometrical expansions are subject to geometrical inversions as
+        well" (p.220), so the two compose directly below. Click a position to load it into playback.
       </p>
       <div className="schillinger__row">
         <label>
@@ -160,8 +170,30 @@ export default function GeometricalInversionsPanel() {
           <input type="text" value={melodyText} onChange={(e) => setMelodyText(e.target.value)} />
         </label>
         <label>
-          Axis of inversion (MIDI note)
+          Axis (MIDI note)
           <input type="number" min={0} max={120} value={axis} onChange={(e) => setAxis(Number(e.target.value))} />
+        </label>
+      </div>
+      <div className="schillinger__row">
+        <label>
+          Pitch coefficient (2p, 3p, ... or &lt;1 to contract)
+          <input
+            type="number"
+            min={0.1}
+            step={0.5}
+            value={pitchCoefficient}
+            onChange={(e) => setPitchCoefficient(Number(e.target.value))}
+          />
+        </label>
+        <label>
+          Time coefficient (2t, 3t, ... or &lt;1 to contract)
+          <input
+            type="number"
+            min={0.1}
+            step={0.5}
+            value={timeCoefficient}
+            onChange={(e) => setTimeCoefficient(Number(e.target.value))}
+          />
         </label>
       </div>
       {positions ? (

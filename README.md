@@ -650,32 +650,45 @@ implements (`tonalExpansion`, Ch. 5), not additional math. This closes
 out Book II end to end: Ch. 1-2 (pre-existing), Ch. 3-5 and Ch. 7-8 have
 their own panels above; Ch. 6 and Ch. 9 are pure prose.
 
-## Geometrical inversions (Book III)
+## Geometrical inversions and expansions (Book III)
 
-`GeometricalInversionsPanel.tsx` (`src/core/geometricalInversions.ts`)
-opens Book III (Variations of Music by Means of Geometrical Projection),
-Ch. 1. A melody graphed as pitch vs. time has four "geometrical
-positions" (p.185-186): (a) the original; (b) "the same thing backwards"
-— retrograde, time-reversed with pitches unchanged; (c) backwards *and*
-upside-down — retrograde inversion; (d) forwards and upside-down —
-inversion only. Pitch inversion reflects each note around a chosen axis:
-`invertedPitch = 2·axis − pitch`, confirmed against the book's own worked
-example (p.199): axis g (67), a theme note d an octave up (74, seven
-semitones above the axis) inverts to c (60, seven semitones below).
-Retrograde preserves each note's own duration while mirroring its
-position in time, so rests stay the same width, just reflected. Unlike
-the Book II pitch-scale panels (which spell scales with synthetic
-uniform-duration playback), this panel schedules notes at their real
-`startUnits`/`durationUnits` — the first panel in this project to need
-genuinely non-uniform timed playback for a melody the user typed in
-directly. A nice cross-book check: inverting the whole-tone scale (Book
-II Ch. 1-2's `symmetricDivisionScale(6)`) around its own root reproduces
-its own identical pitch-class set — confirming the book's own claim
-(p.199) that some scales have "an axis of symmetry." Sections on
-inverting harmony (each chord voice treated as its own melody), rhythm
-cleanup at position boundaries, and coefficients-of-recurrence sequencing
-across positions are compositional workflow built on this one primitive,
-not additional formulas, so aren't implemented separately.
+`GeometricalInversionsPanel.tsx` (`src/core/geometricalInversions.ts` +
+`src/core/geometricalExpansions.ts`) covers all of Book III (Variations
+of Music by Means of Geometrical Projection) — just 2 chapters, much
+shorter than Books I-II. A melody graphed as pitch vs. time has four
+"geometrical positions" (Ch. 1, p.185-186): (a) the original; (b) "the
+same thing backwards" — retrograde, time-reversed with pitches unchanged;
+(c) backwards *and* upside-down — retrograde inversion; (d) forwards and
+upside-down — inversion only. Pitch inversion reflects each note around a
+chosen axis: `invertedPitch = 2·axis − pitch`, confirmed against the
+book's own worked example (p.199): axis g (67), a theme note d an octave
+up (74, seven semitones above the axis) inverts to c (60, seven semitones
+below). Retrograde preserves each note's own duration while mirroring its
+position in time, so rests stay the same width, just reflected.
+
+Geometrical expansion (Ch. 2, p.208-214) stretches the pitch and/or time
+axes by a coefficient *before* a position is chosen — distinct from Book
+II Ch. 5's *tonal* expansion, which rearranges a scale's own pitch-units
+without altering them. `expandedPitch = axis + (pitch − axis) ×
+coefficient`; a coefficient under 1 contracts rather than expands, so one
+formula covers both, matching how the book frames contraction as the
+reciprocal case. Confirmed against the book's own footnote example
+(p.208): expanding `c-d-e-f-g` by a coefficient of 2 gives `c-e-g#-a#-d`
+exactly. Time expands independently the same way (`pt, 2t, 3t`), scaling
+both a note's start position and its own duration. "All geometrical
+expansions are subject to geometrical inversions as well" (p.220), so the
+panel composes both directly — this is also the first panel in this
+project needing genuinely non-uniform timed playback for a melody typed
+in directly, rather than the synthetic uniform-duration playback used by
+every Book II pitch-scale panel. A nice cross-book check: inverting the
+whole-tone scale (Book II Ch. 1-2's `symmetricDivisionScale(6)`) around
+its own root reproduces its own identical pitch-class set — confirming
+the book's own claim (p.199) that some scales have "an axis of symmetry."
+Sections on inverting/expanding harmony (each chord voice treated as its
+own melody), rhythm cleanup at position boundaries, range-readjustment,
+and coefficients-of-recurrence sequencing are compositional workflow
+built on these primitives, not additional formulas, so aren't implemented
+separately. This closes out Book III end to end.
 
 ## Percussion mapping
 
