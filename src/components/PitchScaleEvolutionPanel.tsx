@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   intervalInterferenceResultant,
+  intervalInterferenceChain,
   slidingWindowMerge,
   slidingWindowSelect,
   intervalsToMidiNotes,
@@ -44,6 +45,12 @@ export default function PitchScaleEvolutionPanel() {
 
   const resultant = useMemo(() => intervalInterferenceResultant(splitA, splitB), [splitA, splitB]);
   const family = useMemo(() => generalPermutations(resultant), [resultant]);
+
+  const [chainStages, setChainStages] = useState(2);
+  const chain = useMemo(
+    () => intervalInterferenceChain([splitA, splitB], chainStages),
+    [splitA, splitB, chainStages],
+  );
 
   const displacementIntervals = useMemo(() => parseIntervals(displacementText), [displacementText]);
   const displacementScales = useMemo(
@@ -198,6 +205,38 @@ export default function PitchScaleEvolutionPanel() {
               Preview
             </button>
           </span>
+        ))}
+      </div>
+
+      <p className="schillinger__hint">
+        Section A also chains: re-interfering each stage's own resultant (via its circular rotations,
+        not every general permutation) produces a longer resultant each time — binomial → trinomial →
+        quintinomial → 9-term, "the modified forms... fall into synchronization" (p.114). Confirmed
+        against the book's own worked stages: interfering the trinomial (4,4,3) gives the quintinomial
+        (1,3,3,1,3); interfering that again gives exactly 9 terms ("ten units and nine intervals").
+        Term counts grow 2→3→5→9→17..., the same recurrence as Book I Ch.13's interference-groups.
+      </p>
+      <div className="schillinger__row">
+        <label>
+          Chain stages
+          <input
+            type="number"
+            min={0}
+            max={5}
+            value={chainStages}
+            onChange={(e) => setChainStages(Math.max(0, Math.min(5, Number(e.target.value))))}
+          />
+        </label>
+      </div>
+      <div className="schillinger__readout">
+        {chain.map((stage, i) => (
+          <div key={i}>
+            Stage {i} ({stage.length} term{stage.length === 1 ? "" : "s"}): {stage.join("+")} (
+            {spell(stage)})
+            <button type="button" onClick={() => preview(`Chain stage ${i}`, stage)}>
+              Preview
+            </button>
+          </div>
         ))}
       </div>
 

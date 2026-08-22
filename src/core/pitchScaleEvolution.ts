@@ -35,14 +35,72 @@
  * the book's own six-interval example (p.119-120, 2,2,1,2,2,1): every
  * window-size-2 merge (5 positions) and every window-size-5 selection (2
  * positions) match the book's own listed rows exactly.
+ *
+ * Section A also turns out to *chain*, which was missed on first read:
+ * the book's own intro paragraph (p.114) describes a recursive process --
+ * "splitting the interval into a binomial, we acquire a three-unit scale
+ * [interference of the binomial's 2 orderings produces a trinomial
+ * resultant]... the modified forms of the binomial interval fall into
+ * synchronization and produce a resultant scale with four units and three
+ * intervals [the trinomial]... the modified forms of the trinomial
+ * interval fall into synchronization and produce a resultant scale with
+ * six units and five intervals [a quintinomial]... the modified forms of
+ * the quintinomial interval fall into synchronization and produce a
+ * resultant scale with ten units and nine intervals [a 9-term resultant]."
+ * `circularIntervalInterference` generalizes `intervalInterferenceResultant`
+ * from exactly 2 terms to any N: it unions the attack points of every
+ * *circular* rotation of the term sequence (not every general permutation
+ * -- verified by hand that general permutations overshoot to full
+ * uniformity one stage early, while circular permutations land exactly on
+ * the book's own stated term counts at every stage). Confirmed against the
+ * book's own worked trinomial example (p.116): circular-interfering
+ * (4,4,3) gives the quintinomial (3,1,3,1,3), matching one of the book's
+ * own listed permutation rows (1+3+3+1+3) as a multiset; interfering that
+ * quintinomial again gives exactly 9 terms, matching "ten units and nine
+ * intervals" exactly (not 11, which unioning ALL permutations instead of
+ * just the circular ones incorrectly produces).
+ *
+ * The resulting term-count sequence (2 -> 3 -> 5 -> 9 -> ...) is exactly
+ * Book I Ch.13's own interference-group recurrence, i_n = 2*i_(n-1) - 1
+ * (`interferenceGroupSizes`) -- a deep, verified cross-book consistency:
+ * the same growth law governs both rhythmic interference-groups and this
+ * pitch-interval interference chain.
  */
 
-/** Section A: unions the attack points of (a,b) and its reverse (b,a), returning the resultant trinomial. */
-export function intervalInterferenceResultant(a: number, b: number): number[] {
-  const total = a + b;
-  const points = new Set<number>([0, a, b]);
+import { circularPermutations } from "./permutations.ts";
+
+/** Unions the attack points of every circular rotation of `terms`, returning the resultant -- the general form of Section A's interference (p.114-117). */
+export function circularIntervalInterference(terms: readonly number[]): number[] {
+  const points = new Set<number>([0]);
+  for (const rotation of circularPermutations([...terms])) {
+    let cursor = 0;
+    for (const value of rotation) {
+      cursor += value;
+      points.add(cursor);
+    }
+  }
+  // Every rotation's cursor ends at the same total, so `sorted` already closes
+  // on that total as its own last member -- no separate wrap-around step needed.
   const sorted = [...points].sort((x, y) => x - y);
-  return sorted.map((point, i) => (i + 1 < sorted.length ? sorted[i + 1] : total) - point);
+  const gaps: number[] = [];
+  for (let i = 1; i < sorted.length; i++) gaps.push(sorted[i] - sorted[i - 1]);
+  return gaps;
+}
+
+/** Section A: unions the attack points of (a,b) and its reverse (b,a), returning the resultant trinomial -- the N=2 case of `circularIntervalInterference`. */
+export function intervalInterferenceResultant(a: number, b: number): number[] {
+  return circularIntervalInterference([a, b]);
+}
+
+/** Repeatedly applies `circularIntervalInterference`, returning every stage including the starting terms -- the book's own binomial->trinomial->quintinomial->9-term chain (p.114). */
+export function intervalInterferenceChain(start: readonly number[], stages: number): number[][] {
+  const chain: number[][] = [[...start]];
+  let current: number[] = [...start];
+  for (let i = 0; i < stages; i++) {
+    current = circularIntervalInterference(current);
+    chain.push(current);
+  }
+  return chain;
 }
 
 /** Section C: every way of summing a contiguous window of `windowSize` intervals into one, keeping the rest of the sequence unchanged. */

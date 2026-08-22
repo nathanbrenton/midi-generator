@@ -2,11 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   intervalInterferenceResultant,
+  circularIntervalInterference,
+  intervalInterferenceChain,
   slidingWindowMerge,
   slidingWindowSelect,
   intervalsToMidiNotes,
 } from "../src/core/pitchScaleEvolution.ts";
 import { generalPermutations, circularPermutations } from "../src/core/permutations.ts";
+import { interferenceGroupSizes } from "../src/core/rhythmStyleEvolution.ts";
 
 test("intervalInterferenceResultant(3,2) matches the book's own example exactly: 2,1,2 (p.115)", () => {
   assert.deepEqual(intervalInterferenceResultant(3, 2), [2, 1, 2]);
@@ -75,4 +78,73 @@ test("slidingWindowSelect and slidingWindowMerge both throw for an out-of-range 
 
 test("intervalsToMidiNotes produces intervals.length + 1 notes via cumulative sum from root", () => {
   assert.deepEqual(intervalsToMidiNotes(60, [2, 1, 2]), [60, 62, 63, 65]);
+});
+
+// Section A's interference chain (p.114-117), missed on first read: the
+// book recursively re-interferes each stage's own output using CIRCULAR
+// permutations (not every general permutation -- general permutations
+// overshoot to full uniformity one stage early).
+test("circularIntervalInterference generalizes intervalInterferenceResultant -- N=2 matches exactly", () => {
+  assert.deepEqual(circularIntervalInterference([3, 2]), intervalInterferenceResultant(3, 2));
+  assert.deepEqual(circularIntervalInterference([4, 1]), intervalInterferenceResultant(4, 1));
+});
+
+test("circularIntervalInterference of the book's own trinomial (4,4,3) matches its own listed quintinomial row as a multiset: 1,3,3,1,3 (p.116)", () => {
+  const result = circularIntervalInterference([4, 4, 3]);
+  assert.deepEqual([...result].sort(), [1, 1, 3, 3, 3]);
+  assert.equal(
+    result.reduce((a, b) => a + b, 0),
+    11,
+  );
+});
+
+test("circularIntervalInterference of the quintinomial gives exactly a 9-term resultant, matching the book's own 'ten units and nine intervals' exactly (p.114)", () => {
+  const quintinomial = circularIntervalInterference([4, 4, 3]);
+  const nineTerm = circularIntervalInterference(quintinomial);
+  assert.equal(nineTerm.length, 9);
+  assert.equal(
+    nineTerm.reduce((a, b) => a + b, 0),
+    11,
+  );
+});
+
+test("using general permutations instead of circular ones overshoots to full uniformity one stage early -- confirming circular is the book's own rule, not general", () => {
+  const quintinomial = circularIntervalInterference([4, 4, 3]);
+  // Recompute the next stage using ALL general permutations instead of just circular rotations.
+  const total = quintinomial.reduce((a, b) => a + b, 0);
+  const points = new Set([0]);
+  for (const perm of generalPermutations(quintinomial)) {
+    let cursor = 0;
+    for (const v of perm) {
+      cursor += v;
+      points.add(cursor);
+    }
+  }
+  const overshot = [...points].sort((a, b) => a - b);
+  assert.equal(overshot.length - 1, total); // every integer position filled = full uniformity, 11 terms not 9
+});
+
+test("intervalInterferenceChain reproduces the book's own trinomial->quintinomial->9-term progression in one call", () => {
+  const chain = intervalInterferenceChain([4, 4, 3], 2);
+  assert.equal(chain.length, 3);
+  assert.deepEqual(chain[0], [4, 4, 3]);
+  assert.deepEqual([...chain[1]].sort(), [1, 1, 3, 3, 3]);
+  assert.equal(chain[2].length, 9);
+});
+
+test("the interference chain's term-count growth (3->5->9) follows the same recurrence as Book I Ch.13's i_n=2*i_(n-1)-1 (interferenceGroupSizes), just starting from 3 instead of 2", () => {
+  const chain = intervalInterferenceChain([4, 4, 3], 2);
+  const counts = chain.map((stage) => stage.length);
+  assert.deepEqual(counts, [3, 5, 9]);
+  for (let i = 1; i < counts.length; i++) {
+    assert.equal(counts[i], 2 * counts[i - 1] - 1);
+  }
+  // Cross-check against Book I's own recurrence starting from its own base case (2), for a different chain length.
+  assert.deepEqual(interferenceGroupSizes(5), [2, 3, 5, 9, 17]);
+});
+
+test("intervalInterferenceChain eventually reaches uniformity (all-1s) for a small/dense starting binomial, and stays there -- the book's own 'neutral, terminal' case", () => {
+  const chain = intervalInterferenceChain([3, 2], 3);
+  assert.deepEqual(chain[2], [1, 1, 1, 1, 1]);
+  assert.deepEqual(chain[3], [1, 1, 1, 1, 1]); // uniformity is a fixed point
 });
