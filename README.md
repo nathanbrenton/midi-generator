@@ -872,9 +872,26 @@ chords, matching the book's own stated count exactly. Chapter 1 also
 gives a nice cross-book confirmation: "the total number of seven-unit
 scales equals 462" is exactly `compositionCount(12, 7)` from Book II
 Ch. 7 (p.206). Section B (historical cycle-style commentary — Bach,
-Wagner, Palestrina) has no formula, so isn't implemented. Sections C-F
-(chord inversions, voice-leading, the negative form) are natural next
-steps not yet built.
+Wagner, Palestrina) has no formula, so isn't implemented.
+
+Sections C-D (Transformations of S(5); Voice-Leading, p.376-381) add
+proper 4-part voice-leading: an S(5) triad has three "functions" — root,
+third, fifth — plus a constant bass doubling the root, unaffected by
+transformation. Clockwise voice-leading sends "the root of the first
+chord... to the third of the next chord; the third... to the fifth...;
+the fifth... to the root..." (p.379); counterclockwise is the mirror
+(root→fifth→third→root). Each reassigned voice moves to the nearest
+available octave of its new function (`nearestPitch`, a standard
+minimal-movement voice-leading rule) — confirmed by hand before coding: a
+C major triad (bass 48, root 60, third 64, fifth 67) voice-led clockwise
+into the next chord of a cycle-of-thirds progression (E minor) gives
+exactly `{bass 52, root 64, third 55, fifth 59}`, verified again live in
+the browser. Building this surfaced a real bug (an unmemoized derived
+array feeding the playback effect, the same class of issue as the
+project's very first playback bug in Book I Ch. 9) — caught via the
+project's standard AudioContext-instrumentation check, fixed by wrapping
+the array in `useMemo`. Sections E-F (a 4-category cycle/transformation
+taxonomy; the Negative Form) are natural next steps not yet built.
 
 ## Percussion mapping
 

@@ -37,11 +37,31 @@
  * Section B (Historical Development of Cycle Styles) is musicological
  * commentary (Bach, Wagner, Palestrina lineage) with no formula, so isn't
  * implemented -- the same scoping call made throughout this project.
- * Sections C-F (Transformations of S(5), Voice-Leading, Cycle/Transform
- * correlation, the Negative Form) are natural next steps but not yet
- * built, given Book V's own size (24 chapters, far larger than any prior
- * book) -- this module covers the foundational cycle/triad machinery the
- * rest of the book is expected to build on.
+ *
+ * Sections C-D (Transformations of S(5); Voice-Leading, p.376-381): an
+ * S(5) triad has three "functions" -- root (a), third (b), fifth (c) --
+ * plus a constant bass doubling the root, unaffected by transformation
+ * ("the transformation of functions affects all parts except the bass,"
+ * p.376). Two transformations connect consecutive chords in a
+ * progression: clockwise, where "the root of the first chord becomes the
+ * third of the next chord; the third... becomes the fifth...; the fifth...
+ * becomes the root..." (p.379), and counterclockwise, the mirror (root to
+ * fifth, fifth to third, third to root). This is voice-leading by
+ * function-reassignment: whichever voice sang a given function now sings
+ * its mapped function in the next chord, placed at the nearest available
+ * octave -- confirmed by hand before coding: starting from a C major
+ * triad in root position (bass 48, root 60, third 64, fifth 67) and
+ * applying clockwise voice-leading into the next chord of a C3 cycle
+ * (E minor) gives {bass 52, root 64, third 55, fifth 59} -- exactly an E
+ * minor triad's pitch classes (E,G,B), each voice moving by no more than
+ * a few semitones, precisely the "smooth" voice-leading the transformation
+ * is meant to produce.
+ *
+ * Sections E-F (How Cycles and Transformations Are Related -- a
+ * 4-category taxonomy of constant/variable choices, not a new formula;
+ * The Negative Form -- chords built downward instead of upward) are
+ * natural next steps not yet built, given Book V's own size (24
+ * chapters, far larger than any prior book).
  */
 
 import { midiNoteForDegree, type PitchScale } from "./scales.ts";
@@ -75,4 +95,66 @@ export function stackedTriad(scale: PitchScale, rootMidiNote: number, rootDegree
 /** Builds the actual triad progression for a sequence of root-degrees (e.g. from `diatonicCycle`/`binomialCycle`). */
 export function chordProgression(scale: PitchScale, rootMidiNote: number, rootDegrees: readonly number[]): number[][] {
   return rootDegrees.map((degree) => stackedTriad(scale, rootMidiNote, degree));
+}
+
+export type ChordFunction = "root" | "third" | "fifth";
+export type TransformDirection = "clockwise" | "counterclockwise";
+
+/** "The root of the first chord becomes the third of the next... the third becomes the fifth... the fifth becomes the root" (p.379). */
+const CLOCKWISE_NEXT: Record<ChordFunction, ChordFunction> = { root: "third", third: "fifth", fifth: "root" };
+/** The mirror: root->fifth, fifth->third, third->root (p.379). */
+const COUNTERCLOCKWISE_NEXT: Record<ChordFunction, ChordFunction> = { root: "fifth", fifth: "third", third: "root" };
+
+/** The pitch nearest to `referencePitch` sharing `targetPitchClass` (0-11) -- standard nearest-tone voice-leading, minimal melodic movement. */
+export function nearestPitch(referencePitch: number, targetPitchClass: number): number {
+  const refClass = ((referencePitch % 12) + 12) % 12;
+  const targetClass = ((targetPitchClass % 12) + 12) % 12;
+  let delta = ((targetClass - refClass) % 12 + 12) % 12;
+  if (delta > 6) delta -= 12;
+  return referencePitch + delta;
+}
+
+export interface Voicing {
+  /** Constant root-doubling bass, unaffected by the a/b/c transformation (p.376). */
+  bass: number;
+  root: number;
+  third: number;
+  fifth: number;
+}
+
+/** Transforms `voicing` into the next chord (rooted at `nextRootDegree`) via clockwise or counterclockwise voice-leading (p.379-381). */
+export function transformVoicing(
+  voicing: Voicing,
+  scale: PitchScale,
+  rootMidiNote: number,
+  nextRootDegree: number,
+  direction: TransformDirection,
+): Voicing {
+  const [nextRoot, nextThird, nextFifth] = stackedTriad(scale, rootMidiNote, nextRootDegree);
+  const pitchClassFor: Record<ChordFunction, number> = { root: nextRoot, third: nextThird, fifth: nextFifth };
+  const nextMap = direction === "clockwise" ? CLOCKWISE_NEXT : COUNTERCLOCKWISE_NEXT;
+
+  const next: Voicing = { bass: nearestPitch(voicing.bass, pitchClassFor.root), root: 0, third: 0, fifth: 0 };
+  (Object.keys(pitchClassFor) as ChordFunction[]).forEach((fn) => {
+    const newFn = nextMap[fn];
+    next[newFn] = nearestPitch(voicing[fn], pitchClassFor[newFn]);
+  });
+  return next;
+}
+
+/** Builds a full voice-led progression: a starting root-position triad (plus bass), then each subsequent chord via `transformVoicing` (p.379-381). */
+export function voiceLeadProgression(
+  scale: PitchScale,
+  rootMidiNote: number,
+  rootDegrees: readonly number[],
+  direction: TransformDirection,
+): Voicing[] {
+  const [root, third, fifth] = stackedTriad(scale, rootMidiNote, rootDegrees[0]);
+  let current: Voicing = { bass: root - 12, root, third, fifth };
+  const progression: Voicing[] = [current];
+  for (let i = 1; i < rootDegrees.length; i++) {
+    current = transformVoicing(current, scale, rootMidiNote, rootDegrees[i], direction);
+    progression.push(current);
+  }
+  return progression;
 }

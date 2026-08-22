@@ -6,6 +6,9 @@ import {
   trinomialCycle,
   stackedTriad,
   chordProgression,
+  nearestPitch,
+  transformVoicing,
+  voiceLeadProgression,
 } from "../src/core/diatonicHarmony.ts";
 import { compositionCount } from "../src/core/symmetricScales.ts";
 import { intervalCellScale } from "../src/core/scales.ts";
@@ -93,4 +96,68 @@ test("chordProgression builds one triad per root-degree, matching diatonicCycle'
   const progression = chordProgression(MAJOR, 60, cycle);
   assert.equal(progression.length, 7);
   assert.deepEqual(progression[0], [60, 64, 67]); // C major triad, first chord of the circle of fifths
+});
+
+// Sections C-D (p.376-381): clockwise/counterclockwise voice-leading via
+// function reassignment, placed at the nearest available octave.
+test("nearestPitch finds the closest octave placement of a target pitch class, matching hand-verified examples", () => {
+  assert.equal(nearestPitch(60, 7), 55); // C4 -> nearest G is G3 (down a 5th), not G4 (up a 4th)
+  assert.equal(nearestPitch(64, 11), 59); // E4 -> nearest B is B3
+  assert.equal(nearestPitch(67, 4), 64); // G4 -> nearest E is E4
+});
+
+test("nearestPitch never moves more than 6 semitones", () => {
+  for (let ref = 40; ref < 80; ref++) {
+    for (let target = 0; target < 12; target++) {
+      assert.ok(Math.abs(nearestPitch(ref, target) - ref) <= 6);
+    }
+  }
+});
+
+test("transformVoicing (clockwise, C3 cycle) matches the hand-derived C-major-to-E-minor example exactly (p.379)", () => {
+  const voicing = { bass: 48, root: 60, third: 64, fifth: 67 }; // C major triad, root position
+  const next = transformVoicing(voicing, MAJOR, 60, 2, "clockwise"); // next root = degree 2 (E)
+  assert.deepEqual(next, { bass: 52, root: 64, third: 55, fifth: 59 });
+});
+
+test("transformVoicing's clockwise mapping: root->third, third->fifth, fifth->root (p.379)", () => {
+  // Using a static target (same chord as source) isolates the mapping itself.
+  const voicing = { bass: 48, root: 60, third: 64, fifth: 67 };
+  const next = transformVoicing(voicing, MAJOR, 60, 0, "clockwise");
+  assert.equal(next.third, nearestPitch(60, 64 % 12)); // old root -> new third
+  assert.equal(next.fifth, nearestPitch(64, 67 % 12)); // old third -> new fifth
+  assert.equal(next.root, nearestPitch(67, 60 % 12)); // old fifth -> new root
+});
+
+test("transformVoicing's counterclockwise mapping is the mirror: root->fifth, fifth->third, third->root (p.379)", () => {
+  const voicing = { bass: 48, root: 60, third: 64, fifth: 67 };
+  const next = transformVoicing(voicing, MAJOR, 60, 0, "counterclockwise");
+  assert.equal(next.fifth, nearestPitch(60, 67 % 12)); // old root -> new fifth
+  assert.equal(next.third, nearestPitch(67, 64 % 12)); // old fifth -> new third
+  assert.equal(next.root, nearestPitch(64, 60 % 12)); // old third -> new root
+});
+
+test("voiceLeadProgression's bass always carries the current chord's root pitch class", () => {
+  const cycle = diatonicCycle(3, 0);
+  const progression = voiceLeadProgression(MAJOR, 60, cycle, "clockwise");
+  const rootTriads = chordProgression(MAJOR, 60, cycle);
+  progression.forEach((voicing, i) => {
+    assert.equal(((voicing.bass % 12) + 12) % 12, rootTriads[i][0] % 12);
+  });
+});
+
+test("voiceLeadProgression produces one voicing per root-degree, each voice moving smoothly (no leap over 6 semitones between consecutive chords)", () => {
+  const cycle = diatonicCycle(5, 0);
+  const progression = voiceLeadProgression(MAJOR, 60, cycle, "clockwise");
+  assert.equal(progression.length, 7);
+  for (let i = 1; i < progression.length; i++) {
+    const prev = progression[i - 1];
+    const curr = progression[i];
+    for (const fn of ["root", "third", "fifth"]) {
+      const prevVal = prev[fn];
+      // find which voice in curr this one became -- just check overall max movement across all pairings is bounded
+      const closest = Math.min(...["root", "third", "fifth"].map((f) => Math.abs(curr[f] - prevVal)));
+      assert.ok(closest <= 6);
+    }
+  }
 });

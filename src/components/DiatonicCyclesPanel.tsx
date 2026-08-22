@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { diatonicCycle, binomialCycle, chordProgression, type CycleType } from "../core/diatonicHarmony";
+import {
+  diatonicCycle,
+  binomialCycle,
+  chordProgression,
+  voiceLeadProgression,
+  type CycleType,
+  type TransformDirection,
+  type Voicing,
+} from "../core/diatonicHarmony";
 import { intervalCellScale } from "../core/scales";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
@@ -21,11 +29,17 @@ function chordLabel(triad: readonly number[]): string {
   return triad.map(noteName).join("-");
 }
 
+function voicingToArray(voicing: Voicing): number[] {
+  return [voicing.bass, voicing.root, voicing.third, voicing.fifth];
+}
+
 export default function DiatonicCyclesPanel() {
   const [root, setRoot] = useState(60);
   const [firstCycle, setFirstCycle] = useState<CycleType>(5);
   const [useBinomial, setUseBinomial] = useState(false);
   const [secondCycle, setSecondCycle] = useState<CycleType>(3);
+  const [voiceLead, setVoiceLead] = useState(false);
+  const [direction, setDirection] = useState<TransformDirection>("clockwise");
 
   const [bpm, setBpm] = useState(100);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -37,11 +51,19 @@ export default function DiatonicCyclesPanel() {
     () => (useBinomial ? binomialCycle(firstCycle, secondCycle) : diatonicCycle(firstCycle)),
     [useBinomial, firstCycle, secondCycle],
   );
-  const progression = useMemo(() => chordProgression(MAJOR_SCALE, root, rootDegrees), [root, rootDegrees]);
+  const stackedProgression = useMemo(() => chordProgression(MAJOR_SCALE, root, rootDegrees), [root, rootDegrees]);
+  const voiceLedProgression = useMemo(
+    () => voiceLeadProgression(MAJOR_SCALE, root, rootDegrees, direction),
+    [root, rootDegrees, direction],
+  );
+  const progression: number[][] = useMemo(
+    () => (voiceLead ? voiceLedProgression.map(voicingToArray) : stackedProgression),
+    [voiceLead, voiceLedProgression, stackedProgression],
+  );
 
   const notes: NoteEvent[] = useMemo(() => {
-    return progression.flatMap((triad, i) =>
-      triad.map((midiNote, voice) => ({
+    return progression.flatMap((chord, i) =>
+      chord.map((midiNote, voice) => ({
         midiNote,
         startUnits: i,
         durationUnits: 0.9,
@@ -137,6 +159,9 @@ export default function DiatonicCyclesPanel() {
         gives C-E-G-B-D-F-A; the cycle of the seventh is purely descending stepwise motion, "a purely
         contrapuntal derivation" (p.363-369) — all three confirmed against real music theory before
         any code was written. A binomial progression concatenates two full cycles into 14 chords.
+        Voice-leading (Sections C-D) reassigns each of the 3 upper voices to a new function in the
+        next chord — clockwise sends root→third→fifth→root; counterclockwise sends root→fifth→third→
+        root — placed at the nearest octave, plus a constant bass doubling the root (p.376-381).
       </p>
       <div className="schillinger__row">
         <label>
@@ -168,6 +193,21 @@ export default function DiatonicCyclesPanel() {
                   {CYCLE_LABELS[c]}
                 </option>
               ))}
+            </select>
+          </label>
+        )}
+      </div>
+      <div className="schillinger__row">
+        <label>
+          <input type="checkbox" checked={voiceLead} onChange={(e) => setVoiceLead(e.target.checked)} />
+          Voice-led (4-part: bass + 3 transformed upper voices)
+        </label>
+        {voiceLead && (
+          <label>
+            Direction
+            <select value={direction} onChange={(e) => setDirection(e.target.value as TransformDirection)}>
+              <option value="clockwise">Clockwise (root→third→fifth→root)</option>
+              <option value="counterclockwise">Counterclockwise (root→fifth→third→root)</option>
             </select>
           </label>
         )}
