@@ -1,11 +1,10 @@
 import "./AppHeader.css";
 
-export type AppMode = "tour" | "motif" | "compose";
+export type AppMode = "tour" | "motif";
 
 const MODES: { mode: AppMode; label: string; href: string }[] = [
   { mode: "tour", label: "Chapter Tour", href: "#/" },
   { mode: "motif", label: "Motif Explorer", href: "#motif" },
-  { mode: "compose", label: "Compose", href: "#compose" },
 ];
 
 export default function AppHeader({ active }: { active: AppMode }) {

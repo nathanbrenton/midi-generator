@@ -4,8 +4,7 @@
   grid-template-areas:
     ".    up    ."
     "left roll  right"
-    ".    down  ."
-    "cap  cap   cap";
+    ".    down  .";
   align-items: center;
   justify-items: center;
   gap: 0.4rem 0.6rem;
@@ -44,12 +43,4 @@
 
 .midi-preview__arrow--right {
   grid-area: right;
-}
-
-.midi-preview__caption {
-  grid-area: cap;
-  font-family: ui-monospace, monospace;
-  font-size: 0.8rem;
-  letter-spacing: 0.01em;
-  color: color-mix(in srgb, currentColor 70%, transparent);
 }

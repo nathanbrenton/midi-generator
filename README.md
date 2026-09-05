@@ -17,115 +17,81 @@ npm run dev
 
 The main app (below) is a chapter-by-chapter tour of the books, one panel
 per figure. **The Motif Explorer** (`src/pages/MotifExplorerPage.tsx`, at
-the `#motif` URL) is a second, separate page with a different purpose: not
-educational, an immediate compositional workbench for building and
-auditioning one short musical idea at a time. It's reached via a plain
-`location.hash` check in `App.tsx` (`useHashRoute.ts`) — no router, matching
-the rest of the project's zero-dependency approach — and is the first
-keyboard-driven surface in the codebase: **←/→** slides the motif's length
-window, **↑/↓** browses its circular-permutation rotations (Ch. 9), and
-**space** plays/stops, all guarded to no-op while a text/number input has
-focus.
+the `#motif` URL, switchable via the sticky `AppHeader`) is a second,
+separate page with a different purpose: not educational, an immediate
+compositional workbench for building and auditioning one short musical
+idea at a time. It's reached via a plain `location.hash` check in
+`App.tsx` (`useHashRoute.ts`) — no router, matching the rest of the
+project's zero-dependency approach.
+
+**Deliberately monophonic and rhythm-only for now.** This page (and a
+short-lived standalone "Compose" mode that briefly existed alongside it)
+had drifted toward exposing everything at once — voices, scale, multiple
+generators' worth of options — which cuts against the actual goal:
+building the UI back up in the *same order* Schillinger's own books
+introduce the ideas, starting with Book I's rhythm. So it was
+consolidated to one page and cut back down to a single looping monophonic
+resultant (every attack is a short click, GM closed hi-hat on channel
+10) — voices and scale (Book II/Ch. 7 territory) are a deliberate, later
+step, not missing by accident.
+
+**Keyboard, the first in the codebase**: **←/→** slides the motif's length
+window; **↑/↓** progressively introduces rests — `restCombinations` (built
+earlier for sample analysis) enumerates every way of choosing exactly N of
+the current window's positions to go silent, holding their position and
+duration fixed; concatenating that across every rest count from 0 up to
+"all positions" gives one continuous, steppable sequence — pressing up
+from a clean loop introduces one rest, walks through every single-rest
+position, then moves on to two-rest combinations, and so on. (An earlier
+pass here had up/down browsing circular-permutation *rotations* instead —
+that was this project's own drift from the original request, corrected
+during consolidation.) **Space** plays/stops. All three are guarded to
+no-op while a text/number input has focus.
 
 **Layout: the piano roll is the whole point, so almost every parameter is
-hidden by default.** A Logic-style transport bar sits above the roll —
-Play/Pause, the generators/case selector (2 or 3 generators, then the
-active resultant), a compact cycle-length readout, Tempo, and an overflow
-(`⋯`) menu holding Download MIDI, kept a couple of clicks away rather than
-a primary button. The remaining four parameter groups (Extend, Length,
-Voices, Scale) live behind a slim rail of buttons below that; clicking one
-opens a floating panel next to the rail without shifting or shrinking the
-stage — clicking the same button again, clicking outside, or pressing
-Escape closes it. Only one panel is open at a time. Built mobile-first
-(the rail becomes a horizontal button row and the flyout becomes a
-full-width inline panel below `42rem`; both switch to the side-by-side
-desktop layout above it) — a deliberate exception to this project's
-otherwise desktop-first convention (see "What's portable" below),
-specifically because this page is meant to eventually work as a
+hidden by default, and the D-pad itself carries no status text** — cycle
+info lives in the transport bar instead (below), not as a caption under
+the roll. A Logic-style transport bar sits above the roll — Play/Pause,
+the generators/case selector (2 or 3 generators, then the active
+resultant, Ch. 2A Figure 19 / `THREE_GENERATOR_CASES` Ch. 6), a compact
+cycle-length readout (units/events/rests), Tempo, and an overflow (`⋯`)
+menu holding Download MIDI, kept a couple of clicks away rather than a
+primary button. The remaining two parameter groups (Extend, Length) live
+behind a slim rail of buttons below that; clicking one opens a floating
+panel next to the rail without shifting or shrinking the stage — clicking
+the same button again, clicking outside, or pressing Escape closes it.
+Built mobile-first (the rail becomes a horizontal button row and the
+flyout becomes a full-width inline panel below `42rem`; both switch to
+the side-by-side desktop layout above it) — a deliberate exception to
+this project's otherwise desktop-first convention (see "What's portable"
+below), specifically because this page is meant to eventually work as a
 distributable mobile app.
 
 Every piece of it reuses already-tested core modules — no new `src/core`
-code was needed. **Generators/case** (in the transport bar) picks 2
-generators (any of the 19 canonical cases, Ch. 2A Figure 19) or 3
-(`THREE_GENERATOR_CASES`, Ch. 6). **Extend the
-motif** swaps in Fractioned/Expansion/Contraction/Balance via the same
+code was needed. **Extend the motif** has two independent modes: Technique
+swaps in Fractioned/Expansion/Contraction/Balance via the same
 `buildResultantForTechnique` dispatcher the main generator uses — Expansion
 is literally "append the fractioned form," Contraction "prepend" it, Balance
-"combine" them, plus a plain repeat count. **Motif length** is a sliding
-`{start, length}` window over the resultant's segments — the same mechanic
-as the main generator's "Loop a range" control, generalized here into the
-primary length control, with an added "by beats" mode that grows the window
-to the smallest number of events reaching a target beat count. **Voices**
-distributes the motif's attacks across 1-4 voices via Ch. 7's pli/pla
-mechanic (`synchronizeInstrumentalGroup`/`assignPlaces`/
-`segmentsFromAttackTimes`) — each voice is either a percussion sound
-(`PERCUSSION_VOICE_OPTIONS`) or a melodic role (Lead/Pad/Pluck, mapped to an
-oscillator type, cycling through the chosen **Scale**'s degrees). MIDI
-export is deliberately minimal for now — one plain multi-track download, no
-per-voice overrides dialog, no GM instrument/program-change support — kept
-that way on purpose to prioritize the interaction design first.
+"combine" them, plus a plain repeat count. **Higher-order growth (Ch. 10)**
+is a second, unrelated way to lengthen the same cycle: the 2 (or 3)
+generator values themselves become `higherOrderElements`'s seeds — exactly
+the book's own Figure 120 example — grown to a chosen order (capped 1-6)
+and concatenated into one long cycle; at order 4 with a 3:2 case this
+reproduces the book's classic `abbabaab`+`baababba` shape exactly, just
+spelled in durations instead of letters. The two modes are mutually
+exclusive by design (the book presents them as distinct variation
+mechanisms, not composable). **Motif length** is a sliding `{start,
+length}` window over the resultant's segments — the same mechanic as the
+main generator's "Loop a range" control, generalized here into the primary
+length control, with an added "by beats" mode that grows the window to the
+smallest number of events reaching a target beat count.
 
 **The preview itself is `src/components/MidiPreview.tsx`** — a standalone,
 reusable D-pad wrapper around `SchillingerPianoRoll` (purely presentational,
 same as the roll itself: it takes already-computed lanes and navigation
-callbacks, owns no state). Left/right arrows shift which adjacent part of
-the underlying sequence is windowed (the same "Motif length" window
-described above); up/down arrows cycle through that window's own circular
-permutations (Ch. 9). It isn't specific to Motif Explorer — any page that
-can hand it a `Resultant`-shaped window and a couple of navigation callbacks
-can reuse it.
-
-**"Extend the motif" has two independent modes.** Technique (Ch. 4-5,
-described above) grows the cycle from the actual resultant math. **Higher-
-order growth (Ch. 10)** is a second, unrelated way to lengthen the same
-cycle: the 2 (or 3) generator values themselves become `higherOrderElements`'s
-seeds — exactly the book's own Figure 120 example, just using the active
-case's own numbers instead of an arbitrary `a`/`b` — grown to a chosen order
-(capped 1-6, matching `HigherOrderPermutationsPanel`'s own established cap)
-and concatenated into one long cycle. At order 4 with a 3:2 case this
-reproduces the book's classic `abbabaab`+`baababba` shape exactly, just
-spelled in durations (`3,2` in place of `a,b`) instead of letters; the same
-concatenation generalizes cleanly to 3 seeds for three-generator mode,
-verified by hand. The two modes are mutually exclusive by design (the
-book presents them as distinct variation mechanisms, not composable) — the
-"Motif length" window and rotation browsing below work identically on top
-of either one's output.
-
-## Switching modes
-
-Three modes share the app now — the chapter tour (`#/`, the default),
-Motif Explorer (`#motif`), and Compose (`#compose`) — via a sticky
-`AppHeader` (`src/components/AppHeader.tsx`) rendered above whichever page
-is active, so switching is always one click away regardless of scroll
-position. Still no router dependency: `App.tsx` derives the active mode
-straight from `useHashRoute()`'s hash value. Adding this meant moving the
-page-content padding that used to live on `body` (in `index.css`) onto
-each page's own top-level wrapper instead (`.app`, `.motif-page`,
-`.compose-page`) — a sticky header needs to sit flush against the true
-top of the viewport, which a padded `body` would otherwise leave a gap
-above.
-
-## Compose
-
-The most minimal mode yet — deliberately built "from scratch," working
-through the Schillinger system in sequence rather than exposing everything
-at once: no scales, no polyphony, just a single looping monophonic
-resultant (Book I Ch. 2A) and the two most fundamental ways to vary it.
-**Left/right** shift which attack starts the loop — a plain rotation of
-the resultant's own segments (`circularPermutations`, Ch. 9), reused here
-for "moving through" the cycle rather than for generating distinct reorderings.
-**Up/down** progressively introduce rests: `restCombinations` (built
-earlier for sample analysis) enumerates every way of choosing exactly N of
-the current rotation's positions to go silent, holding their position and
-duration fixed; concatenating that across every rest count from 0 up to
-"all positions" gives one continuous, orderable sequence to step through —
-pressing up from a clean loop introduces one rest, then walks through every
-single-rest position before moving on to two-rest combinations, and so on.
-Every attack plays as a short click (GM closed hi-hat, channel 10) — no
-new core code beyond that combined-rest-count helper, since Compose
-reuses `generateResultant`, `circularPermutations`, `restCombinations`,
-`buildNoteEventsFromSignedSegments`, and `MidiPreview` entirely as-is.
-`src/pages/ComposePage.tsx`.
+callbacks, owns no state, and no longer accepts caption text). It isn't
+specific to Motif Explorer — any page that can hand it lanes and a couple
+of navigation callbacks can reuse it.
 
 ## The theory, briefly
 

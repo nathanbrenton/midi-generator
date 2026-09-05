@@ -2,46 +2,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BINARY_SYNCHRONIZATION_CASES, type Resultant, type ResultantSegment } from "../core/resultant";
 import { buildResultantForTechnique, type Technique } from "../core/technique";
 import { THREE_GENERATOR_CASES, buildTheme } from "../core/threeGenerators";
-import { circularPermutations } from "../core/permutations";
 import { computeLoopTimeSignatureOptions } from "../core/timeSignature";
-import { synchronizeInstrumentalGroup, assignPlaces, segmentsFromAttackTimes } from "../core/instrumentalInterference";
 import { higherOrderElements } from "../core/higherOrderPermutations";
+import { restCombinations, buildNoteEventsFromSignedSegments } from "../core/sampleAnalysis";
 import { PERCUSSION_VOICE_OPTIONS, GM_DRUM_CHANNEL } from "../core/percussion";
-import { SCALE_PRESETS, symmetricDivisionScale, intervalCellScale, midiNoteForDegree, type PitchScale } from "../core/scales";
-import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
 import { type PianoRollLane } from "../components/SchillingerPianoRoll";
 import MidiPreview from "../components/MidiPreview";
 import "../components/SchillingerGenerator.css";
 import "./MotifExplorerPage.css";
 
-type MelodicTimbre = "lead" | "pad" | "pluck";
+const CLICK_NOTE = PERCUSSION_VOICE_OPTIONS.find((p) => p.label === "Closed hi-hat")!.midiNote;
 
-const MELODIC_TIMBRES: { value: MelodicTimbre; label: string; oscillator: OscillatorType }[] = [
-  { value: "lead", label: "Lead", oscillator: "sine" },
-  { value: "pad", label: "Pad", oscillator: "triangle" },
-  { value: "pluck", label: "Pluck", oscillator: "sawtooth" },
-];
-
-interface PercussionVoiceSlot {
-  kind: "percussion";
-  percussionIndex: number;
-}
-interface MelodicVoiceSlot {
-  kind: "melodic";
-  timbre: MelodicTimbre;
-  octaveOffset: number;
-}
-type VoiceSlot = PercussionVoiceSlot | MelodicVoiceSlot;
-
-const VOICE_PALETTE = [
-  { color: "#3d7ddb", highlight: "#7fb0ef" },
-  { color: "#c9932f", highlight: "#e8b95c" },
-  { color: "#5cb85c", highlight: "#8fd68f" },
-  { color: "#b85ccb", highlight: "#d68fe0" },
-];
-
-/** Rebuilds cycleLength/attackPoints from an ordered segment list — used after windowing/rotating/repeating a resultant. */
+/** Rebuilds cycleLength/attackPoints from an ordered segment list — used after windowing/repeating a resultant. */
 function resultantFromSegments(segments: ResultantSegment[]): Resultant {
   let cursor = 0;
   const attackPoints: number[] = [];
@@ -52,83 +25,29 @@ function resultantFromSegments(segments: ResultantSegment[]): Resultant {
   return { cycleLength: cursor, segments, attackPoints };
 }
 
-function voiceLabel(slot: VoiceSlot, index: number): string {
-  if (slot.kind === "percussion") return PERCUSSION_VOICE_OPTIONS[slot.percussionIndex].label;
-  return `${MELODIC_TIMBRES.find((t) => t.value === slot.timbre)!.label} ${index + 1}`;
-}
-
-interface VoiceBuildResult {
-  notes: NoteEvent[];
-  totalUnits: number;
-  resultantRepeats: number;
-  lanes: PianoRollLane[];
-}
-
 /**
- * Distributes a motif's attacks across N voices via Book I Ch.7's pli/pla
- * mechanic (`synchronizeInstrumentalGroup`/`assignPlaces`): each voice is a
- * "place," attacks cycle round-robin across them, and the whole thing
- * realigns after `resultantRepeats` passes of the motif. Works uniformly
- * for any voice count, including 1 (which trivially resolves to every
- * attack going to the single voice, no repeats needed).
+ * Every way of marking some of `durations`' positions as rests, ordered by
+ * how many rests (none first): `restCombinations` (built for sample
+ * analysis, Ch.9-adjacent) at every count from 0 up to "all positions,"
+ * concatenated into one steppable list. Up/down browsing this list is what
+ * "introduce rests" (the original midi-preview request) actually meant —
+ * a prior pass here had used circular-permutation rotation browsing
+ * instead, which was this project's own drift from that request.
  */
-function buildVoices(motif: Resultant, voices: VoiceSlot[], scale: PitchScale, rootMidiNote: number): VoiceBuildResult {
-  const attackCount = motif.segments.length;
-  const sync = synchronizeInstrumentalGroup(attackCount, voices.length);
-  const places = assignPlaces(attackCount, voices.length);
-  const repeatedSegments = Array.from({ length: sync.resultantRepeats }, () => motif.segments).flat();
-
-  const perVoiceTimes: number[][] = voices.map(() => []);
-  let cursor = 0;
-  for (let i = 0; i < repeatedSegments.length; i++) {
-    perVoiceTimes[places[i]].push(cursor);
-    cursor += repeatedSegments[i].duration;
+function allRestVariations(durations: readonly number[]): number[][] {
+  const variations: number[][] = [];
+  for (let restCount = 0; restCount <= durations.length; restCount++) {
+    variations.push(...restCombinations(durations, restCount));
   }
-  const totalUnits = cursor;
-
-  const notes: NoteEvent[] = [];
-  const lanes: PianoRollLane[] = voices.map((slot, voiceIndex) => {
-    const times = perVoiceTimes[voiceIndex];
-    const segments = times.length > 0 ? segmentsFromAttackTimes(times, totalUnits) : [];
-    const palette = VOICE_PALETTE[voiceIndex % VOICE_PALETTE.length];
-
-    segments.forEach((segment, i) => {
-      const start = times[i];
-      if (slot.kind === "percussion") {
-        notes.push({
-          midiNote: PERCUSSION_VOICE_OPTIONS[slot.percussionIndex].midiNote,
-          startUnits: start,
-          durationUnits: segment.duration * 0.5,
-          velocity: 100,
-          voice: voiceIndex,
-          channel: GM_DRUM_CHANNEL,
-        });
-      } else {
-        const degreeIndex = i % scale.degrees.length;
-        notes.push({
-          midiNote: midiNoteForDegree(scale, rootMidiNote + slot.octaveOffset * 12, degreeIndex),
-          startUnits: start,
-          durationUnits: segment.duration * 0.85,
-          velocity: 96,
-          voice: voiceIndex,
-        });
-      }
-    });
-
-    return {
-      label: voiceLabel(slot, voiceIndex),
-      color: palette.color,
-      highlight: palette.highlight,
-      segments: segments.map((segment) => ({ duration: segment.duration })),
-    };
-  });
-
-  return { notes, totalUnits, resultantRepeats: sync.resultantRepeats, lanes };
+  return variations;
 }
 
-type ScaleMode = "preset" | "division" | "cell";
+type ExtendMode = "technique" | "growth";
 
 export default function MotifExplorerPage() {
+  // Deliberately monophonic, rhythm-only for now: "build this out in the
+  // same order Schillinger's own chapters introduce it," starting with
+  // Book I. Voices/scale (Ch. 7, Book II) come back later, in sequence.
   const [generatorCount, setGeneratorCount] = useState<2 | 3>(2);
   const [caseIndex, setCaseIndex] = useState(0);
   const [threeCaseIndex, setThreeCaseIndex] = useState(0);
@@ -149,7 +68,7 @@ export default function MotifExplorerPage() {
   // exactly as the book's own Figure 120 example uses tiny numeric seeds --
   // growing them concatenates into a much longer cycle to browse, e.g. the
   // classic "abbabaab" + "baababba" at order 4 for two seeds.
-  const [extendMode, setExtendMode] = useState<"technique" | "growth">("technique");
+  const [extendMode, setExtendMode] = useState<ExtendMode>("technique");
   const [growthOrder, setGrowthOrder] = useState(2);
 
   const growthSeeds = useMemo(
@@ -197,79 +116,43 @@ export default function MotifExplorerPage() {
     return Math.max(1, count);
   }, [lengthMode, loopSelection.length, targetBeats, repeatedResultant, clampedStart, totalSegments]);
 
-  const windowSegments = useMemo(
-    () => repeatedResultant.segments.slice(clampedStart, clampedStart + windowLength),
+  const windowDurations = useMemo(
+    () => repeatedResultant.segments.slice(clampedStart, clampedStart + windowLength).map((s) => s.duration),
     [repeatedResultant, clampedStart, windowLength],
   );
 
-  // Rotation (circular-permutation) browsing of the current window.
-  const rotationOrder = useMemo(
-    () => circularPermutations(windowSegments.map((_, i) => i)),
-    [windowSegments],
+  // Up/down browsing of which of the current window's attacks are rests --
+  // restCombinations at every rest count from 0 up to "all positions,"
+  // concatenated into one steppable list (see allRestVariations above).
+  const restVariations = useMemo(() => allRestVariations(windowDurations), [windowDurations]);
+  const [restIndex, setRestIndex] = useState(0);
+  useEffect(() => setRestIndex(0), [clampedStart, windowLength]);
+
+  const activeSigned = restVariations[Math.min(restIndex, restVariations.length - 1)];
+  const activeRestCount = activeSigned.filter((v) => v < 0).length;
+  const totalUnits = useMemo(() => activeSigned.reduce((sum, v) => sum + Math.abs(v), 0), [activeSigned]);
+
+  const notes = useMemo(
+    () =>
+      buildNoteEventsFromSignedSegments(activeSigned, CLICK_NOTE, 0, 100).map((note) => ({ ...note, channel: GM_DRUM_CHANNEL })),
+    [activeSigned],
   );
-  const [variationIndex, setVariationIndex] = useState(0);
-  useEffect(() => setVariationIndex(0), [clampedStart, windowLength]);
 
-  const activeSegments = useMemo(() => {
-    if (variationIndex === 0) return windowSegments;
-    return rotationOrder[variationIndex % rotationOrder.length].map((i) => windowSegments[i]);
-  }, [windowSegments, rotationOrder, variationIndex]);
-
-  const activeMotif = useMemo(() => resultantFromSegments(activeSegments), [activeSegments]);
-
-  // Voices, distributed across the motif's attacks via pli/pla (Book I Ch.7).
-  const [voices, setVoices] = useState<VoiceSlot[]>([
-    { kind: "percussion", percussionIndex: 0 },
-    { kind: "melodic", timbre: "lead", octaveOffset: 0 },
-  ]);
-
-  function replaceVoice(index: number, slot: VoiceSlot) {
-    setVoices((vs) => vs.map((v, i) => (i === index ? slot : v)));
-  }
-  function addVoice() {
-    setVoices((vs) => (vs.length >= 4 ? vs : [...vs, { kind: "melodic", timbre: "lead", octaveOffset: 0 }]));
-  }
-  function removeVoice(index: number) {
-    setVoices((vs) => (vs.length <= 1 ? vs : vs.filter((_, i) => i !== index)));
-  }
-
-  // Scale.
-  const [scaleMode, setScaleMode] = useState<ScaleMode>("preset");
-  const [presetIndex, setPresetIndex] = useState(4);
-  const [divisionN, setDivisionN] = useState(7);
-  const [cellText, setCellText] = useState("2,2,1,2,2,2,1");
-  const [rootMidiNote, setRootMidiNote] = useState(60);
-
-  const scale: PitchScale = useMemo(() => {
-    if (scaleMode === "division") {
-      try {
-        return symmetricDivisionScale(divisionN);
-      } catch {
-        return SCALE_PRESETS[presetIndex].build();
-      }
-    }
-    if (scaleMode === "cell") {
-      const cell = cellText
-        .split(",")
-        .map((s) => Number(s.trim()))
-        .filter((n) => Number.isInteger(n) && n > 0);
-      try {
-        return cell.length > 0 ? intervalCellScale(cell) : SCALE_PRESETS[presetIndex].build();
-      } catch {
-        return SCALE_PRESETS[presetIndex].build();
-      }
-    }
-    return SCALE_PRESETS[presetIndex].build();
-  }, [scaleMode, presetIndex, divisionN, cellText]);
-
-  const voiceBuild = useMemo(() => buildVoices(activeMotif, voices, scale, rootMidiNote), [activeMotif, voices, scale, rootMidiNote]);
-
-  const timeSignatureOptions = useMemo(
-    () => computeLoopTimeSignatureOptions(voiceBuild.totalUnits),
-    [voiceBuild.totalUnits],
+  const lanes: PianoRollLane[] = useMemo(
+    () => [
+      {
+        label: generatorCount === 3 ? activeThreeCase.label : activeCase.label,
+        color: "#3d7ddb",
+        highlight: "#7fb0ef",
+        segments: activeSigned.map((v) => ({ duration: Math.abs(v), rest: v < 0 })),
+      },
+    ],
+    [generatorCount, activeThreeCase, activeCase, activeSigned],
   );
+
+  const timeSignatureOptions = useMemo(() => computeLoopTimeSignatureOptions(totalUnits), [totalUnits]);
   const [timeSignatureIndex, setTimeSignatureIndex] = useState(0);
-  useEffect(() => setTimeSignatureIndex(0), [timeSignatureOptions.length, voiceBuild.totalUnits]);
+  useEffect(() => setTimeSignatureIndex(0), [timeSignatureOptions.length, totalUnits]);
   const selectedTimeSignature = timeSignatureOptions[Math.min(timeSignatureIndex, timeSignatureOptions.length - 1)];
 
   // Playback.
@@ -281,27 +164,23 @@ export default function MotifExplorerPage() {
   const cycleStartRef = useRef(0);
 
   const secondsPerUnit = 60 / bpm;
-  const cycleSeconds = voiceBuild.totalUnits * secondsPerUnit;
+  const cycleSeconds = totalUnits * secondsPerUnit;
 
   function scheduleLoopPass(token: number) {
     const context = audioContextRef.current;
-    if (!context || token !== playTokenRef.current || voiceBuild.notes.length === 0) return;
+    if (!context || token !== playTokenRef.current) return;
 
     const cycleStart = context.currentTime;
     cycleStartRef.current = cycleStart;
-    for (const note of voiceBuild.notes) {
-      const slot = voices[note.voice];
-      const oscillatorType: OscillatorType =
-        slot?.kind === "percussion" ? "square" : MELODIC_TIMBRES.find((t) => t.value === slot?.timbre)!.oscillator;
-
+    for (const note of notes) {
       const oscillator = context.createOscillator();
       const gain = context.createGain();
-      oscillator.type = oscillatorType;
+      oscillator.type = "square";
       oscillator.frequency.value = 440 * Math.pow(2, (note.midiNote - 69) / 12);
 
       const noteStart = cycleStart + note.startUnits * secondsPerUnit;
       const noteEnd = noteStart + note.durationUnits * secondsPerUnit;
-      gain.gain.setValueAtTime(note.velocity / 400, noteStart);
+      gain.gain.setValueAtTime(0.12, noteStart);
       gain.gain.exponentialRampToValueAtTime(0.001, noteEnd);
 
       oscillator.connect(gain);
@@ -328,7 +207,6 @@ export default function MotifExplorerPage() {
       stopPlayback();
       return;
     }
-    if (voiceBuild.notes.length === 0) return;
     audioContextRef.current = new AudioContext();
     setIsPlaying(true);
     scheduleLoopPass(++playTokenRef.current);
@@ -346,7 +224,7 @@ export default function MotifExplorerPage() {
     audioContextRef.current = new AudioContext();
     scheduleLoopPass(++playTokenRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voiceBuild.notes, secondsPerUnit, cycleSeconds]);
+  }, [notes, secondsPerUnit, cycleSeconds]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -364,8 +242,8 @@ export default function MotifExplorerPage() {
   }, [isPlaying, cycleSeconds]);
 
   function downloadMidi() {
-    if (voiceBuild.notes.length === 0) return;
-    const bytes = buildMidiFile(voiceBuild.notes, { bpm, ticksPerUnit: 120 });
+    if (notes.length === 0) return;
+    const bytes = buildMidiFile(notes, { bpm, ticksPerUnit: 120 });
     const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
     const blob = new Blob([buffer], { type: "audio/midi" });
     const url = URL.createObjectURL(blob);
@@ -376,18 +254,17 @@ export default function MotifExplorerPage() {
     URL.revokeObjectURL(url);
   }
 
-  // Keyboard shortcuts: Left/Right slide the window, Up/Down browse rotations, Space plays/stops.
+  // Keyboard shortcuts: Left/Right slide the window, Up/Down browse rests, Space plays/stops.
   // A ref holds the latest handlers so the listener can attach once on mount without going stale.
   const handlersRef = useRef({
     moveWindow: (_delta: number) => {},
-    cycleVariation: (_delta: number) => {},
+    shiftRest: (_delta: number) => {},
     togglePlayback: () => {},
   });
   handlersRef.current = {
     moveWindow: (delta: number) =>
       setLoopSelection((sel) => ({ ...sel, start: Math.max(0, Math.min(sel.start + delta, totalSegments - 1)) })),
-    cycleVariation: (delta: number) =>
-      setVariationIndex((v) => (v + delta + rotationOrder.length) % rotationOrder.length),
+    shiftRest: (delta: number) => setRestIndex((i) => (i + delta + restVariations.length) % restVariations.length),
     togglePlayback,
   };
 
@@ -395,7 +272,7 @@ export default function MotifExplorerPage() {
   // button, closed by default, so the piano roll stays the visual focus.
   // "Which resultant" (generators + case) is prominent in the transport bar
   // instead, so it isn't one of these hidden panels.
-  type PanelKey = "extend" | "length" | "voices" | "scale";
+  type PanelKey = "extend" | "length";
   const [activePanel, setActivePanel] = useState<PanelKey | null>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const flyoutRef = useRef<HTMLDivElement>(null);
@@ -450,11 +327,11 @@ export default function MotifExplorerPage() {
           break;
         case "ArrowUp":
           e.preventDefault();
-          handlersRef.current.cycleVariation(-1);
+          handlersRef.current.shiftRest(1);
           break;
         case "ArrowDown":
           e.preventDefault();
-          handlersRef.current.cycleVariation(1);
+          handlersRef.current.shiftRest(-1);
           break;
         case " ":
         case "Spacebar":
@@ -484,7 +361,7 @@ export default function MotifExplorerPage() {
   return (
     <main className="motif-page">
       <div className="motif-transport">
-        <button type="button" className="motif-transport__play" onClick={togglePlayback} disabled={voiceBuild.notes.length === 0 && !isPlaying}>
+        <button type="button" className="motif-transport__play" onClick={togglePlayback}>
           {isPlaying ? "❚❚" : "▶"}
         </button>
 
@@ -518,7 +395,13 @@ export default function MotifExplorerPage() {
         </div>
 
         <div className="motif-transport__info">
-          {voiceBuild.totalUnits} units · {activeMotif.segments.length} events
+          {totalUnits} units · {activeSigned.length} events
+          {activeRestCount > 0 && (
+            <>
+              {" "}
+              · {activeRestCount} rest{activeRestCount === 1 ? "" : "s"}
+            </>
+          )}
         </div>
 
         <div className="motif-transport__spacer" />
@@ -534,7 +417,7 @@ export default function MotifExplorerPage() {
           </button>
           {overflowOpen && (
             <div className="motif-transport__menu">
-              <button type="button" onClick={downloadMidi} disabled={voiceBuild.notes.length === 0}>
+              <button type="button" onClick={downloadMidi} disabled={notes.length === 0}>
                 Download MIDI
               </button>
             </div>
@@ -546,8 +429,6 @@ export default function MotifExplorerPage() {
         <div className="motif-rail" ref={railRef}>
           {panelButton("extend", "Extend")}
           {panelButton("length", "Length")}
-          {panelButton("voices", "Voices")}
-          {panelButton("scale", "Scale")}
         </div>
 
         {activePanel && (
@@ -558,7 +439,7 @@ export default function MotifExplorerPage() {
                 <div className="schillinger__row">
                   <label>
                     Mode
-                    <select value={extendMode} onChange={(e) => setExtendMode(e.target.value as "technique" | "growth")}>
+                    <select value={extendMode} onChange={(e) => setExtendMode(e.target.value as ExtendMode)}>
                       <option value="technique">Technique (Ch. 4-5)</option>
                       <option value="growth">Higher-order growth (Ch. 10)</option>
                     </select>
@@ -667,150 +548,6 @@ export default function MotifExplorerPage() {
                     </label>
                   </div>
                 )}
-                <div className="schillinger__readout">
-                  window {activeSegments.map((s) => s.duration).join(" ")} ({activeMotif.cycleLength} beats,{" "}
-                  {activeSegments.length} events)
-                  {variationIndex > 0 && (
-                    <>
-                      {" "}
-                      · rotation {variationIndex + 1}/{rotationOrder.length}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {activePanel === "voices" && (
-              <div className="motif-flyout__panel">
-                <h3>Voices</h3>
-                {voices.map((slot, i) => (
-                  <div className="schillinger__row" key={i}>
-                    <label>
-                      Voice {i + 1}
-                      <select
-                        value={slot.kind}
-                        onChange={(e) =>
-                          replaceVoice(
-                            i,
-                            e.target.value === "percussion"
-                              ? { kind: "percussion", percussionIndex: 0 }
-                              : { kind: "melodic", timbre: "lead", octaveOffset: 0 },
-                          )
-                        }
-                      >
-                        <option value="percussion">Percussion</option>
-                        <option value="melodic">Melodic</option>
-                      </select>
-                    </label>
-                    {slot.kind === "percussion" ? (
-                      <label>
-                        Sound
-                        <select
-                          value={slot.percussionIndex}
-                          onChange={(e) => replaceVoice(i, { kind: "percussion", percussionIndex: Number(e.target.value) })}
-                        >
-                          {PERCUSSION_VOICE_OPTIONS.map((p, pi) => (
-                            <option key={p.label} value={pi}>
-                              {p.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    ) : (
-                      <>
-                        <label>
-                          Timbre
-                          <select
-                            value={slot.timbre}
-                            onChange={(e) => replaceVoice(i, { ...slot, timbre: e.target.value as MelodicTimbre })}
-                          >
-                            {MELODIC_TIMBRES.map((t) => (
-                              <option key={t.value} value={t.value}>
-                                {t.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label>
-                          Octave
-                          <input
-                            type="number"
-                            min={-2}
-                            max={2}
-                            value={slot.octaveOffset}
-                            onChange={(e) => replaceVoice(i, { ...slot, octaveOffset: Number(e.target.value) })}
-                          />
-                        </label>
-                      </>
-                    )}
-                    <button type="button" onClick={() => removeVoice(i)} disabled={voices.length <= 1}>
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <div className="schillinger__actions">
-                  <button type="button" onClick={addVoice} disabled={voices.length >= 4}>
-                    + Add voice
-                  </button>
-                </div>
-                <div className="schillinger__readout">
-                  {activeMotif.segments.length} attacks distributed by pli/pla across {voices.length} voice
-                  {voices.length === 1 ? "" : "s"}
-                  {voiceBuild.resultantRepeats > 1 && <> · motif repeats {voiceBuild.resultantRepeats}× before voices realign</>}
-                </div>
-              </div>
-            )}
-
-            {activePanel === "scale" && (
-              <div className="motif-flyout__panel">
-                <h3>Scale</h3>
-                <div className="schillinger__row">
-                  <label>
-                    Mode
-                    <select value={scaleMode} onChange={(e) => setScaleMode(e.target.value as ScaleMode)}>
-                      <option value="preset">Preset</option>
-                      <option value="division">Equal division</option>
-                      <option value="cell">Interval cell</option>
-                    </select>
-                  </label>
-                  {scaleMode === "preset" && (
-                    <label>
-                      Scale
-                      <select value={presetIndex} onChange={(e) => setPresetIndex(Number(e.target.value))}>
-                        {SCALE_PRESETS.map((p, i) => (
-                          <option key={p.name} value={i}>
-                            {p.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                  {scaleMode === "division" && (
-                    <label>
-                      Notes
-                      <input type="number" min={1} max={12} value={divisionN} onChange={(e) => setDivisionN(Number(e.target.value))} />
-                    </label>
-                  )}
-                  {scaleMode === "cell" && (
-                    <label>
-                      Cell (semitones)
-                      <input type="text" value={cellText} onChange={(e) => setCellText(e.target.value)} />
-                    </label>
-                  )}
-                  <label>
-                    Root
-                    <input
-                      type="number"
-                      min={24}
-                      max={96}
-                      value={rootMidiNote}
-                      onChange={(e) => setRootMidiNote(Number(e.target.value))}
-                    />
-                  </label>
-                </div>
-                <div className="schillinger__readout">
-                  {scale.intervals.length}-note scale · intervals {scale.intervals.join(" ")}
-                </div>
               </div>
             )}
           </div>
@@ -820,19 +557,17 @@ export default function MotifExplorerPage() {
           <section className="motif-page__stage">
             {selectedTimeSignature && (
               <MidiPreview
-                lanes={voiceBuild.lanes}
-                cycleLength={voiceBuild.totalUnits}
+                lanes={lanes}
+                cycleLength={totalUnits}
                 timeSignature={selectedTimeSignature}
                 playheadFraction={isPlaying ? playheadFraction : undefined}
                 onShiftLeft={() => handlersRef.current.moveWindow(-1)}
                 onShiftRight={() => handlersRef.current.moveWindow(1)}
                 canShiftLeft={clampedStart > 0}
                 canShiftRight={clampedStart < totalSegments - 1}
-                onCycleUp={() => handlersRef.current.cycleVariation(-1)}
-                onCycleDown={() => handlersRef.current.cycleVariation(1)}
-                canCycle={rotationOrder.length > 1}
-                positionLabel={`window ${clampedStart + 1}-${clampedStart + windowLength} of ${totalSegments}`}
-                variationLabel={rotationOrder.length > 1 ? `rotation ${variationIndex + 1}/${rotationOrder.length}` : undefined}
+                onCycleUp={() => handlersRef.current.shiftRest(1)}
+                onCycleDown={() => handlersRef.current.shiftRest(-1)}
+                canCycle={restVariations.length > 1}
               />
             )}
           </section>
