@@ -46,6 +46,7 @@ import MelodicContinuityPanel from "./MelodicContinuityPanel";
 import OrganicMelodyPanel from "./OrganicMelodyPanel";
 import DiatonicCyclesPanel from "./DiatonicCyclesPanel";
 import SymmetricHarmonyPanel from "./SymmetricHarmonyPanel";
+import VariableDoublingsPanel from "./VariableDoublingsPanel";
 import "./SchillingerGenerator.css";
 
 const LANE_COLORS = {
@@ -886,6 +887,8 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
       <DiatonicCyclesPanel />
 
       <SymmetricHarmonyPanel />
+
+      <VariableDoublingsPanel />
 
       <section className="schillinger__section schillinger__section--wide">
         <h3>Playback (melody / percussion)</h3>

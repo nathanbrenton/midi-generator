@@ -1012,8 +1012,38 @@ exactly the *sorted union of pitch classes* across every tonic's own
 triad — confirmed against both of the book's own worked examples (major
 gives c-db-e-f#-g-a#/bb; minor gives c-db-eb-f#-g-a), and verified again
 live in the browser, byte for byte. The exact root-motion cycle labels
-connecting consecutive tonics aren't yet precisely modeled — a natural
-next step, along with Sections B-E (Three/Four/Six/Twelve Tonics).
+connecting consecutive tonics aren't yet precisely modeled. Sections B-E
+(Three/Four/Six/Twelve Tonics) need no new code — the same
+`symmetricHarmonyScale` generalizes cleanly across every tonic count; the
+book adds only qualitative recurrence-cycle properties there, no new
+checkable formula.
+
+## Variable doublings in harmony (Book V, Ch. 6)
+
+With the root always held in the bass, one of a chord's three functions
+(root/third/fifth) can be additionally doubled among the upper three
+voices — Schillinger's own comparative table (p.401): S(5)① keeps all
+three functions distinct up top (`1,3,5`); S(5)③ doubles the third
+instead, so the root disappears from the upper voices entirely (`3,3,5`);
+S(5)⑤ doubles the fifth (`3,5,5`). "Only three positions are possible" for
+③ and ⑤ — confirmed by rendering the actual page (p.401, Figure 57) since
+the doubling notation didn't survive OCR — is exactly `generalPermutations`
+(Ch. 9) applied to a 3-element multiset with one repeated pair (3!/2!=3);
+S(5)① gets the full six, since its three functions are distinct, matching
+the figure's own six-column layout. `src/core/variableDoublings.ts`:
+`VARIABLE_DOUBLING_FORMS`, `doublingPositions`/`positionCount`, and
+`buildDoublingVoicing`.
+
+**Honest scope limit**: Figure 57 also draws a *specific* registral
+spacing for each position (including "black note" unison-vs-octave
+variants and a clockwise/counterclockwise split for S(5)①'s six
+positions) that didn't resolve unambiguously even at high render
+resolution — not reproduced here. `buildDoublingVoicing` stacks each
+position's functions upward from the bass in plain close position
+instead, a reasonable but independent implementation choice, not a
+transcription of the book's own specific voicings. Figures 68-69 (the
+C3/C5/C7 transformation tables between doubling forms) are likewise not
+built, for the same reason — worth revisiting against a cleaner scan.
 
 ## Percussion mapping
 
