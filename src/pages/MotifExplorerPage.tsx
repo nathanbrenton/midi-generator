@@ -393,10 +393,17 @@ export default function MotifExplorerPage() {
 
   // Side-panel disclosure: every compositional parameter lives behind a rail
   // button, closed by default, so the piano roll stays the visual focus.
-  type PanelKey = "rhythm" | "extend" | "length" | "voices" | "scale";
+  // "Which resultant" (generators + case) is prominent in the transport bar
+  // instead, so it isn't one of these hidden panels.
+  type PanelKey = "extend" | "length" | "voices" | "scale";
   const [activePanel, setActivePanel] = useState<PanelKey | null>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const flyoutRef = useRef<HTMLDivElement>(null);
+
+  // Overflow menu (transport bar): houses Download MIDI, kept a couple of
+  // clicks away rather than a primary always-visible button.
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const overflowRef = useRef<HTMLDivElement>(null);
 
   function togglePanel(key: PanelKey) {
     setActivePanel((current) => (current === key ? null : key));
@@ -412,6 +419,16 @@ export default function MotifExplorerPage() {
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [activePanel]);
+
+  useEffect(() => {
+    if (!overflowOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      if (overflowRef.current?.contains(e.target as Node)) return;
+      setOverflowOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [overflowOpen]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -446,6 +463,7 @@ export default function MotifExplorerPage() {
           break;
         case "Escape":
           setActivePanel(null);
+          setOverflowOpen(false);
           break;
       }
     }
@@ -465,11 +483,67 @@ export default function MotifExplorerPage() {
 
   return (
     <main className="motif-page">
-      <h1>Motif Explorer</h1>
+      <div className="motif-transport">
+        <button type="button" className="motif-transport__play" onClick={togglePlayback} disabled={voiceBuild.notes.length === 0 && !isPlaying}>
+          {isPlaying ? "❚❚" : "▶"}
+        </button>
+
+        <div className="motif-transport__group">
+          <select
+            className="motif-transport__generators"
+            value={generatorCount}
+            onChange={(e) => setGeneratorCount(Number(e.target.value) as 2 | 3)}
+            aria-label="Number of generators"
+          >
+            <option value={2}>2 gen</option>
+            <option value={3}>3 gen</option>
+          </select>
+          {generatorCount === 2 ? (
+            <select value={caseIndex} onChange={(e) => setCaseIndex(Number(e.target.value))} aria-label="Resultant case">
+              {BINARY_SYNCHRONIZATION_CASES.map((c, i) => (
+                <option key={c.label} value={i}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <select value={threeCaseIndex} onChange={(e) => setThreeCaseIndex(Number(e.target.value))} aria-label="Resultant case">
+              {THREE_GENERATOR_CASES.map((c, i) => (
+                <option key={c.label} value={i}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        <div className="motif-transport__info">
+          {voiceBuild.totalUnits} units · {activeMotif.segments.length} events
+        </div>
+
+        <div className="motif-transport__spacer" />
+
+        <label className="motif-transport__tempo">
+          <input type="number" min={40} max={220} value={bpm} onChange={(e) => setBpm(Number(e.target.value))} />
+          bpm
+        </label>
+
+        <div className="motif-transport__overflow" ref={overflowRef}>
+          <button type="button" aria-label="More options" onClick={() => setOverflowOpen((v) => !v)}>
+            ⋯
+          </button>
+          {overflowOpen && (
+            <div className="motif-transport__menu">
+              <button type="button" onClick={downloadMidi} disabled={voiceBuild.notes.length === 0}>
+                Download MIDI
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="motif-workspace">
         <div className="motif-rail" ref={railRef}>
-          {panelButton("rhythm", "Rhythm")}
           {panelButton("extend", "Extend")}
           {panelButton("length", "Length")}
           {panelButton("voices", "Voices")}
@@ -478,48 +552,6 @@ export default function MotifExplorerPage() {
 
         {activePanel && (
           <div className="motif-flyout" ref={flyoutRef}>
-            {activePanel === "rhythm" && (
-              <div className="motif-flyout__panel">
-                <h3>Rhythm</h3>
-                <div className="schillinger__row">
-                  <label>
-                    Generators
-                    <select value={generatorCount} onChange={(e) => setGeneratorCount(Number(e.target.value) as 2 | 3)}>
-                      <option value={2}>2</option>
-                      <option value={3}>3</option>
-                    </select>
-                  </label>
-                  {generatorCount === 2 ? (
-                    <label>
-                      Case
-                      <select value={caseIndex} onChange={(e) => setCaseIndex(Number(e.target.value))}>
-                        {BINARY_SYNCHRONIZATION_CASES.map((c, i) => (
-                          <option key={c.label} value={i}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : (
-                    <label>
-                      Case
-                      <select value={threeCaseIndex} onChange={(e) => setThreeCaseIndex(Number(e.target.value))}>
-                        {THREE_GENERATOR_CASES.map((c, i) => (
-                          <option key={c.label} value={i}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                </div>
-                <div className="schillinger__readout">
-                  base cycle {baseResultant.cycleLength} units · {baseResultant.segments.length} events · durations{" "}
-                  {baseResultant.segments.map((s) => s.duration).join(" ")}
-                </div>
-              </div>
-            )}
-
             {activePanel === "extend" && (
               <div className="motif-flyout__panel">
                 <h3>Extend the motif</h3>
@@ -803,24 +835,6 @@ export default function MotifExplorerPage() {
                 variationLabel={rotationOrder.length > 1 ? `rotation ${variationIndex + 1}/${rotationOrder.length}` : undefined}
               />
             )}
-            <p className="motif-page__hint">
-              ←/→ slides the window · ↑/↓ browses rotations · space plays/stops
-            </p>
-            <div className="schillinger__row">
-              <label>
-                Tempo
-                <input type="number" min={40} max={220} value={bpm} onChange={(e) => setBpm(Number(e.target.value))} />
-                bpm
-              </label>
-            </div>
-            <div className="schillinger__actions">
-              <button type="button" onClick={togglePlayback} disabled={voiceBuild.notes.length === 0 && !isPlaying}>
-                {isPlaying ? "Stop" : "Play"}
-              </button>
-              <button type="button" onClick={downloadMidi} disabled={voiceBuild.notes.length === 0}>
-                Download MIDI
-              </button>
-            </div>
           </section>
         </div>
       </div>

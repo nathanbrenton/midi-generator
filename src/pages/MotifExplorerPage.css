@@ -1,49 +1,136 @@
+/* Mobile-first: base rules target a narrow viewport; the min-width block
+   below layers on the wider desktop layout (side rail, floating flyout). */
+
 .motif-page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
   max-width: 60rem;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0.75rem;
   font-family: system-ui, sans-serif;
 }
 
-.motif-page h1 {
-  font-size: 1.8rem;
-  margin: 0;
-}
-
-.motif-page__hint {
-  margin: 0;
-  font-size: 0.8rem;
-  color: color-mix(in srgb, currentColor 55%, transparent);
-}
-
-.motif-workspace {
-  position: relative;
+/* Transport bar: Logic-style summary of current settings, playback, and
+   the overflow menu. Always visible, deliberately terse. */
+.motif-transport {
   display: flex;
-  align-items: flex-start;
-  gap: 1.25rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  font-size: 0.8rem;
 }
 
-/* Every compositional parameter lives behind this rail, closed by default,
-   so the piano roll stays the visual focus (per explicit design direction). */
-.motif-rail {
+.motif-transport select,
+.motif-transport input {
+  font-size: 0.8rem;
+}
+
+.motif-transport__play {
+  width: 2.2rem;
+  height: 2.2rem;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.motif-transport__group {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.motif-transport__info {
+  color: color-mix(in srgb, currentColor 55%, transparent);
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.motif-transport__spacer {
+  flex: 1 1 0;
+  min-width: 0.5rem;
+}
+
+.motif-transport__tempo {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.motif-transport__tempo input {
+  width: 3.2rem;
+}
+
+.motif-transport__overflow {
+  position: relative;
+}
+
+.motif-transport__overflow > button {
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+.motif-transport__menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.35rem;
+  z-index: 6;
+  background: var(--bg);
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px color-mix(in srgb, black 30%, transparent);
+  padding: 0.35rem;
+  white-space: nowrap;
+}
+
+.motif-transport__menu button {
+  border: none;
+  background: transparent;
+  padding: 0.4rem 0.7rem;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.8rem;
+  border-radius: 6px;
+}
+
+.motif-transport__menu button:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+/* Workspace: rail + flyout + stage. Stacked on mobile, side-by-side on desktop. */
+.motif-workspace {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  width: 6rem;
-  flex-shrink: 0;
+  gap: 0.75rem;
+}
+
+.motif-rail {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.3rem;
 }
 
 .motif-rail__btn {
-  text-align: left;
-  padding: 0.55rem 0.7rem;
+  padding: 0.45rem 0.7rem;
   border: none;
   border-radius: 6px;
   background: transparent;
   color: color-mix(in srgb, currentColor 60%, transparent);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   cursor: pointer;
 }
 
@@ -59,17 +146,11 @@
 }
 
 .motif-flyout {
-  position: absolute;
-  left: 6.75rem;
-  top: 0;
-  z-index: 5;
-  width: 24rem;
-  max-width: calc(100vw - 9rem);
+  width: 100%;
   background: var(--bg);
   border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
   border-radius: 10px;
-  box-shadow: 0 12px 32px color-mix(in srgb, black 30%, transparent);
-  padding: 1.1rem;
+  padding: 0.9rem;
 }
 
 .motif-flyout__panel {
@@ -80,26 +161,63 @@
 
 .motif-flyout__panel h3 {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .motif-stage-wrap {
-  flex: 1;
-  display: flex;
-  justify-content: center;
+  width: 100%;
 }
 
 .motif-page__stage {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
   width: 100%;
-  padding: 1.5rem;
+  padding: 0.75rem;
   border-radius: 10px;
   background: color-mix(in srgb, currentColor 6%, transparent);
 }
 
 .motif-page__stage .midi-preview {
   width: 100%;
+}
+
+@media (min-width: 42rem) {
+  .motif-page {
+    padding: 2rem;
+  }
+
+  .motif-workspace {
+    position: relative;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1.25rem;
+  }
+
+  .motif-rail {
+    flex-direction: column;
+    width: 6rem;
+    flex-shrink: 0;
+    gap: 0.2rem;
+  }
+
+  .motif-flyout {
+    position: absolute;
+    left: 6.75rem;
+    top: 0;
+    z-index: 5;
+    width: 24rem;
+    max-width: calc(100vw - 9rem);
+    box-shadow: 0 12px 32px color-mix(in srgb, black 30%, transparent);
+  }
+
+  .motif-stage-wrap {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+
+  .motif-page__stage {
+    padding: 1.5rem;
+  }
 }
