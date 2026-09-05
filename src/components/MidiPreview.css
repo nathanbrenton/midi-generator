@@ -1,0 +1,55 @@
+.midi-preview {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    ".    up    ."
+    "left roll  right"
+    ".    down  ."
+    "cap  cap   cap";
+  align-items: center;
+  justify-items: center;
+  gap: 0.4rem 0.6rem;
+}
+
+.midi-preview__roll {
+  grid-area: roll;
+  width: 100%;
+  min-width: 0;
+}
+
+.midi-preview__arrow {
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.midi-preview__arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.midi-preview__arrow--up {
+  grid-area: up;
+}
+
+.midi-preview__arrow--down {
+  grid-area: down;
+}
+
+.midi-preview__arrow--left {
+  grid-area: left;
+}
+
+.midi-preview__arrow--right {
+  grid-area: right;
+}
+
+.midi-preview__caption {
+  grid-area: cap;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+  color: color-mix(in srgb, currentColor 70%, transparent);
+}

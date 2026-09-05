@@ -9,7 +9,8 @@ import { PERCUSSION_VOICE_OPTIONS, GM_DRUM_CHANNEL } from "../core/percussion";
 import { SCALE_PRESETS, symmetricDivisionScale, intervalCellScale, midiNoteForDegree, type PitchScale } from "../core/scales";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
-import SchillingerPianoRoll, { type PianoRollLane } from "../components/SchillingerPianoRoll";
+import { type PianoRollLane } from "../components/SchillingerPianoRoll";
+import MidiPreview from "../components/MidiPreview";
 import "../components/SchillingerGenerator.css";
 import "./MotifExplorerPage.css";
 
@@ -503,9 +504,6 @@ export default function MotifExplorerPage() {
           <div className="schillinger__row">
             <label>
               Start
-              <button type="button" onClick={() => handlersRef.current.moveWindow(-1)} disabled={clampedStart === 0}>
-                ◀
-              </button>
               <input
                 type="number"
                 min={0}
@@ -513,13 +511,6 @@ export default function MotifExplorerPage() {
                 value={clampedStart}
                 onChange={(e) => setLoopSelection((sel) => ({ ...sel, start: Number(e.target.value) }))}
               />
-              <button
-                type="button"
-                onClick={() => handlersRef.current.moveWindow(1)}
-                disabled={clampedStart >= totalSegments - 1}
-              >
-                ▶
-              </button>
             </label>
             {lengthMode === "events" ? (
               <label>
@@ -668,11 +659,20 @@ export default function MotifExplorerPage() {
 
       <section className="motif-page__stage">
         {selectedTimeSignature && (
-          <SchillingerPianoRoll
+          <MidiPreview
             lanes={voiceBuild.lanes}
             cycleLength={voiceBuild.totalUnits}
             timeSignature={selectedTimeSignature}
             playheadFraction={isPlaying ? playheadFraction : undefined}
+            onShiftLeft={() => handlersRef.current.moveWindow(-1)}
+            onShiftRight={() => handlersRef.current.moveWindow(1)}
+            canShiftLeft={clampedStart > 0}
+            canShiftRight={clampedStart < totalSegments - 1}
+            onCycleUp={() => handlersRef.current.cycleVariation(-1)}
+            onCycleDown={() => handlersRef.current.cycleVariation(1)}
+            canCycle={rotationOrder.length > 1}
+            positionLabel={`window ${clampedStart + 1}-${clampedStart + windowLength} of ${totalSegments}`}
+            variationLabel={rotationOrder.length > 1 ? `rotation ${variationIndex + 1}/${rotationOrder.length}` : undefined}
           />
         )}
         <div className="schillinger__row">

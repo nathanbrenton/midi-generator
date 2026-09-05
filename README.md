@@ -47,6 +47,19 @@ export is deliberately minimal for now — one plain multi-track download, no
 per-voice overrides dialog, no GM instrument/program-change support — kept
 that way on purpose to prioritize the interaction design first.
 
+**The preview itself is `src/components/MidiPreview.tsx`** — a standalone,
+reusable D-pad wrapper around `SchillingerPianoRoll` (purely presentational,
+same as the roll itself: it takes already-computed lanes and navigation
+callbacks, owns no state). Left/right arrows shift which adjacent part of
+the underlying sequence is windowed (the same "Motif length" window
+described above); up/down arrows cycle through that window's own circular
+permutations (Ch. 9). It isn't specific to Motif Explorer — any page that
+can hand it a `Resultant`-shaped window and a couple of navigation callbacks
+can reuse it. A natural next step (not yet built): letting the "cycle"
+being browsed grow via Expansion/Contraction or Ch. 10's higher-order
+`abbabaab...`-style variation (`higherOrderElements`), rather than only a
+fixed-length window over the plain resultant.
+
 ## The theory, briefly
 
 Schillinger's Book I builds rhythm from **interference of periodicities**:
