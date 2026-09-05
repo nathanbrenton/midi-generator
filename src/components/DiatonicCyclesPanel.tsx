@@ -5,6 +5,7 @@ import {
   stackedTriad,
   negativeStackedTriad,
   voiceLeadProgression,
+  buildPassingSixthGroups,
   type CycleType,
   type TransformDirection,
   type Voicing,
@@ -42,6 +43,7 @@ export default function DiatonicCyclesPanel() {
   const [voiceLead, setVoiceLead] = useState(false);
   const [direction, setDirection] = useState<TransformDirection>("clockwise");
   const [form, setForm] = useState<"positive" | "negative">("positive");
+  const [passingSixths, setPassingSixths] = useState(false);
 
   const [bpm, setBpm] = useState(100);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -64,9 +66,13 @@ export default function DiatonicCyclesPanel() {
     () => voiceLeadProgression(MAJOR_SCALE, root, rootDegrees, direction),
     [root, rootDegrees, direction],
   );
+  const withPassingSixths = useMemo(
+    () => (passingSixths ? buildPassingSixthGroups(voiceLedProgression) : voiceLedProgression),
+    [passingSixths, voiceLedProgression],
+  );
   const progression: number[][] = useMemo(
-    () => (voiceLead ? voiceLedProgression.map(voicingToArray) : stackedProgression),
-    [voiceLead, voiceLedProgression, stackedProgression],
+    () => (voiceLead ? withPassingSixths.map(voicingToArray) : stackedProgression),
+    [voiceLead, withPassingSixths, stackedProgression],
   );
 
   const notes: NoteEvent[] = useMemo(() => {
@@ -158,7 +164,7 @@ export default function DiatonicCyclesPanel() {
 
   return (
     <section className="schillinger__section schillinger__section--wide">
-      <h3>Diatonic Cycles (Book V, Ch. 1-2)</h3>
+      <h3>Diatonic Cycles &amp; Passing Sixth-chords (Book V, Ch. 1-2, 8)</h3>
       <p className="schillinger__hint">
         Book V opens Special Theory of Harmony — chord structures and progressions. A root-position
         triad, S(5), stacks a scale's root, third, and fifth (p.211). A "diatonic cycle" steps the
@@ -173,6 +179,10 @@ export default function DiatonicCyclesPanel() {
         negative form (Section F) builds triads downward instead of upward: from c as the root, the
         third and fifth land a third and a fifth below it — a and f — not above (p.386); voice-leading
         isn't yet extended to the negative form, so it's only available in stacked (non-voice-led) mode.
+        Chapter 8's "group with a passing sixth-chord" (G6) inserts an inversion (S(6)) between every
+        consecutive pair of chords: the passing chord keeps the first chord's own root/third/fifth
+        completely unmoved, shifting only the bass to the nearest pitch sharing the third's pitch class
+        — "3 in the bass under S(6) is a third above its preceding position" (p.415), confirmed by hand.
       </p>
       <div className="schillinger__row">
         <label>
@@ -239,6 +249,12 @@ export default function DiatonicCyclesPanel() {
               <option value="clockwise">Clockwise (root→third→fifth→root)</option>
               <option value="counterclockwise">Counterclockwise (root→fifth→third→root)</option>
             </select>
+          </label>
+        )}
+        {voiceLead && (
+          <label>
+            <input type="checkbox" checked={passingSixths} onChange={(e) => setPassingSixths(e.target.checked)} />
+            Passing sixth-chords (Ch. 8): G6 = S(5)+S(6)+S(5)+...
           </label>
         )}
       </div>

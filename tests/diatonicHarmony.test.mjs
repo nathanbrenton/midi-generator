@@ -10,6 +10,8 @@ import {
   nearestPitch,
   transformVoicing,
   voiceLeadProgression,
+  passingSixthChord,
+  buildPassingSixthGroups,
 } from "../src/core/diatonicHarmony.ts";
 import { compositionCount } from "../src/core/symmetricScales.ts";
 import { intervalCellScale } from "../src/core/scales.ts";
@@ -181,4 +183,34 @@ test("negativeStackedTriad wraps octaves correctly for a root degree near the bo
   const triad = negativeStackedTriad(MAJOR, 60, 1); // D4=62
   // D, and going down two more scale-degrees each time: B3, G3
   assert.deepEqual(triad, [62, 59, 55]);
+});
+
+// Chapter 8, Section A (Groups with Passing Sixth-chords, p.415-416).
+test("passingSixthChord keeps root/third/fifth unmoved and puts the third's pitch class in the bass, a third above the original bass (p.415)", () => {
+  const voicing = { bass: 48, root: 60, third: 64, fifth: 67 }; // C major, bass C3
+  const passing = passingSixthChord(voicing);
+  assert.equal(passing.root, voicing.root);
+  assert.equal(passing.third, voicing.third);
+  assert.equal(passing.fifth, voicing.fifth);
+  assert.equal(passing.bass, 52); // E3 -- a major third above 48, matching the book's own claim exactly
+  assert.equal(((passing.bass % 12) + 12) % 12, ((voicing.third % 12) + 12) % 12);
+});
+
+test("buildPassingSixthGroups chains G6 = S(5)+S(6)+S(5)+S(6)+S(5)... inserting exactly one passing chord between every consecutive pair", () => {
+  const progression = voiceLeadProgression(MAJOR, 60, diatonicCycle(5, 0), "clockwise");
+  const withPassing = buildPassingSixthGroups(progression);
+  assert.equal(withPassing.length, progression.length * 2 - 1);
+  for (let i = 0; i < progression.length - 1; i++) {
+    const original = withPassing[i * 2];
+    const passing = withPassing[i * 2 + 1];
+    const next = withPassing[i * 2 + 2];
+    assert.deepEqual(original, progression[i]);
+    assert.deepEqual(passing, passingSixthChord(progression[i]));
+    assert.deepEqual(next, progression[i + 1]);
+  }
+});
+
+test("buildPassingSixthGroups on a single chord returns just that chord (no passing chord to insert)", () => {
+  const single = voiceLeadProgression(MAJOR, 60, [0], "clockwise");
+  assert.deepEqual(buildPassingSixthGroups(single), single);
 });

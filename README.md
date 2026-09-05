@@ -909,7 +909,7 @@ patterns, not additional formulas, so aren't implemented separately.
 Verified live: the confirmed book example (First series, index 3) plays
 back as `c4-f4-c#5-e3`, matching hand-derivation exactly.
 
-## Diatonic cycles (Book V — Special Theory of Harmony begins)
+## Diatonic cycles and passing sixth-chords (Book V, Ch. 1-2, 8)
 
 `DiatonicCyclesPanel.tsx` (`src/core/diatonicHarmony.ts`) opens Book V,
 a genuinely new domain for this project — chord structures and
@@ -969,6 +969,31 @@ again live in the browser. `negativeStackedTriad` is the exact mirror of
 `stackedTriad` (offsets 0,-2,-4 instead of 0,+2,+4). Negative-form
 voice-leading isn't yet built, so the panel's voice-leading option is
 only available for the positive form.
+
+**Chapter 8, Section A (Groups with Passing Sixth-chords, p.415-416)**
+jumped ahead of Ch. 3-7's own numbering since it builds directly on this
+chapter's `Voicing`/`nearestPitch` machinery. "A group with a passing S(6)
+is a pre-set combination of three chords: S(5) + S(6) + S(5)... it is
+necessary to connect S(5) with the next S(5)... and add the intermediate
+third of the first chord in the bass, *without moving the remaining
+voices*" — a complete, unambiguous rule: `passingSixthChord` takes an
+existing `Voicing` and moves only its bass to the nearest pitch sharing
+the third's pitch class, leaving root/third/fifth untouched. Confirmed by
+hand: a C major voicing (bass 48, root 60, third 64, fifth 67) produces a
+passing bass of 52 (E3) — exactly a third above 48, matching the book's
+own "3 in the bass under S(6) is a third above its preceding position"
+(p.415). The classical form connects the outer chords by C-5, but "we
+shall extend this principle to all cycles" (Section C generalizes to
+G6(C3)/G6(C5)/G6(C7) and their negative-direction counterparts) — so
+`buildPassingSixthGroups` is deliberately generic over *any* already-built
+`voiceLeadProgression`, chaining `S(5)+S(6)+S(5)+S(6)+...` by inserting a
+passing chord between every consecutive pair. In the panel, enabling
+Voice-led reveals a "Passing sixth-chords" checkbox that does exactly
+this. Not built: Section B's cadence-cycle framing and Section D's "16
+forms of G6" combinatorics for Type II/III (a plain 4×4 product of
+independent structure choices, confirmed by hand but not worth a
+dedicated function) are compositional guidance rather than reusable
+primitives.
 
 ## The symmetric system of harmony (Book V, Ch. 3)
 

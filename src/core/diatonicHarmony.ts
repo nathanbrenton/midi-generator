@@ -81,6 +81,34 @@
  * Negative-form voice-leading ("if everything is read downward, the C and
  * O transformations correspond" -- i.e. clockwise/counterclockwise swap
  * meaning) is a natural next step, not yet built.
+ *
+ * Chapter 8, Section A (Groups with Passing Sixth-chords, p.415-416): "A
+ * group with a passing S(6) is a pre-set combination of three chords:
+ * S(5) + S(6) + S(5). Every passing chord occupies the center of its
+ * group... In order to obtain G6, it is necessary to connect S(5) with the
+ * next S(5)... and add the intermediate third of the first chord in the
+ * bass, WITHOUT MOVING THE REMAINING VOICES." That's a complete,
+ * unambiguous rule -- the passing S(6) is literally the first chord's own
+ * `Voicing`, unchanged except its bass moves from the root's pitch class
+ * to the third's (via `nearestPitch`, same minimal-movement voice-leading
+ * used everywhere else in this module). Confirmed by hand: a C-major
+ * voicing {bass 48, root 60, third 64, fifth 67} produces a passing bass
+ * of 52 (E3) -- exactly a third above 48, matching the book's own "3 in
+ * the bass under S(6) is a third above its preceding position" (p.415).
+ * The classical form connects the outer S(5) chords by C-5, but "we shall
+ * extend this principle to all cycles" (p.415) and Section C explicitly
+ * generalizes to G6(C3)/G6(C5)/G6(C7)/G6(C-5)/G6(C-3)/G6(C-7) -- so
+ * `buildPassingSixthGroups` is deliberately generic over *any* already-built
+ * `Voicing` progression (from `voiceLeadProgression` with whatever cycle
+ * the caller chooses), rather than hard-coding C-5.
+ *
+ * Not built: Section B's cadence-cycle framing (C6 closes, C5/C7 continue
+ * -- compositional guidance, not a formula), Section D's "16 forms of G6"
+ * combinatorics for Type II/III (a plain 4x4=16 product of independent
+ * S(5)-structure choices for the two outer chords, confirmed by hand but
+ * not wired into a function since it's a one-line arithmetic fact, not a
+ * reusable primitive), and Section E's generalized "passing third" (the
+ * same device applied after any S(5), not just within a fixed G6 shape).
  */
 
 import { midiNoteForDegree, type PitchScale } from "./scales.ts";
@@ -181,4 +209,29 @@ export function voiceLeadProgression(
     progression.push(current);
   }
   return progression;
+}
+
+/**
+ * Ch.8 Section A: the passing S(6) belonging to `voicing` -- the same
+ * root/third/fifth, unmoved, with only the bass shifted to the nearest
+ * pitch sharing the third's pitch class (p.415).
+ */
+export function passingSixthChord(voicing: Voicing): Voicing {
+  return { ...voicing, bass: nearestPitch(voicing.bass, voicing.third) };
+}
+
+/**
+ * Inserts a passing S(6) between every consecutive pair of chords in an
+ * existing S(5) progression, forming a chain of G6 groups: S(5) + S(6) +
+ * S(5) + S(6) + S(5) + ... Generic over any `Voicing` progression (see
+ * module docstring) -- the classical form passes a C-5-connected
+ * `voiceLeadProgression`, but any cycle works equally well.
+ */
+export function buildPassingSixthGroups(progression: readonly Voicing[]): Voicing[] {
+  const result: Voicing[] = [];
+  progression.forEach((voicing, i) => {
+    result.push(voicing);
+    if (i < progression.length - 1) result.push(passingSixthChord(voicing));
+  });
+  return result;
 }
