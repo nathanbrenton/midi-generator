@@ -13,6 +13,40 @@ npm install
 npm run dev
 ```
 
+## Motif Explorer
+
+The main app (below) is a chapter-by-chapter tour of the books, one panel
+per figure. **The Motif Explorer** (`src/pages/MotifExplorerPage.tsx`, at
+the `#motif` URL) is a second, separate page with a different purpose: not
+educational, an immediate compositional workbench for building and
+auditioning one short musical idea at a time. It's reached via a plain
+`location.hash` check in `App.tsx` (`useHashRoute.ts`) — no router, matching
+the rest of the project's zero-dependency approach — and is the first
+keyboard-driven surface in the codebase: **←/→** slides the motif's length
+window, **↑/↓** browses its circular-permutation rotations (Ch. 9), and
+**space** plays/stops, all guarded to no-op while a text/number input has
+focus.
+
+Every piece of it reuses already-tested core modules — no new `src/core`
+code was needed. **Rhythm** picks 2 generators (any of the 19 canonical
+cases, Ch. 2A Figure 19) or 3 (`THREE_GENERATOR_CASES`, Ch. 6). **Extend the
+motif** swaps in Fractioned/Expansion/Contraction/Balance via the same
+`buildResultantForTechnique` dispatcher the main generator uses — Expansion
+is literally "append the fractioned form," Contraction "prepend" it, Balance
+"combine" them, plus a plain repeat count. **Motif length** is a sliding
+`{start, length}` window over the resultant's segments — the same mechanic
+as the main generator's "Loop a range" control, generalized here into the
+primary length control, with an added "by beats" mode that grows the window
+to the smallest number of events reaching a target beat count. **Voices**
+distributes the motif's attacks across 1-4 voices via Ch. 7's pli/pla
+mechanic (`synchronizeInstrumentalGroup`/`assignPlaces`/
+`segmentsFromAttackTimes`) — each voice is either a percussion sound
+(`PERCUSSION_VOICE_OPTIONS`) or a melodic role (Lead/Pad/Pluck, mapped to an
+oscillator type, cycling through the chosen **Scale**'s degrees). MIDI
+export is deliberately minimal for now — one plain multi-track download, no
+per-voice overrides dialog, no GM instrument/program-change support — kept
+that way on purpose to prioritize the interaction design first.
+
 ## The theory, briefly
 
 Schillinger's Book I builds rhythm from **interference of periodicities**:
