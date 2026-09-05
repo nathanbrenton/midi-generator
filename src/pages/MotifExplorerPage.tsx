@@ -391,6 +391,28 @@ export default function MotifExplorerPage() {
     togglePlayback,
   };
 
+  // Side-panel disclosure: every compositional parameter lives behind a rail
+  // button, closed by default, so the piano roll stays the visual focus.
+  type PanelKey = "rhythm" | "extend" | "length" | "voices" | "scale";
+  const [activePanel, setActivePanel] = useState<PanelKey | null>(null);
+  const railRef = useRef<HTMLDivElement>(null);
+  const flyoutRef = useRef<HTMLDivElement>(null);
+
+  function togglePanel(key: PanelKey) {
+    setActivePanel((current) => (current === key ? null : key));
+  }
+
+  useEffect(() => {
+    if (!activePanel) return;
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+      if (railRef.current?.contains(target) || flyoutRef.current?.contains(target)) return;
+      setActivePanel(null);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [activePanel]);
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const tag = (document.activeElement?.tagName ?? "").toLowerCase();
@@ -422,333 +444,386 @@ export default function MotifExplorerPage() {
           e.preventDefault();
           handlersRef.current.togglePlayback();
           break;
+        case "Escape":
+          setActivePanel(null);
+          break;
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  const panelButton = (key: PanelKey, label: string) => (
+    <button
+      type="button"
+      className={activePanel === key ? "motif-rail__btn motif-rail__btn--active" : "motif-rail__btn"}
+      onClick={() => togglePanel(key)}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <main className="motif-page">
       <h1>Motif Explorer</h1>
-      <p className="motif-page__intro">
-        A focused workbench for building and auditioning one short musical idea —
-        not a chapter tour, just the pieces useful for writing. Keyboard: ←/→ slides
-        the motif window, ↑/↓ browses circular-permutation rotations, space plays/stops.
-      </p>
 
-      <div className="schillinger motif-page__controls">
-        <section className="schillinger__section">
-          <h3>Rhythm</h3>
-          <div className="schillinger__row">
-            <label>
-              Generators
-              <select value={generatorCount} onChange={(e) => setGeneratorCount(Number(e.target.value) as 2 | 3)}>
-                <option value={2}>2</option>
-                <option value={3}>3</option>
-              </select>
-            </label>
-            {generatorCount === 2 ? (
-              <label>
-                Case
-                <select value={caseIndex} onChange={(e) => setCaseIndex(Number(e.target.value))}>
-                  {BINARY_SYNCHRONIZATION_CASES.map((c, i) => (
-                    <option key={c.label} value={i}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : (
-              <label>
-                Case
-                <select value={threeCaseIndex} onChange={(e) => setThreeCaseIndex(Number(e.target.value))}>
-                  {THREE_GENERATOR_CASES.map((c, i) => (
-                    <option key={c.label} value={i}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-          </div>
-          <div className="schillinger__readout">
-            base cycle {baseResultant.cycleLength} units · {baseResultant.segments.length} events · durations{" "}
-            {baseResultant.segments.map((s) => s.duration).join(" ")}
-          </div>
-        </section>
+      <div className="motif-workspace">
+        <div className="motif-rail" ref={railRef}>
+          {panelButton("rhythm", "Rhythm")}
+          {panelButton("extend", "Extend")}
+          {panelButton("length", "Length")}
+          {panelButton("voices", "Voices")}
+          {panelButton("scale", "Scale")}
+        </div>
 
-        <section className="schillinger__section">
-          <h3>Extend the motif</h3>
-          <div className="schillinger__row">
-            <label>
-              Mode
-              <select value={extendMode} onChange={(e) => setExtendMode(e.target.value as "technique" | "growth")}>
-                <option value="technique">Technique (Ch. 4-5)</option>
-                <option value="growth">Higher-order growth (Ch. 10)</option>
-              </select>
-            </label>
-          </div>
-          {extendMode === "technique" ? (
-            <div className="schillinger__row">
-              {generatorCount === 2 && (
-                <label>
-                  Technique
-                  <select value={technique} onChange={(e) => setTechnique(e.target.value as Technique)}>
-                    <option value="plain">Plain</option>
-                    <option value="fractioned">Fractioned</option>
-                    <option value="expansion">Expansion (append)</option>
-                    <option value="contraction">Contraction (prepend)</option>
-                    <option value="balance">Balance (combine)</option>
-                  </select>
-                </label>
-              )}
-              <label>
-                Repeat
-                <input
-                  type="number"
-                  min={1}
-                  max={4}
-                  value={repeatCount}
-                  onChange={(e) => setRepeatCount(Math.max(1, Math.min(4, Number(e.target.value))))}
-                />
-                ×
-              </label>
-            </div>
-          ) : (
-            <div className="schillinger__row">
-              <label>
-                Order
-                <input
-                  type="number"
-                  min={1}
-                  max={6}
-                  value={growthOrder}
-                  onChange={(e) => setGrowthOrder(Math.max(1, Math.min(6, Number(e.target.value))))}
-                />
-              </label>
-              <span className="schillinger__hint">
-                {generatorCount === 3 ? "3" : "2"} seeds ({growthSeeds.map((s) => s[0]).join(", ")}) grown to order {growthOrder} →{" "}
-                {growthResultant.segments.length} events
-              </span>
-            </div>
-          )}
-        </section>
-
-        <section className="schillinger__section schillinger__section--wide">
-          <h3>Motif length</h3>
-          <div className="schillinger__row">
-            <label className="schillinger__checkbox">
-              <input type="radio" name="lengthMode" checked={lengthMode === "events"} onChange={() => setLengthMode("events")} />
-              By events
-            </label>
-            <label className="schillinger__checkbox">
-              <input type="radio" name="lengthMode" checked={lengthMode === "beats"} onChange={() => setLengthMode("beats")} />
-              By beats
-            </label>
-          </div>
-          <div className="schillinger__row">
-            <label>
-              Start
-              <input
-                type="number"
-                min={0}
-                max={Math.max(0, totalSegments - 1)}
-                value={clampedStart}
-                onChange={(e) => setLoopSelection((sel) => ({ ...sel, start: Number(e.target.value) }))}
-              />
-            </label>
-            {lengthMode === "events" ? (
-              <label>
-                Length (events)
-                <input
-                  type="number"
-                  min={1}
-                  max={totalSegments}
-                  value={loopSelection.length}
-                  onChange={(e) => setLoopSelection((sel) => ({ ...sel, length: Number(e.target.value) }))}
-                />
-              </label>
-            ) : (
-              <label>
-                Target beats
-                <input type="number" min={1} max={64} value={targetBeats} onChange={(e) => setTargetBeats(Number(e.target.value))} />
-              </label>
-            )}
-          </div>
-          <div className="schillinger__readout">
-            window {activeSegments.map((s) => s.duration).join(" ")} ({activeMotif.cycleLength} beats, {activeSegments.length} events)
-            {variationIndex > 0 && <> · rotation {variationIndex + 1}/{rotationOrder.length}</>}
-          </div>
-        </section>
-
-        <section className="schillinger__section schillinger__section--wide">
-          <h3>Voices</h3>
-          {voices.map((slot, i) => (
-            <div className="schillinger__row" key={i}>
-              <label>
-                Voice {i + 1}
-                <select
-                  value={slot.kind}
-                  onChange={(e) =>
-                    replaceVoice(
-                      i,
-                      e.target.value === "percussion"
-                        ? { kind: "percussion", percussionIndex: 0 }
-                        : { kind: "melodic", timbre: "lead", octaveOffset: 0 },
-                    )
-                  }
-                >
-                  <option value="percussion">Percussion</option>
-                  <option value="melodic">Melodic</option>
-                </select>
-              </label>
-              {slot.kind === "percussion" ? (
-                <label>
-                  Sound
-                  <select
-                    value={slot.percussionIndex}
-                    onChange={(e) => replaceVoice(i, { kind: "percussion", percussionIndex: Number(e.target.value) })}
-                  >
-                    {PERCUSSION_VOICE_OPTIONS.map((p, pi) => (
-                      <option key={p.label} value={pi}>
-                        {p.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : (
-                <>
+        {activePanel && (
+          <div className="motif-flyout" ref={flyoutRef}>
+            {activePanel === "rhythm" && (
+              <div className="motif-flyout__panel">
+                <h3>Rhythm</h3>
+                <div className="schillinger__row">
                   <label>
-                    Timbre
-                    <select value={slot.timbre} onChange={(e) => replaceVoice(i, { ...slot, timbre: e.target.value as MelodicTimbre })}>
-                      {MELODIC_TIMBRES.map((t) => (
-                        <option key={t.value} value={t.value}>
-                          {t.label}
-                        </option>
-                      ))}
+                    Generators
+                    <select value={generatorCount} onChange={(e) => setGeneratorCount(Number(e.target.value) as 2 | 3)}>
+                      <option value={2}>2</option>
+                      <option value={3}>3</option>
                     </select>
                   </label>
+                  {generatorCount === 2 ? (
+                    <label>
+                      Case
+                      <select value={caseIndex} onChange={(e) => setCaseIndex(Number(e.target.value))}>
+                        {BINARY_SYNCHRONIZATION_CASES.map((c, i) => (
+                          <option key={c.label} value={i}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <label>
+                      Case
+                      <select value={threeCaseIndex} onChange={(e) => setThreeCaseIndex(Number(e.target.value))}>
+                        {THREE_GENERATOR_CASES.map((c, i) => (
+                          <option key={c.label} value={i}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                </div>
+                <div className="schillinger__readout">
+                  base cycle {baseResultant.cycleLength} units · {baseResultant.segments.length} events · durations{" "}
+                  {baseResultant.segments.map((s) => s.duration).join(" ")}
+                </div>
+              </div>
+            )}
+
+            {activePanel === "extend" && (
+              <div className="motif-flyout__panel">
+                <h3>Extend the motif</h3>
+                <div className="schillinger__row">
                   <label>
-                    Octave
+                    Mode
+                    <select value={extendMode} onChange={(e) => setExtendMode(e.target.value as "technique" | "growth")}>
+                      <option value="technique">Technique (Ch. 4-5)</option>
+                      <option value="growth">Higher-order growth (Ch. 10)</option>
+                    </select>
+                  </label>
+                </div>
+                {extendMode === "technique" ? (
+                  <div className="schillinger__row">
+                    {generatorCount === 2 && (
+                      <label>
+                        Technique
+                        <select value={technique} onChange={(e) => setTechnique(e.target.value as Technique)}>
+                          <option value="plain">Plain</option>
+                          <option value="fractioned">Fractioned</option>
+                          <option value="expansion">Expansion (append)</option>
+                          <option value="contraction">Contraction (prepend)</option>
+                          <option value="balance">Balance (combine)</option>
+                        </select>
+                      </label>
+                    )}
+                    <label>
+                      Repeat
+                      <input
+                        type="number"
+                        min={1}
+                        max={4}
+                        value={repeatCount}
+                        onChange={(e) => setRepeatCount(Math.max(1, Math.min(4, Number(e.target.value))))}
+                      />
+                      ×
+                    </label>
+                  </div>
+                ) : (
+                  <div className="schillinger__row">
+                    <label>
+                      Order
+                      <input
+                        type="number"
+                        min={1}
+                        max={6}
+                        value={growthOrder}
+                        onChange={(e) => setGrowthOrder(Math.max(1, Math.min(6, Number(e.target.value))))}
+                      />
+                    </label>
+                    <span className="schillinger__hint">
+                      {generatorCount === 3 ? "3" : "2"} seeds ({growthSeeds.map((s) => s[0]).join(", ")}) grown to order{" "}
+                      {growthOrder} → {growthResultant.segments.length} events
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activePanel === "length" && (
+              <div className="motif-flyout__panel">
+                <h3>Motif length</h3>
+                <div className="schillinger__row">
+                  <label className="schillinger__checkbox">
+                    <input type="radio" name="lengthMode" checked={lengthMode === "events"} onChange={() => setLengthMode("events")} />
+                    By events
+                  </label>
+                  <label className="schillinger__checkbox">
+                    <input type="radio" name="lengthMode" checked={lengthMode === "beats"} onChange={() => setLengthMode("beats")} />
+                    By beats
+                  </label>
+                </div>
+                <div className="schillinger__row">
+                  <label>
+                    Start
                     <input
                       type="number"
-                      min={-2}
-                      max={2}
-                      value={slot.octaveOffset}
-                      onChange={(e) => replaceVoice(i, { ...slot, octaveOffset: Number(e.target.value) })}
+                      min={0}
+                      max={Math.max(0, totalSegments - 1)}
+                      value={clampedStart}
+                      onChange={(e) => setLoopSelection((sel) => ({ ...sel, start: Number(e.target.value) }))}
                     />
                   </label>
-                </>
-              )}
-              <button type="button" onClick={() => removeVoice(i)} disabled={voices.length <= 1}>
-                Remove
+                  {lengthMode === "events" ? (
+                    <label>
+                      Length (events)
+                      <input
+                        type="number"
+                        min={1}
+                        max={totalSegments}
+                        value={loopSelection.length}
+                        onChange={(e) => setLoopSelection((sel) => ({ ...sel, length: Number(e.target.value) }))}
+                      />
+                    </label>
+                  ) : (
+                    <label>
+                      Target beats
+                      <input type="number" min={1} max={64} value={targetBeats} onChange={(e) => setTargetBeats(Number(e.target.value))} />
+                    </label>
+                  )}
+                </div>
+                {timeSignatureOptions.length > 1 && (
+                  <div className="schillinger__row">
+                    <label>
+                      Time signature
+                      <select value={timeSignatureIndex} onChange={(e) => setTimeSignatureIndex(Number(e.target.value))}>
+                        {timeSignatureOptions.map((o, i) => (
+                          <option key={o.label} value={i}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                )}
+                <div className="schillinger__readout">
+                  window {activeSegments.map((s) => s.duration).join(" ")} ({activeMotif.cycleLength} beats,{" "}
+                  {activeSegments.length} events)
+                  {variationIndex > 0 && (
+                    <>
+                      {" "}
+                      · rotation {variationIndex + 1}/{rotationOrder.length}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activePanel === "voices" && (
+              <div className="motif-flyout__panel">
+                <h3>Voices</h3>
+                {voices.map((slot, i) => (
+                  <div className="schillinger__row" key={i}>
+                    <label>
+                      Voice {i + 1}
+                      <select
+                        value={slot.kind}
+                        onChange={(e) =>
+                          replaceVoice(
+                            i,
+                            e.target.value === "percussion"
+                              ? { kind: "percussion", percussionIndex: 0 }
+                              : { kind: "melodic", timbre: "lead", octaveOffset: 0 },
+                          )
+                        }
+                      >
+                        <option value="percussion">Percussion</option>
+                        <option value="melodic">Melodic</option>
+                      </select>
+                    </label>
+                    {slot.kind === "percussion" ? (
+                      <label>
+                        Sound
+                        <select
+                          value={slot.percussionIndex}
+                          onChange={(e) => replaceVoice(i, { kind: "percussion", percussionIndex: Number(e.target.value) })}
+                        >
+                          {PERCUSSION_VOICE_OPTIONS.map((p, pi) => (
+                            <option key={p.label} value={pi}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : (
+                      <>
+                        <label>
+                          Timbre
+                          <select
+                            value={slot.timbre}
+                            onChange={(e) => replaceVoice(i, { ...slot, timbre: e.target.value as MelodicTimbre })}
+                          >
+                            {MELODIC_TIMBRES.map((t) => (
+                              <option key={t.value} value={t.value}>
+                                {t.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          Octave
+                          <input
+                            type="number"
+                            min={-2}
+                            max={2}
+                            value={slot.octaveOffset}
+                            onChange={(e) => replaceVoice(i, { ...slot, octaveOffset: Number(e.target.value) })}
+                          />
+                        </label>
+                      </>
+                    )}
+                    <button type="button" onClick={() => removeVoice(i)} disabled={voices.length <= 1}>
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <div className="schillinger__actions">
+                  <button type="button" onClick={addVoice} disabled={voices.length >= 4}>
+                    + Add voice
+                  </button>
+                </div>
+                <div className="schillinger__readout">
+                  {activeMotif.segments.length} attacks distributed by pli/pla across {voices.length} voice
+                  {voices.length === 1 ? "" : "s"}
+                  {voiceBuild.resultantRepeats > 1 && <> · motif repeats {voiceBuild.resultantRepeats}× before voices realign</>}
+                </div>
+              </div>
+            )}
+
+            {activePanel === "scale" && (
+              <div className="motif-flyout__panel">
+                <h3>Scale</h3>
+                <div className="schillinger__row">
+                  <label>
+                    Mode
+                    <select value={scaleMode} onChange={(e) => setScaleMode(e.target.value as ScaleMode)}>
+                      <option value="preset">Preset</option>
+                      <option value="division">Equal division</option>
+                      <option value="cell">Interval cell</option>
+                    </select>
+                  </label>
+                  {scaleMode === "preset" && (
+                    <label>
+                      Scale
+                      <select value={presetIndex} onChange={(e) => setPresetIndex(Number(e.target.value))}>
+                        {SCALE_PRESETS.map((p, i) => (
+                          <option key={p.name} value={i}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  {scaleMode === "division" && (
+                    <label>
+                      Notes
+                      <input type="number" min={1} max={12} value={divisionN} onChange={(e) => setDivisionN(Number(e.target.value))} />
+                    </label>
+                  )}
+                  {scaleMode === "cell" && (
+                    <label>
+                      Cell (semitones)
+                      <input type="text" value={cellText} onChange={(e) => setCellText(e.target.value)} />
+                    </label>
+                  )}
+                  <label>
+                    Root
+                    <input
+                      type="number"
+                      min={24}
+                      max={96}
+                      value={rootMidiNote}
+                      onChange={(e) => setRootMidiNote(Number(e.target.value))}
+                    />
+                  </label>
+                </div>
+                <div className="schillinger__readout">
+                  {scale.intervals.length}-note scale · intervals {scale.intervals.join(" ")}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="motif-stage-wrap">
+          <section className="motif-page__stage">
+            {selectedTimeSignature && (
+              <MidiPreview
+                lanes={voiceBuild.lanes}
+                cycleLength={voiceBuild.totalUnits}
+                timeSignature={selectedTimeSignature}
+                playheadFraction={isPlaying ? playheadFraction : undefined}
+                onShiftLeft={() => handlersRef.current.moveWindow(-1)}
+                onShiftRight={() => handlersRef.current.moveWindow(1)}
+                canShiftLeft={clampedStart > 0}
+                canShiftRight={clampedStart < totalSegments - 1}
+                onCycleUp={() => handlersRef.current.cycleVariation(-1)}
+                onCycleDown={() => handlersRef.current.cycleVariation(1)}
+                canCycle={rotationOrder.length > 1}
+                positionLabel={`window ${clampedStart + 1}-${clampedStart + windowLength} of ${totalSegments}`}
+                variationLabel={rotationOrder.length > 1 ? `rotation ${variationIndex + 1}/${rotationOrder.length}` : undefined}
+              />
+            )}
+            <p className="motif-page__hint">
+              ←/→ slides the window · ↑/↓ browses rotations · space plays/stops
+            </p>
+            <div className="schillinger__row">
+              <label>
+                Tempo
+                <input type="number" min={40} max={220} value={bpm} onChange={(e) => setBpm(Number(e.target.value))} />
+                bpm
+              </label>
+            </div>
+            <div className="schillinger__actions">
+              <button type="button" onClick={togglePlayback} disabled={voiceBuild.notes.length === 0 && !isPlaying}>
+                {isPlaying ? "Stop" : "Play"}
+              </button>
+              <button type="button" onClick={downloadMidi} disabled={voiceBuild.notes.length === 0}>
+                Download MIDI
               </button>
             </div>
-          ))}
-          <div className="schillinger__actions">
-            <button type="button" onClick={addVoice} disabled={voices.length >= 4}>
-              + Add voice
-            </button>
-          </div>
-          <div className="schillinger__readout">
-            {activeMotif.segments.length} attacks distributed by pli/pla across {voices.length} voice{voices.length === 1 ? "" : "s"}
-            {voiceBuild.resultantRepeats > 1 && <> · motif repeats {voiceBuild.resultantRepeats}× before voices realign</>}
-          </div>
-        </section>
-
-        <section className="schillinger__section schillinger__section--wide">
-          <h3>Scale</h3>
-          <div className="schillinger__row">
-            <label>
-              Mode
-              <select value={scaleMode} onChange={(e) => setScaleMode(e.target.value as ScaleMode)}>
-                <option value="preset">Preset</option>
-                <option value="division">Equal division</option>
-                <option value="cell">Interval cell</option>
-              </select>
-            </label>
-            {scaleMode === "preset" && (
-              <label>
-                Scale
-                <select value={presetIndex} onChange={(e) => setPresetIndex(Number(e.target.value))}>
-                  {SCALE_PRESETS.map((p, i) => (
-                    <option key={p.name} value={i}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {scaleMode === "division" && (
-              <label>
-                Notes
-                <input type="number" min={1} max={12} value={divisionN} onChange={(e) => setDivisionN(Number(e.target.value))} />
-              </label>
-            )}
-            {scaleMode === "cell" && (
-              <label>
-                Cell (semitones)
-                <input type="text" value={cellText} onChange={(e) => setCellText(e.target.value)} />
-              </label>
-            )}
-            <label>
-              Root
-              <input type="number" min={24} max={96} value={rootMidiNote} onChange={(e) => setRootMidiNote(Number(e.target.value))} />
-            </label>
-          </div>
-          <div className="schillinger__readout">
-            {scale.intervals.length}-note scale · intervals {scale.intervals.join(" ")}
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
-
-      <section className="motif-page__stage">
-        {selectedTimeSignature && (
-          <MidiPreview
-            lanes={voiceBuild.lanes}
-            cycleLength={voiceBuild.totalUnits}
-            timeSignature={selectedTimeSignature}
-            playheadFraction={isPlaying ? playheadFraction : undefined}
-            onShiftLeft={() => handlersRef.current.moveWindow(-1)}
-            onShiftRight={() => handlersRef.current.moveWindow(1)}
-            canShiftLeft={clampedStart > 0}
-            canShiftRight={clampedStart < totalSegments - 1}
-            onCycleUp={() => handlersRef.current.cycleVariation(-1)}
-            onCycleDown={() => handlersRef.current.cycleVariation(1)}
-            canCycle={rotationOrder.length > 1}
-            positionLabel={`window ${clampedStart + 1}-${clampedStart + windowLength} of ${totalSegments}`}
-            variationLabel={rotationOrder.length > 1 ? `rotation ${variationIndex + 1}/${rotationOrder.length}` : undefined}
-          />
-        )}
-        <div className="schillinger__row">
-          <label>
-            Tempo
-            <input type="number" min={40} max={220} value={bpm} onChange={(e) => setBpm(Number(e.target.value))} />
-            bpm
-          </label>
-          {timeSignatureOptions.length > 1 && (
-            <label>
-              Time signature
-              <select value={timeSignatureIndex} onChange={(e) => setTimeSignatureIndex(Number(e.target.value))}>
-                {timeSignatureOptions.map((o, i) => (
-                  <option key={o.label} value={i}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-        </div>
-        <div className="schillinger__actions">
-          <button type="button" onClick={togglePlayback} disabled={voiceBuild.notes.length === 0 && !isPlaying}>
-            {isPlaying ? "Stop" : "Play"}
-          </button>
-          <button type="button" onClick={downloadMidi} disabled={voiceBuild.notes.length === 0}>
-            Download MIDI
-          </button>
-        </div>
-      </section>
     </main>
   );
 }

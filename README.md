@@ -27,6 +27,14 @@ window, **↑/↓** browses its circular-permutation rotations (Ch. 9), and
 **space** plays/stops, all guarded to no-op while a text/number input has
 focus.
 
+**Layout: the piano roll is the whole point, so every parameter is hidden
+by default.** All five parameter groups (Rhythm, Extend, Length, Voices,
+Scale) live behind a slim rail of buttons; clicking one opens a floating
+panel next to the rail without shifting or shrinking the stage — clicking
+the same button again, clicking outside, or pressing Escape closes it.
+Only one panel is open at a time. Tempo/Play/Download stay directly under
+the roll as transport controls, not parameters, so they're always visible.
+
 Every piece of it reuses already-tested core modules — no new `src/core`
 code was needed. **Rhythm** picks 2 generators (any of the 19 canonical
 cases, Ch. 2A Figure 19) or 3 (`THREE_GENERATOR_CASES`, Ch. 6). **Extend the

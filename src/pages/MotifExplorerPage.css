@@ -1,7 +1,7 @@
 .motif-page {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
   max-width: 60rem;
   margin: 0 auto;
   padding: 2rem;
@@ -13,23 +13,93 @@
   margin: 0;
 }
 
-.motif-page__intro {
+.motif-page__hint {
   margin: 0;
-  font-size: 0.9rem;
-  color: color-mix(in srgb, currentColor 70%, transparent);
+  font-size: 0.8rem;
+  color: color-mix(in srgb, currentColor 55%, transparent);
 }
 
-.motif-page__controls {
-  padding: 1rem;
-  border-radius: 8px;
-  background: color-mix(in srgb, currentColor 4%, transparent);
+.motif-workspace {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+
+/* Every compositional parameter lives behind this rail, closed by default,
+   so the piano roll stays the visual focus (per explicit design direction). */
+.motif-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 6rem;
+  flex-shrink: 0;
+}
+
+.motif-rail__btn {
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: color-mix(in srgb, currentColor 60%, transparent);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.motif-rail__btn:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: currentColor;
+}
+
+.motif-rail__btn--active {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  color: currentColor;
+  font-weight: 600;
+}
+
+.motif-flyout {
+  position: absolute;
+  left: 6.75rem;
+  top: 0;
+  z-index: 5;
+  width: 24rem;
+  max-width: calc(100vw - 9rem);
+  background: var(--bg);
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px color-mix(in srgb, black 30%, transparent);
+  padding: 1.1rem;
+}
+
+.motif-flyout__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.motif-flyout__panel h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.motif-stage-wrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
 }
 
 .motif-page__stage {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.75rem;
-  padding: 1.25rem;
-  border-radius: 8px;
+  width: 100%;
+  padding: 1.5rem;
+  border-radius: 10px;
   background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.motif-page__stage .midi-preview {
+  width: 100%;
 }
