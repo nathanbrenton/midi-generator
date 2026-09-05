@@ -55,10 +55,23 @@ the underlying sequence is windowed (the same "Motif length" window
 described above); up/down arrows cycle through that window's own circular
 permutations (Ch. 9). It isn't specific to Motif Explorer — any page that
 can hand it a `Resultant`-shaped window and a couple of navigation callbacks
-can reuse it. A natural next step (not yet built): letting the "cycle"
-being browsed grow via Expansion/Contraction or Ch. 10's higher-order
-`abbabaab...`-style variation (`higherOrderElements`), rather than only a
-fixed-length window over the plain resultant.
+can reuse it.
+
+**"Extend the motif" has two independent modes.** Technique (Ch. 4-5,
+described above) grows the cycle from the actual resultant math. **Higher-
+order growth (Ch. 10)** is a second, unrelated way to lengthen the same
+cycle: the 2 (or 3) generator values themselves become `higherOrderElements`'s
+seeds — exactly the book's own Figure 120 example, just using the active
+case's own numbers instead of an arbitrary `a`/`b` — grown to a chosen order
+(capped 1-6, matching `HigherOrderPermutationsPanel`'s own established cap)
+and concatenated into one long cycle. At order 4 with a 3:2 case this
+reproduces the book's classic `abbabaab`+`baababba` shape exactly, just
+spelled in durations (`3,2` in place of `a,b`) instead of letters; the same
+concatenation generalizes cleanly to 3 seeds for three-generator mode,
+verified by hand. The two modes are mutually exclusive by design (the
+book presents them as distinct variation mechanisms, not composable) — the
+"Motif length" window and rotation browsing below work identically on top
+of either one's output.
 
 ## The theory, briefly
 

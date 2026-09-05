@@ -5,6 +5,7 @@ import { THREE_GENERATOR_CASES, buildTheme } from "../core/threeGenerators";
 import { circularPermutations } from "../core/permutations";
 import { computeLoopTimeSignatureOptions } from "../core/timeSignature";
 import { synchronizeInstrumentalGroup, assignPlaces, segmentsFromAttackTimes } from "../core/instrumentalInterference";
+import { higherOrderElements } from "../core/higherOrderPermutations";
 import { PERCUSSION_VOICE_OPTIONS, GM_DRUM_CHANNEL } from "../core/percussion";
 import { SCALE_PRESETS, symmetricDivisionScale, intervalCellScale, midiNoteForDegree, type PitchScale } from "../core/scales";
 import type { NoteEvent } from "../core/melody";
@@ -137,16 +138,36 @@ export default function MotifExplorerPage() {
   const activeCase = BINARY_SYNCHRONIZATION_CASES[caseIndex];
   const activeThreeCase = THREE_GENERATOR_CASES[threeCaseIndex];
 
-  const baseResultant: Resultant = useMemo(() => {
+  const techniqueResultant: Resultant = useMemo(() => {
     return generatorCount === 3
       ? buildTheme(activeThreeCase.generators)
       : buildResultantForTechnique(technique, activeCase.a, activeCase.b);
   }, [generatorCount, activeThreeCase, technique, activeCase]);
 
+  // Ch.10's higher-order growth (Section A, "Permutations of the Higher
+  // Order"): the two (or three) generator VALUES themselves are the seeds,
+  // exactly as the book's own Figure 120 example uses tiny numeric seeds --
+  // growing them concatenates into a much longer cycle to browse, e.g. the
+  // classic "abbabaab" + "baababba" at order 4 for two seeds.
+  const [extendMode, setExtendMode] = useState<"technique" | "growth">("technique");
+  const [growthOrder, setGrowthOrder] = useState(2);
+
+  const growthSeeds = useMemo(
+    () => (generatorCount === 3 ? activeThreeCase.generators.map((g) => [g]) : [[activeCase.a], [activeCase.b]]),
+    [generatorCount, activeThreeCase, activeCase],
+  );
+
+  const growthResultant: Resultant = useMemo(() => {
+    const elements = higherOrderElements(growthSeeds, growthOrder);
+    return resultantFromSegments(elements.flat().map((duration) => ({ duration, sources: [] })));
+  }, [growthSeeds, growthOrder]);
+
+  const baseResultant = extendMode === "growth" ? growthResultant : techniqueResultant;
+
   const repeatedResultant = useMemo(() => {
-    if (repeatCount <= 1) return baseResultant;
+    if (extendMode === "growth" || repeatCount <= 1) return baseResultant;
     return resultantFromSegments(Array.from({ length: repeatCount }, () => baseResultant.segments).flat());
-  }, [baseResultant, repeatCount]);
+  }, [baseResultant, repeatCount, extendMode]);
 
   const totalSegments = repeatedResultant.segments.length;
 
@@ -159,7 +180,7 @@ export default function MotifExplorerPage() {
     setLoopSelection({ start: 0, length: Math.max(2, Math.min(4, totalSegments)) });
     // Reset the window to a sensible default whenever the underlying shape changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [generatorCount, activeCase, activeThreeCase, technique, repeatCount]);
+  }, [generatorCount, activeCase, activeThreeCase, technique, repeatCount, extendMode, growthOrder]);
 
   const clampedStart = Math.max(0, Math.min(loopSelection.start, totalSegments - 1));
 
@@ -463,30 +484,58 @@ export default function MotifExplorerPage() {
         <section className="schillinger__section">
           <h3>Extend the motif</h3>
           <div className="schillinger__row">
-            {generatorCount === 2 && (
-              <label>
-                Technique
-                <select value={technique} onChange={(e) => setTechnique(e.target.value as Technique)}>
-                  <option value="plain">Plain</option>
-                  <option value="fractioned">Fractioned</option>
-                  <option value="expansion">Expansion (append)</option>
-                  <option value="contraction">Contraction (prepend)</option>
-                  <option value="balance">Balance (combine)</option>
-                </select>
-              </label>
-            )}
             <label>
-              Repeat
-              <input
-                type="number"
-                min={1}
-                max={4}
-                value={repeatCount}
-                onChange={(e) => setRepeatCount(Math.max(1, Math.min(4, Number(e.target.value))))}
-              />
-              ×
+              Mode
+              <select value={extendMode} onChange={(e) => setExtendMode(e.target.value as "technique" | "growth")}>
+                <option value="technique">Technique (Ch. 4-5)</option>
+                <option value="growth">Higher-order growth (Ch. 10)</option>
+              </select>
             </label>
           </div>
+          {extendMode === "technique" ? (
+            <div className="schillinger__row">
+              {generatorCount === 2 && (
+                <label>
+                  Technique
+                  <select value={technique} onChange={(e) => setTechnique(e.target.value as Technique)}>
+                    <option value="plain">Plain</option>
+                    <option value="fractioned">Fractioned</option>
+                    <option value="expansion">Expansion (append)</option>
+                    <option value="contraction">Contraction (prepend)</option>
+                    <option value="balance">Balance (combine)</option>
+                  </select>
+                </label>
+              )}
+              <label>
+                Repeat
+                <input
+                  type="number"
+                  min={1}
+                  max={4}
+                  value={repeatCount}
+                  onChange={(e) => setRepeatCount(Math.max(1, Math.min(4, Number(e.target.value))))}
+                />
+                ×
+              </label>
+            </div>
+          ) : (
+            <div className="schillinger__row">
+              <label>
+                Order
+                <input
+                  type="number"
+                  min={1}
+                  max={6}
+                  value={growthOrder}
+                  onChange={(e) => setGrowthOrder(Math.max(1, Math.min(6, Number(e.target.value))))}
+                />
+              </label>
+              <span className="schillinger__hint">
+                {generatorCount === 3 ? "3" : "2"} seeds ({growthSeeds.map((s) => s[0]).join(", ")}) grown to order {growthOrder} →{" "}
+                {growthResultant.segments.length} events
+              </span>
+            </div>
+          )}
         </section>
 
         <section className="schillinger__section schillinger__section--wide">
