@@ -1018,7 +1018,7 @@ connecting consecutive tonics aren't yet precisely modeled. Sections B-E
 book adds only qualitative recurrence-cycle properties there, no new
 checkable formula.
 
-## Variable doublings in harmony (Book V, Ch. 6)
+## Variable doublings and inversions of S(5) (Book V, Ch. 6-7)
 
 With the root always held in the bass, one of a chord's three functions
 (root/third/fifth) can be additionally doubled among the upper three
@@ -1034,16 +1034,41 @@ the figure's own six-column layout. `src/core/variableDoublings.ts`:
 `VARIABLE_DOUBLING_FORMS`, `doublingPositions`/`positionCount`, and
 `buildDoublingVoicing`.
 
-**Honest scope limit**: Figure 57 also draws a *specific* registral
-spacing for each position (including "black note" unison-vs-octave
-variants and a clockwise/counterclockwise split for S(5)①'s six
-positions) that didn't resolve unambiguously even at high render
+**Chapter 7 (Inversions of the S(5) Chord)** generalizes the same
+machinery to S(6), the first inversion — "the only condition under which
+S(5) becomes an S(6) is when the third (3) appears in the bass" (p.406).
+The doubling notation carries over unchanged, but since the bass now
+removes a "3" from the full 4-voice chord instead of a "1", the
+position-count pairing *flips*: S(6)① and S(6)⑤ get only 3 positions each
+("systematized through... the doubled function appears above / surrounds /
+below the remaining function" — the same three orderings, just newly
+named), while S(6)③ gets the full 6, matching the book's own six-column
+layout for it (confirmed by rendering p.406-407 at high resolution — the
+OCR badly mangled the circled-number notation here). The book's own claim
+that "S(6)① is identical with S(5)① positions, except that the bass has
+constant 3" checks out exactly: it's literally S(5)①'s own four pitches
+(`{1,1,3,5}`) with a 3 moved into the bass instead of a 1.
+`upperVoiceFunctions(doubledFunction, bassFunction)` captures this as one
+general rule — "the full 4-function chord minus whatever sits in the
+bass" — from which both `VARIABLE_DOUBLING_FORMS` (Ch. 6, bass=root) and
+`INVERSION_DOUBLING_FORMS` (Ch. 7, bass=third) are derived.
+
+**Honest scope limit**: both chapters' figures also draw *specific*
+registral spacings for each position (including "black note"
+unison-vs-octave variants and the clockwise/counterclockwise six-way
+split itself) that didn't resolve unambiguously even at high render
 resolution — not reproduced here. `buildDoublingVoicing` stacks each
 position's functions upward from the bass in plain close position
 instead, a reasonable but independent implementation choice, not a
-transcription of the book's own specific voicings. Figures 68-69 (the
-C3/C5/C7 transformation tables between doubling forms) are likewise not
-built, for the same reason — worth revisiting against a cleaner scan.
+transcription of either chapter's specific voicings. Each chapter's own
+Figures 68-69 (the C3/C5/C7 transformation tables between doubling/
+inversion forms) are likewise not built, for the same reason — worth
+revisiting against cleaner scans. Ch. 7's Figures 77-78 (diatonic
+doubling-preference tables keyed by scale degree) and its Section B
+(continuity forms alternating S(5)/S(6), built from Book I's own growth
+series) are compositional/stylistic guidance rather than deterministic
+formulas, so they aren't built either — same treatment as every other
+"compositional guidance" section scoped out project-wide.
 
 ## Percussion mapping
 

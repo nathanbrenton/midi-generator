@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DOUBLED_FUNCTIONS,
   VARIABLE_DOUBLING_FORMS,
+  INVERSION_DOUBLING_FORMS,
   doublingPositions,
   buildDoublingVoicing,
   type DoubledFunction,
@@ -20,6 +21,7 @@ function noteName(midiNote: number): string {
 export default function VariableDoublingsPanel() {
   const [root, setRoot] = useState(60);
   const [structureId, setStructureId] = useState<StructureId>(1);
+  const [inversion, setInversion] = useState<"root" | "first">("root");
   const [doubledFunction, setDoubledFunction] = useState<DoubledFunction>(3);
   const [positionIndex, setPositionIndex] = useState(0);
 
@@ -32,13 +34,16 @@ export default function VariableDoublingsPanel() {
   const structure = S5_STRUCTURES[structureId];
   const intervals = { third: structure.intervals[0], fifth: structure.intervals[0] + structure.intervals[1] };
 
-  const positions = useMemo(() => doublingPositions(doubledFunction), [doubledFunction]);
-  useEffect(() => setPositionIndex(0), [doubledFunction]);
+  const forms = inversion === "root" ? VARIABLE_DOUBLING_FORMS : INVERSION_DOUBLING_FORMS;
+  const form = forms[doubledFunction];
+
+  const positions = useMemo(() => doublingPositions(form), [form]);
+  useEffect(() => setPositionIndex(0), [inversion, doubledFunction]);
   const activePosition = positions[Math.min(positionIndex, positions.length - 1)];
 
   const voicing = useMemo(
-    () => buildDoublingVoicing(activePosition, root, intervals),
-    [activePosition, root, intervals.third, intervals.fifth],
+    () => buildDoublingVoicing(form, activePosition, root, intervals),
+    [form, activePosition, root, intervals.third, intervals.fifth],
   );
 
   const notes: NoteEvent[] = useMemo(() => {
@@ -129,17 +134,22 @@ export default function VariableDoublingsPanel() {
 
   return (
     <section className="schillinger__section schillinger__section--wide">
-      <h3>Variable Doublings in Harmony (Book V, Ch. 6)</h3>
+      <h3>Variable Doublings &amp; Inversions of S(5) (Book V, Ch. 6-7)</h3>
       <p className="schillinger__hint">
-        With the root always held in the bass, one function is additionally doubled among the
-        upper three voices: S(5)① keeps all three functions distinct up top (1,3,5); S(5)③
-        doubles the third instead, so the root drops out of the upper voices (3,3,5); S(5)⑤
-        doubles the fifth (3,5,5) — the book's own comparative table (p.401). "Only three
-        positions are possible" for ③ and ⑤ — exactly <code>generalPermutations</code> (Ch. 9) on
-        a multiset with a repeated pair (3!/2!=3); ① gets the full six, since its three functions
-        are distinct. The specific register each position stacks into is this app's own choice,
-        not a reproduction of the book's Figure 57 (the scan didn't resolve that level of detail
-        cleanly) — only the doubling forms and position count are book-verified.
+        With the root held in the bass (S(5)), one function is additionally doubled among the
+        upper three voices: ① keeps all three functions distinct up top (1,3,5); ③ doubles the
+        third instead, so the root drops out of the upper voices (3,3,5); ⑤ doubles the fifth
+        (3,5,5) — the book's own comparative table (p.401). "Only three positions are possible"
+        for ③ and ⑤ — exactly <code>generalPermutations</code> (Ch. 9) on a multiset with a
+        repeated pair (3!/2!=3); ① gets the full six, since its three functions are distinct.
+        Ch. 7's S(6) is the first inversion — the third stays in the bass instead — and reuses
+        the exact same doubling notation, but since the bass now removes a "3" from the full
+        chord instead of a "1", the position-count pairing flips: S(6)① and S(6)⑤ get only 3
+        positions, S(6)③ gets 6 (confirmed by rendering p.406-407, including the book's own
+        "S(6)① is identical with S(5)① positions, except the bass has constant 3"). The specific
+        register each position stacks into is this app's own choice, not a reproduction of
+        either chapter's figure (the scans didn't resolve that level of detail cleanly) — only
+        the doubling forms and position counts are book-verified.
       </p>
       <div className="schillinger__row">
         <label>
@@ -157,11 +167,18 @@ export default function VariableDoublingsPanel() {
           </select>
         </label>
         <label>
+          Inversion
+          <select value={inversion} onChange={(e) => setInversion(e.target.value as "root" | "first")}>
+            <option value="root">Root position — S(5) (Ch. 6)</option>
+            <option value="first">First inversion — S(6) (Ch. 7)</option>
+          </select>
+        </label>
+        <label>
           Doubled function
           <select value={doubledFunction} onChange={(e) => setDoubledFunction(Number(e.target.value) as DoubledFunction)}>
             {DOUBLED_FUNCTIONS.map((fn) => (
               <option key={fn} value={fn}>
-                {VARIABLE_DOUBLING_FORMS[fn].label}
+                {forms[fn].label}
               </option>
             ))}
           </select>
@@ -178,8 +195,8 @@ export default function VariableDoublingsPanel() {
         </label>
       </div>
       <div className="schillinger__readout">
-        {positions.length} position{positions.length === 1 ? "" : "s"} for {VARIABLE_DOUBLING_FORMS[doubledFunction].label} ·
-        bass {noteName(voicing.bass)} · upper {voicing.upper.map(noteName).join("-")}
+        {positions.length} position{positions.length === 1 ? "" : "s"} for {form.label} · bass{" "}
+        {noteName(voicing.bass)} · upper {voicing.upper.map(noteName).join("-")}
       </div>
 
       <h4>Playback</h4>
