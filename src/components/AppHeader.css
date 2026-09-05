@@ -1,0 +1,33 @@
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.app-header__nav {
+  display: flex;
+  gap: 1.5rem;
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 0.75rem 2rem;
+}
+
+.app-header__link {
+  color: color-mix(in srgb, currentColor 60%, transparent);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid transparent;
+}
+
+.app-header__link:hover {
+  color: currentColor;
+}
+
+.app-header__link--active {
+  color: currentColor;
+  border-bottom-color: currentColor;
+}

@@ -430,9 +430,6 @@ export default function MotifExplorerPage() {
 
   return (
     <main className="motif-page">
-      <p className="motif-page__nav">
-        <a href="#/">← Back to full generator</a>
-      </p>
       <h1>Motif Explorer</h1>
       <p className="motif-page__intro">
         A focused workbench for building and auditioning one short musical idea —

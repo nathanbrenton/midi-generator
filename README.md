@@ -73,6 +73,42 @@ book presents them as distinct variation mechanisms, not composable) — the
 "Motif length" window and rotation browsing below work identically on top
 of either one's output.
 
+## Switching modes
+
+Three modes share the app now — the chapter tour (`#/`, the default),
+Motif Explorer (`#motif`), and Compose (`#compose`) — via a sticky
+`AppHeader` (`src/components/AppHeader.tsx`) rendered above whichever page
+is active, so switching is always one click away regardless of scroll
+position. Still no router dependency: `App.tsx` derives the active mode
+straight from `useHashRoute()`'s hash value. Adding this meant moving the
+page-content padding that used to live on `body` (in `index.css`) onto
+each page's own top-level wrapper instead (`.app`, `.motif-page`,
+`.compose-page`) — a sticky header needs to sit flush against the true
+top of the viewport, which a padded `body` would otherwise leave a gap
+above.
+
+## Compose
+
+The most minimal mode yet — deliberately built "from scratch," working
+through the Schillinger system in sequence rather than exposing everything
+at once: no scales, no polyphony, just a single looping monophonic
+resultant (Book I Ch. 2A) and the two most fundamental ways to vary it.
+**Left/right** shift which attack starts the loop — a plain rotation of
+the resultant's own segments (`circularPermutations`, Ch. 9), reused here
+for "moving through" the cycle rather than for generating distinct reorderings.
+**Up/down** progressively introduce rests: `restCombinations` (built
+earlier for sample analysis) enumerates every way of choosing exactly N of
+the current rotation's positions to go silent, holding their position and
+duration fixed; concatenating that across every rest count from 0 up to
+"all positions" gives one continuous, orderable sequence to step through —
+pressing up from a clean loop introduces one rest, then walks through every
+single-rest position before moving on to two-rest combinations, and so on.
+Every attack plays as a short click (GM closed hi-hat, channel 10) — no
+new core code beyond that combined-rest-count helper, since Compose
+reuses `generateResultant`, `circularPermutations`, `restCombinations`,
+`buildNoteEventsFromSignedSegments`, and `MidiPreview` entirely as-is.
+`src/pages/ComposePage.tsx`.
+
 ## The theory, briefly
 
 Schillinger's Book I builds rhythm from **interference of periodicities**:

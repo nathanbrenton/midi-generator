@@ -17,18 +17,20 @@
 
 body {
   margin: 0;
-  padding: 2rem;
   font-family: system-ui, sans-serif;
   background: var(--bg);
   color: var(--fg);
 }
 
+/* Page content wrappers each own their padding (rather than body) so a
+   sticky header (AppHeader) can sit flush against the very top edge. */
 .app {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   max-width: 60rem;
   margin: 0 auto;
+  padding: 2rem;
 }
 
 .app h1 {
