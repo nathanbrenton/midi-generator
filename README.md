@@ -689,6 +689,32 @@ a final integer repeat count — reproducing the book's own worked example
 `T''=8`) exactly: steps `32 → 16/3 → 160/3 → 20/3`, then "scaling ×3 clears
 the fraction: repeats 20 times."
 
+**Motif Explorer also has an interactive version of this same chapter**
+(`CoordinationCard.tsx`, its own card below the piano roll) — reusing the
+exact same, already-verified `timeStructureCoordination.ts` functions, not
+a second implementation. The difference is entirely in how `aa` gets
+supplied: instead of typing a bare number, you build a real attack-group
+the same way the rest of the page builds a motif — pick a resultant case,
+window a range of it (the same paired range-slider control used
+elsewhere), and click individual attacks to mute them (reusing
+`SchillingerPianoRoll`'s `onSegmentClick`, the identical interaction the
+main piano roll uses for note/rest toggling) — `aa` is simply the count of
+attacks left sounding. The duration-group (`aT`, `T`) is the page's
+*shared* resultant window, passed in as a prop, per direct instruction not
+to duplicate that selection UI a second time here. When the full
+pli/pla/aa/aT chain resolves to a whole number of repeats, the card
+renders an actual second piano roll: the duration-group's own segments,
+tiled that many times — a real, look-at-it result, not just a number. When
+it doesn't resolve evenly (the book's own Section C example needs the
+whole system scaled ×3), the card shows the exact fraction chain only,
+with a note explaining why, rather than fabricating a rhythm the book
+itself never mechanically derives either — its own "Final Scoring"
+figures for that case are hand-composed illustrations, not something
+`coordinateTimeStructures` output can be turned into note-for-note without
+inventing a subdivision convention the source doesn't specify. Playback
+for this card's own output is a natural next step, deliberately not
+included in this pass.
+
 ## Permutations (rhythmic variation)
 
 A fifth panel (`PermutationsPanel.tsx`, right after Ch. 8) covers Ch. 9 —

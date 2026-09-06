@@ -1,0 +1,53 @@
+.coordination-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+}
+
+.coordination-card__title {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.coordination-card__hint {
+  margin: 0;
+  color: color-mix(in srgb, currentColor 60%, transparent);
+  font-size: 0.75rem;
+}
+
+.coordination-card__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.coordination-card select,
+.coordination-card input {
+  font-size: 0.8rem;
+}
+
+.coordination-card__roll {
+  width: 100%;
+}
+
+.coordination-card__caption {
+  margin: 0;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+  font-size: 0.72rem;
+}
+
+.coordination-card__readout {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: color-mix(in srgb, currentColor 75%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+}

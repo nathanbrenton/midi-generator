@@ -11,6 +11,7 @@ import { buildMidiFile } from "../core/midi";
 import { type PianoRollLane } from "../components/SchillingerPianoRoll";
 import MidiPreview from "../components/MidiPreview";
 import type { HeaderAction } from "../components/AppHeader";
+import CoordinationCard from "../components/CoordinationCard";
 import "../components/SchillingerGenerator.css";
 import "./MotifExplorerPage.css";
 
@@ -1013,6 +1014,8 @@ export default function MotifExplorerPage({
           </section>
         </div>
       </div>
+
+      <CoordinationCard durationGroupSegments={windowDurations} />
 
       {/* Technical/status readouts nobody needs front-and-center, day to
           day -- tucked into their own quiet footer rather than competing
