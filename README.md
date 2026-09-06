@@ -1200,6 +1200,55 @@ independent structure choices, confirmed by hand but not worth a
 dedicated function) are compositional guidance rather than reusable
 primitives.
 
+**The rest of Chapter 8, worked through page by page**: Section C
+("Generalization of G6... other than C-5 cycles within the group") turns
+out to need *no new code at all* — `passingSixthChord` already computes
+the passing chord purely from the first chord's own root/third/fifth,
+with no reference to whatever cycle connects to the next chord, so
+feeding `buildPassingSixthGroups` a progression built on C3/C7/C-5/etc.
+instead of C-5 already produces G6(C3), G6(C7), and so on, exactly as
+Section C describes — confirmed by reading the code, not by guessing.
+Sections D-F and H are pure combinatorics and compositional-sequencing
+guidance (counts like "4²=16 forms" and "2⁴=16 melodic forms," or how to
+lay out mixed cycle/group continuities by bar) — no formulas to
+implement, same disposition as Section B. **Section G (Passing
+Fourth-Sixth Chords, S(4/6), p.427-434)** is a genuinely new, well-defined
+technique — G4/6 = S(5)+S(4/6)+S(6), *reversible* (unlike G6), with 4
+variants (ascending/descending × two doubling choices) and an explicit
+"S(5) → C-5 → S(4/6) → C5 → S(6)" relations chain — but implementing it
+correctly hits a real architecture question: the book's own description
+needs the *variable-doubling* system (Ch. 6/7's S(6)①/S(6)③, "which
+function is doubled") for its final chord, and that system
+(`variableDoublings.ts`) uses a different chord representation (explicit
+semitone `TriadIntervals`, doubling-aware) than the scale-degree `Voicing`
+type Ch. 8's own G6 code is built on. Reconciling the two — or building
+G4/6 on top of `variableDoublings.ts` instead — is a real design choice,
+not something to guess at solo; flagged for discussion rather than forced
+through. Not yet implemented.
+
+## The seventh chord (Book V, Ch. 9, Section A)
+
+`SeventhChordPanel.tsx` (`src/core/seventhChords.ts`). A seventh-chord
+stacks a fourth third onto S(5): root, third, fifth, seventh (p.436).
+"The postulate of resolving seventh — the seventh moves one step down —
+is the basis of the entire system of diatonic continuity." Reading the
+book's own circular-arrow diagrams directly (OCR mangles this passage
+badly, so PDF p.245 was rendered at high resolution before writing any of
+this): each cycle relabels the 4 voices differently. C3 ("the seventh
+alone") is a straight 4-cycle, 1→3→5→7→1 — a direct extension of the
+existing Ch. 2 clockwise voice-leading map (`root→third→fifth→root`) by
+one more step. C7 ("the seventh, the fifth, and the third") is the exact
+mirror, 1→7→5→3→1. C5 ("the seventh and the fifth") is *not* a 4-cycle —
+the figure shows a "+"-shaped cross pairing 1↔5 and 3↔7, a double-swap
+(applying it twice returns to the start), matching the figure's own
+alternating 2-chord pattern rather than a 4-chord cycle. All three
+confirmed by hand before coding: a Cmaj7 {C,E,G,B} under C3 produces
+exactly Em7, under C5 exactly G7, and under C7 exactly Bm7♭5 — matching
+Figures 117-119's own worked chord sequences. `transformSeventhVoicing`
+is the direct 4-function generalization of `transformVoicing`, reusing
+`nearestPitch` for the same minimal-movement voice-leading used
+everywhere else in this project.
+
 ## The symmetric system of harmony (Book V, Ch. 3)
 
 `SymmetricHarmonyPanel.tsx` (`src/core/symmetricHarmony.ts`). Unlike
