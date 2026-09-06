@@ -27,6 +27,8 @@ export interface SchillingerPianoRollProps {
   playheadFraction?: number;
   /** Drops the left-hand lane-label column entirely, giving the roll the full width. */
   hideLabels?: boolean;
+  /** When set, every segment becomes clickable (note<->rest toggling is the caller's job). */
+  onSegmentClick?: (laneIndex: number, segmentIndex: number) => void;
 }
 
 const LABEL_WIDTH = 130;
@@ -46,6 +48,7 @@ export default function SchillingerPianoRoll({
   timeSignature,
   playheadFraction,
   hideLabels = false,
+  onSegmentClick,
 }: SchillingerPianoRollProps) {
   const labelWidth = hideLabels ? 0 : LABEL_WIDTH;
   const totalWidth = labelWidth + ROLL_WIDTH;
@@ -119,16 +122,20 @@ export default function SchillingerPianoRoll({
                 rx={3}
                 fill={fill}
                 stroke={isRest ? lane.color : undefined}
+                onClick={onSegmentClick ? () => onSegmentClick(laneIndex, segmentIndex) : undefined}
                 className={[
                   "piano-roll__note",
                   isRest && "piano-roll__note--rest",
                   segment.matched && "piano-roll__note--matched",
                   segment.looped && "piano-roll__note--looped",
+                  onSegmentClick && "piano-roll__note--clickable",
                 ]
                   .filter(Boolean)
                   .join(" ")}
               />
-              {!isRest && <rect x={x} y={y + 3} width={Math.max(width - 1, 0)} height={4} rx={2} fill={highlight} />}
+              {!isRest && (
+                <rect x={x} y={y + 3} width={Math.max(width - 1, 0)} height={4} rx={2} fill={highlight} style={{ pointerEvents: "none" }} />
+              )}
               {width >= MIN_LABEL_WIDTH && (
                 <text
                   x={x + width / 2}

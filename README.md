@@ -74,6 +74,16 @@ clean loop introduces one rest, walks through every single-rest position,
 then moves on to two-rest combinations, and so on. **Space** plays/stops.
 All three are guarded to no-op while a text/number input has focus.
 
+**Click a blob to toggle it between note and rest directly**, rather than
+only browsing rests with ↑/↓. Since `restCombinations` concatenated across
+every rest count already enumerates *every* possible note/rest pattern for
+the current window, a click doesn't track a separate manual override —
+it flips that one position's sign and looks up which existing entry in
+that same list the result matches, then jumps the active voice's position
+in the list straight there. The next ↑/↓ press continues from that exact
+spot, browsing its neighbors, rather than losing the manual edit or
+restarting from the clean pattern.
+
 **Layout: the piano roll is the whole point, and the D-pad itself carries
 no status text or lane labels** — cycle info and per-voice labeling live in
 the transport bar instead (`SchillingerPianoRoll` takes a `hideLabels` prop
@@ -112,8 +122,25 @@ mechanisms, not composable). **Motif length** is a sliding `{start,
 length}` window over the resultant's segments — the same mechanic as the
 main generator's "Loop a range" control, generalized here into the primary
 length control, with an added "by beats" mode that grows the window to the
-smallest number of events reaching a target beat count, and linked across
-both voices so they stay positioned relative to each other.
+smallest number of events reaching a target beat count, and shared across
+both voices so they stay positioned relative to each other. It's a paired
+**range slider + number input**, not a bare number field: the slider's own
+max is computed as "everything left from the current start to the end of
+the window's own source material" (event count, or summed duration in
+"by beats" mode) rather than an arbitrary cap, and a **Max** button next to
+it jumps straight to that full length in one click — dragging handles
+coarse reach-for-the-end adjustment, the number field handles exact
+fine-tuning, and Max handles the common "just give me all of it" case.
+
+**Time signatures render the way they actually look on a staff** — two
+stacked digits with no dividing bar, not a slashed "3/8" string — via a
+small `TimeSignatureGlyph` component wherever a single resolved reading is
+shown as its own element (currently the transport's always-visible
+badge). A `<select>`'s own `<option>` list can't hold arbitrary markup, so
+the Length row's own time-signature *picker* is still plain text; only
+resolved, non-interactive readings get the notation-style rendering. Not
+yet swept through the main Chapter Tour page's own time-signature displays
+— flagged as a natural follow-up if wanted there too.
 
 **The preview itself is `src/components/MidiPreview.tsx`** — a standalone,
 reusable D-pad wrapper around `SchillingerPianoRoll` (purely presentational,

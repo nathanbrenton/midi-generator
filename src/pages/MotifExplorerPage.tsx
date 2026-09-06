@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BINARY_SYNCHRONIZATION_CASES, type Resultant, type ResultantSegment } from "../core/resultant";
 import { buildResultantForTechnique, type Technique } from "../core/technique";
 import { THREE_GENERATOR_CASES, buildTheme } from "../core/threeGenerators";
-import { computeLoopTimeSignatureOptions } from "../core/timeSignature";
+import { computeLoopTimeSignatureOptions, type TimeSignatureOption } from "../core/timeSignature";
 import { higherOrderElements } from "../core/higherOrderPermutations";
 import { restCombinations, buildNoteEventsFromSignedSegments } from "../core/sampleAnalysis";
 import { PERCUSSION_VOICE_OPTIONS, GM_DRUM_CHANNEL } from "../core/percussion";
@@ -39,6 +39,25 @@ function allRestVariations(durations: readonly number[]): number[][] {
     variations.push(...restCombinations(durations, restCount));
   }
   return variations;
+}
+
+/**
+ * Renders a time signature the way it actually looks on a staff -- two
+ * stacked digits, no dividing bar -- rather than a slashed "3/8" string.
+ * Only usable outside a <select>'s own <option> list (those can't hold
+ * arbitrary markup), which is why the Length row's picker below still
+ * falls back to the plain-text `.label`.
+ */
+function TimeSignatureGlyph({ option }: { option: TimeSignatureOption }) {
+  return (
+    <span className="timesig">
+      {option.bars > 1 && <span className="timesig__bars">{option.bars}×</span>}
+      <span className="timesig__fraction">
+        <span className="timesig__num">{option.beatsPerBar}</span>
+        <span className="timesig__den">{option.denominator}</span>
+      </span>
+    </span>
+  );
 }
 
 type ExtendMode = "technique" | "growth";
@@ -270,6 +289,17 @@ export default function MotifExplorerPage() {
   const restVariations = useMemo(() => allRestVariations(windowDurations), [windowDurations]);
   const totalUnits = useMemo(() => windowDurations.reduce((sum, v) => sum + v, 0), [windowDurations]);
 
+  // Upper bounds for the length slider: the furthest either mode can
+  // stretch the window is "everything left from the current start to the
+  // end of the (repeated/grown) resultant" -- used both as the slider's
+  // max and as the target for a one-click "extend to max" button.
+  const maxEventsLength = Math.max(1, totalSegments - clampedStart);
+  const maxTargetBeats = useMemo(() => {
+    let sum = 0;
+    for (let i = clampedStart; i < totalSegments; i++) sum += repeatedResultant.segments[i].duration;
+    return Math.max(1, sum);
+  }, [repeatedResultant, clampedStart, totalSegments]);
+
   const [voices, setVoices] = useState<VoiceState[]>([defaultVoice("Closed hi-hat")]);
   const [activeVoiceTab, setActiveVoiceTab] = useState(0);
 
@@ -428,6 +458,24 @@ export default function MotifExplorerPage() {
     togglePlayback,
   };
 
+  /**
+   * Clicking a blob flips just that one position between note and rest.
+   * Every possible note/rest combination for the current window already
+   * exists somewhere in `restVariations` (it's every subset of positions
+   * at every rest count), so rather than track a manual override
+   * alongside the up/down index, this looks up which existing variation
+   * the flipped pattern IS and jumps `restIndex` straight to it -- the
+   * next press of up/down then continues from that exact spot, browsing
+   * its neighbors, instead of losing the manual edit.
+   */
+  function toggleSegment(voiceIndex: number, segmentIndex: number) {
+    const current = voiceOutputs[voiceIndex]?.activeSigned;
+    if (!current) return;
+    const flipped = current.map((v, i) => (i === segmentIndex ? -v : v));
+    const matchIndex = restVariations.findIndex((variation) => variation.every((v, i) => v === flipped[i]));
+    if (matchIndex >= 0) updateVoice(voiceIndex, { restIndex: matchIndex });
+  }
+
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement>(null);
 
@@ -489,7 +537,11 @@ export default function MotifExplorerPage() {
             {isPlaying ? "❚❚" : "▶"}
           </button>
 
-          {selectedTimeSignature && <div className="motif-transport__timesig">{selectedTimeSignature.label}</div>}
+          {selectedTimeSignature && (
+            <div className="motif-transport__timesig">
+              <TimeSignatureGlyph option={selectedTimeSignature} />
+            </div>
+          )}
 
           <div className="motif-transport__info">
             {totalUnits} units · {editingOutput.activeSigned.length} events
@@ -657,21 +709,51 @@ export default function MotifExplorerPage() {
             />
           </label>
           {lengthMode === "events" ? (
-            <label className="motif-transport__tempo">
-              Length
+            <div className="motif-transport__lengthslider">
+              <span>Length</span>
+              <input
+                type="range"
+                min={1}
+                max={maxEventsLength}
+                value={Math.min(loopSelection.length, maxEventsLength)}
+                onChange={(e) => setLoopSelection((sel) => ({ ...sel, length: Number(e.target.value) }))}
+              />
               <input
                 type="number"
                 min={1}
-                max={totalSegments}
+                max={maxEventsLength}
                 value={loopSelection.length}
                 onChange={(e) => setLoopSelection((sel) => ({ ...sel, length: Number(e.target.value) }))}
               />
-            </label>
+              <button
+                type="button"
+                className="motif-transport__lengthmax"
+                onClick={() => setLoopSelection((sel) => ({ ...sel, length: maxEventsLength }))}
+              >
+                Max
+              </button>
+            </div>
           ) : (
-            <label className="motif-transport__tempo">
-              Target beats
-              <input type="number" min={1} max={64} value={targetBeats} onChange={(e) => setTargetBeats(Number(e.target.value))} />
-            </label>
+            <div className="motif-transport__lengthslider">
+              <span>Beats</span>
+              <input
+                type="range"
+                min={1}
+                max={maxTargetBeats}
+                value={Math.min(targetBeats, maxTargetBeats)}
+                onChange={(e) => setTargetBeats(Number(e.target.value))}
+              />
+              <input
+                type="number"
+                min={1}
+                max={maxTargetBeats}
+                value={targetBeats}
+                onChange={(e) => setTargetBeats(Number(e.target.value))}
+              />
+              <button type="button" className="motif-transport__lengthmax" onClick={() => setTargetBeats(maxTargetBeats)}>
+                Max
+              </button>
+            </div>
           )}
           {timeSignatureOptions.length > 1 && (
             <select value={timeSignatureIndex} onChange={(e) => setTimeSignatureIndex(Number(e.target.value))} aria-label="Time signature">
@@ -695,6 +777,7 @@ export default function MotifExplorerPage() {
                 timeSignature={selectedTimeSignature}
                 playheadFraction={isPlaying ? playheadFraction : undefined}
                 hideLabels
+                onSegmentClick={toggleSegment}
                 onShiftLeft={() => handlersRef.current.moveWindow(-1)}
                 onShiftRight={() => handlersRef.current.moveWindow(1)}
                 canShiftLeft={clampedStart > 0}

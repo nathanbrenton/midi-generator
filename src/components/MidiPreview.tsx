@@ -17,6 +17,8 @@ export interface MidiPreviewProps {
   canCycle: boolean;
   /** Drops the piano roll's left-hand lane-label column; pass when the caller labels lanes elsewhere. */
   hideLabels?: boolean;
+  /** When set, clicking a segment toggles it (caller decides note<->rest semantics). */
+  onSegmentClick?: (laneIndex: number, segmentIndex: number) => void;
 }
 
 /**
@@ -43,6 +45,7 @@ export default function MidiPreview({
   onCycleDown,
   canCycle,
   hideLabels,
+  onSegmentClick,
 }: MidiPreviewProps) {
   return (
     <div className="midi-preview">
@@ -64,6 +67,7 @@ export default function MidiPreview({
           timeSignature={timeSignature}
           playheadFraction={playheadFraction}
           hideLabels={hideLabels}
+          onSegmentClick={onSegmentClick}
         />
       </div>
       <button

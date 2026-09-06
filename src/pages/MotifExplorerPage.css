@@ -55,13 +55,35 @@
 }
 
 .motif-transport__timesig {
-  font-family: ui-monospace, monospace;
-  font-weight: 600;
-  font-size: 0.85rem;
-  padding: 0.15rem 0.45rem;
+  display: flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
   border-radius: 6px;
   background: color-mix(in srgb, currentColor 10%, transparent);
   white-space: nowrap;
+}
+
+/* Notation-style time signature: two stacked digits, no dividing bar. */
+.timesig {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.timesig__bars {
+  font-family: ui-monospace, monospace;
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.timesig__fraction {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-family: ui-monospace, monospace;
 }
 
 .motif-transport__info {
@@ -125,6 +147,46 @@
 
 .motif-transport__tempo input {
   width: 3.2rem;
+}
+
+.motif-transport__lengthslider {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1 1 12rem;
+  min-width: 9rem;
+}
+
+.motif-transport__lengthslider span {
+  white-space: nowrap;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+.motif-transport__lengthslider input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 5rem;
+  accent-color: #3d7ddb;
+}
+
+.motif-transport__lengthslider input[type="number"] {
+  width: 3.4rem;
+  flex-shrink: 0;
+}
+
+.motif-transport__lengthmax {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  color: currentColor;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.motif-transport__lengthmax:hover {
+  background: color-mix(in srgb, currentColor 18%, transparent);
 }
 
 .motif-transport__overflow {
