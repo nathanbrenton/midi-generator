@@ -257,7 +257,7 @@ export default function MotifExplorerPage({
 
   // Motif length / window (the "cycle contract/expand" control).
   const [loopSelection, setLoopSelection] = useState({ start: 0, length: 4 });
-  const [lengthMode, setLengthMode] = useState<LengthMode>("events");
+  const [lengthMode, setLengthMode] = useState<LengthMode>("beats");
   const [targetBeats, setTargetBeats] = useState(4);
 
   useEffect(() => {
@@ -540,13 +540,13 @@ export default function MotifExplorerPage({
   return (
     <main className="motif-page">
       <div className="motif-transport">
-        <div className="motif-transport__row">
+        <div className="motif-transport__row motif-transport__row--playback">
           <button type="button" className="motif-transport__play" onClick={togglePlayback}>
             {isPlaying ? "❚❚" : "▶"}
           </button>
 
           {selectedTimeSignature && (
-            <div className="motif-transport__timesig">
+            <div className="motif-transport__timesig-dominant">
               <TimeSignatureGlyph option={selectedTimeSignature} />
               {timeSignatureOptions.length > 1 && (
                 <select
@@ -564,18 +564,6 @@ export default function MotifExplorerPage({
               )}
             </div>
           )}
-
-          <div className="motif-transport__info">
-            {totalUnits} units · {editingOutput.activeSigned.length} events
-            {editingOutput.activeRestCount > 0 && (
-              <>
-                {" "}
-                · {editingOutput.activeRestCount} rest{editingOutput.activeRestCount === 1 ? "" : "s"}
-              </>
-            )}
-          </div>
-
-          <div className="motif-transport__spacer" />
 
           <label className="motif-transport__tempo">
             <input type="number" min={40} max={220} value={bpm} onChange={(e) => setBpm(Number(e.target.value))} />
@@ -819,6 +807,19 @@ export default function MotifExplorerPage({
           </section>
         </div>
       </div>
+
+      {/* Technical/status readouts nobody needs front-and-center, day to
+          day -- tucked into their own quiet footer rather than competing
+          with the transport for attention. */}
+      <footer className="motif-footer">
+        {totalUnits} units · {editingOutput.activeSigned.length} events
+        {editingOutput.activeRestCount > 0 && (
+          <>
+            {" "}
+            · {editingOutput.activeRestCount} rest{editingOutput.activeRestCount === 1 ? "" : "s"}
+          </>
+        )}
+      </footer>
     </main>
   );
 }

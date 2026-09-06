@@ -90,32 +90,40 @@ scheduled, and the very next pass simply reflects the edit (see
 
 **Layout is organized by how often each control actually gets touched**,
 not just by what kind of setting it is. A Logic-style transport bar sits
-above the roll, stacked into rows: **(1)** Play/Pause, a notation-style
-time signature badge (two stacked digits, no dividing bar — see below)
-with its own reading-picker grouped directly into it, a compact
-cycle-length readout for whichever voice tab is active, and Tempo
-(defaults to 124bpm); **(2)** the frequently-changed resultant case and
-technique picker, at full visual weight; **(3)** the rarely-touched
-generator count and Extend-mode/Repeat-or-Order controls, visually
-quieter (smaller, muted) and explicitly labeled ("Generators," "Extend,"
-"Repeat") since a control you touch once a session benefits from a label
-more than one you're already fluent with; **(4)** the voice tabs plus that
-voice's own drum-sound choice; **(5)** the motif-length window — an
-Events/Beats mode toggle compacted into a small segmented control (a
-"set once and forget it" choice doesn't need two full radio+label pairs'
-worth of width), then **paired range-slider + number-input + Max button**
-groups for both **Start** and **Length** — dragging handles coarse
-positioning, the number field handles exact fine-tuning, Max jumps
+above the roll, stacked into rows: **(1)** Play/Pause, a **dominant,
+fixed-position notation-style time signature badge** (two stacked digits,
+no dividing bar, with its own reading-picker grouped directly into it),
+and Tempo (defaults to 124bpm) — laid out on a 3-column grid
+(`1fr auto 1fr`), not flexbox, specifically so the badge's position can't
+drift when Play/Pause's icon or Tempo's digit count changes width; the two
+side columns absorb the size difference equally, keeping the badge exactly
+centered regardless of what's selected around it; **(2)** the
+frequently-changed resultant case and technique picker, at full visual
+weight; **(3)** the rarely-touched generator count and Extend-mode/
+Repeat-or-Order controls, visually quieter (smaller, muted) and explicitly
+labeled ("Generators," "Extend," "Repeat") since a control you touch once
+a session benefits from a label more than one you're already fluent with;
+**(4)** the voice tabs plus that voice's own drum-sound choice; **(5)**
+the motif-length window — an Events/Beats mode toggle compacted into a
+small segmented control (beats is the default, since that's the more
+musically meaningful unit — "set once and forget it," not a choice most
+sessions revisit), then **paired range-slider + number-input + Max
+button** groups for both **Start** and **Length** — dragging handles
+coarse positioning, the number field handles exact fine-tuning, Max jumps
 straight to the far end. **Download MIDI — rarely used — isn't in this
 page's transport at all**: it lives in the app's own top header, in an
 overflow (`⋯`) menu next to the Chapter Tour/Motif Explorer links, which
 Motif Explorer populates via a small `onHeaderActionChange` callback prop
 (`App.tsx` holds the actual `headerAction` state; `AppHeader` renders it
-generically enough that any future page could opt in the same way). Built
-mobile-first (rows wrap; the whole transport stacks cleanly at narrow
-widths) — a deliberate exception to this project's otherwise desktop-first
-convention (see "What's portable" below), specifically because this page
-is meant to eventually work as a distributable mobile app.
+generically enough that any future page could opt in the same way). A
+quiet **footer card** at the very bottom of the page holds the technical/
+status readout (units · events · rests) that used to compete for space in
+the transport itself — rarely useful info, given somewhere to live without
+crowding what actually gets used every session. Built mobile-first (rows
+wrap; the whole transport stacks cleanly at narrow widths) — a deliberate
+exception to this project's otherwise desktop-first convention (see
+"What's portable" below), specifically because this page is meant to
+eventually work as a distributable mobile app.
 
 **Playback never restarts on a live edit.** Earlier, ANY change to the
 computed `notes` (a blob click, an instrument swap, even just switching
