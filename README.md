@@ -1249,7 +1249,28 @@ is the direct 4-function generalization of `transformVoicing`, reusing
 `nearestPitch` for the same minimal-movement voice-leading used
 everywhere else in this project.
 
-## The symmetric system of harmony (Book V, Ch. 3)
+**Section B (Resolution of S(7), p.439-442) and Section C (Negative
+Cycles, p.443-444) are not yet built.** The rules are clear in prose —
+resolution: "the function which would otherwise have become a seventh...
+now becomes a root-tone" (explaining why a tonic triad ends up with a
+tripled root and no fifth); preparation: three methods (suspending,
+descending, ascending) each targeting one of the consonant functions
+(1, 3, or 5) to become the new dissonant seventh, with a clean
+method×function→cycle lookup table (e.g. suspending 1→C7, descending 1→C0,
+ascending 1→C-3) read directly off Figure 129. But the *exact* worked
+voice-leading (Figures 127 and 138, "tonic triad acquires a tripled
+root") didn't resolve unambiguously even after rendering PDF pages 247-248
+at high resolution and cropping in on the actual noteheads — the same
+kind of scan-quality wall Ch. 6/7's registral-spacing figures hit
+(documented in `variableDoublings.ts`). Section C compounds this: tested
+directly whether simply using a negative root-degree step through the
+existing machinery would produce the "negative" system's own stated
+postulate ("the negative seventh moves one step up") — it doesn't (the
+same clockwise map with a negative step still resolves downward, just by
+a smaller interval), confirming this needs a genuinely different
+permutation, not a sign flip, and isn't safe to guess at without a
+clearer source or a second opinion. Deferred, same as Ch. 8 Section G,
+rather than forced through on an uncertain reading.
 
 `SymmetricHarmonyPanel.tsx` (`src/core/symmetricHarmony.ts`). Unlike
 diatonic harmony (Ch. 2), symmetric chord structures are pre-selected
