@@ -30,6 +30,8 @@ function resultantFromSegments(segments: ResultantSegment[]): Resultant {
  * analysis, Ch.9-adjacent) at every count from 0 up to "all positions,"
  * concatenated into one steppable list. Up/down browsing this list is what
  * "introduce rests" (the original midi-preview request) actually meant.
+ * Every variation has the same total duration -- only which positions
+ * sound changes, not the underlying rhythm's length.
  */
 function allRestVariations(durations: readonly number[]): number[][] {
   const variations: number[][] = [];
@@ -41,17 +43,14 @@ function allRestVariations(durations: readonly number[]): number[][] {
 
 type ExtendMode = "technique" | "growth";
 type LengthMode = "events" | "beats";
-type LoopSelection = { start: number; length: number };
 
-/** One motif's own compositional choices — everything a second voice needs its own copy of. */
+/**
+ * A voice's own choices, independent of every other voice -- for now, per
+ * direct instruction, that's just which drum sound it plays and which of
+ * the shared rhythm's rest-variations it applies. The resultant/technique/
+ * length/tempo are shared, top-level state below.
+ */
 interface VoiceState {
-  generatorCount: 2 | 3;
-  caseIndex: number;
-  threeCaseIndex: number;
-  technique: Technique;
-  repeatCount: number;
-  extendMode: ExtendMode;
-  growthOrder: number;
   restIndex: number;
   instrumentIndex: number;
 }
@@ -61,114 +60,7 @@ function defaultVoice(instrumentLabel: string): VoiceState {
     0,
     PERCUSSION_VOICE_OPTIONS.findIndex((p) => p.label === instrumentLabel),
   );
-  return {
-    generatorCount: 2,
-    caseIndex: 0,
-    threeCaseIndex: 0,
-    technique: "plain",
-    repeatCount: 1,
-    extendMode: "technique",
-    growthOrder: 2,
-    restIndex: 0,
-    instrumentIndex,
-  };
-}
-
-interface VoiceOutput {
-  activeCaseLabel: string;
-  growthSeedsLabel: string;
-  growthEventsCount: number;
-  totalSegments: number;
-  clampedStart: number;
-  windowLength: number;
-  restVariations: number[][];
-  activeSigned: number[];
-  activeRestCount: number;
-  totalUnits: number;
-  notes: NoteEvent[];
-  lane: PianoRollLane;
-}
-
-/**
- * Everything derivable from one voice's own settings plus the *shared*
- * window (start/length are linked across voices — see the component below)
- * -- a plain function rather than a hook, since it's called once per voice.
- */
-function computeVoiceOutput(
-  voice: VoiceState,
-  trackIndex: number,
-  loopSelection: LoopSelection,
-  lengthMode: LengthMode,
-  targetBeats: number,
-  color: string,
-  highlight: string,
-): VoiceOutput {
-  const activeCase = BINARY_SYNCHRONIZATION_CASES[voice.caseIndex];
-  const activeThreeCase = THREE_GENERATOR_CASES[voice.threeCaseIndex];
-
-  const techniqueResultant: Resultant =
-    voice.generatorCount === 3
-      ? buildTheme(activeThreeCase.generators)
-      : buildResultantForTechnique(voice.technique, activeCase.a, activeCase.b);
-
-  const growthSeeds =
-    voice.generatorCount === 3 ? activeThreeCase.generators.map((g) => [g]) : [[activeCase.a], [activeCase.b]];
-  const growthElements = higherOrderElements(growthSeeds, voice.growthOrder);
-  const growthResultant = resultantFromSegments(growthElements.flat().map((duration) => ({ duration, sources: [] })));
-
-  const baseResultant = voice.extendMode === "growth" ? growthResultant : techniqueResultant;
-  const repeatedResultant =
-    voice.extendMode === "growth" || voice.repeatCount <= 1
-      ? baseResultant
-      : resultantFromSegments(Array.from({ length: voice.repeatCount }, () => baseResultant.segments).flat());
-
-  const totalSegments = repeatedResultant.segments.length;
-  const clampedStart = Math.max(0, Math.min(loopSelection.start, totalSegments - 1));
-
-  let windowLength: number;
-  if (lengthMode === "events") {
-    windowLength = Math.max(1, Math.min(loopSelection.length, totalSegments - clampedStart));
-  } else {
-    let sum = 0;
-    let count = 0;
-    for (let i = clampedStart; i < totalSegments && sum < targetBeats; i++) {
-      sum += repeatedResultant.segments[i].duration;
-      count++;
-    }
-    windowLength = Math.max(1, count);
-  }
-
-  const windowDurations = repeatedResultant.segments.slice(clampedStart, clampedStart + windowLength).map((s) => s.duration);
-  const restVariations = allRestVariations(windowDurations);
-  const activeSigned = restVariations[Math.min(voice.restIndex, restVariations.length - 1)];
-  const activeRestCount = activeSigned.filter((v) => v < 0).length;
-  const totalUnits = activeSigned.reduce((sum, v) => sum + Math.abs(v), 0);
-
-  const instrument = PERCUSSION_VOICE_OPTIONS[voice.instrumentIndex];
-  const notes = buildNoteEventsFromSignedSegments(activeSigned, instrument.midiNote, trackIndex, 100).map((note) => ({
-    ...note,
-    channel: GM_DRUM_CHANNEL,
-  }));
-
-  return {
-    activeCaseLabel: voice.generatorCount === 3 ? activeThreeCase.label : activeCase.label,
-    growthSeedsLabel: growthSeeds.map((s) => s[0]).join(", "),
-    growthEventsCount: growthResultant.segments.length,
-    totalSegments,
-    clampedStart,
-    windowLength,
-    restVariations,
-    activeSigned,
-    activeRestCount,
-    totalUnits,
-    notes,
-    lane: {
-      label: `voice-${trackIndex}`,
-      color,
-      highlight,
-      segments: activeSigned.map((v) => ({ duration: Math.abs(v), rest: v < 0 })),
-    },
-  };
+  return { restIndex: 0, instrumentIndex };
 }
 
 const VOICE_COLORS: readonly { color: string; highlight: string }[] = [
@@ -300,6 +192,84 @@ export default function MotifExplorerPage() {
   // Deliberately rhythm-only for now: "build this out in the same order
   // Schillinger's own chapters introduce it," starting with Book I. Scale
   // (pitched melody) comes back later, in sequence.
+  //
+  // Resultant/technique/length/tempo are shared across every voice, per
+  // direct instruction -- only the drum sound and rest-pattern differ.
+  const [generatorCount, setGeneratorCount] = useState<2 | 3>(2);
+  const [caseIndex, setCaseIndex] = useState(0);
+  const [threeCaseIndex, setThreeCaseIndex] = useState(0);
+  const [technique, setTechnique] = useState<Technique>("plain");
+  const [repeatCount, setRepeatCount] = useState(1);
+  const [extendMode, setExtendMode] = useState<ExtendMode>("technique");
+  const [growthOrder, setGrowthOrder] = useState(2);
+
+  const activeCase = BINARY_SYNCHRONIZATION_CASES[caseIndex];
+  const activeThreeCase = THREE_GENERATOR_CASES[threeCaseIndex];
+
+  const techniqueResultant: Resultant = useMemo(() => {
+    return generatorCount === 3
+      ? buildTheme(activeThreeCase.generators)
+      : buildResultantForTechnique(technique, activeCase.a, activeCase.b);
+  }, [generatorCount, activeThreeCase, technique, activeCase]);
+
+  const growthSeeds = useMemo(
+    () => (generatorCount === 3 ? activeThreeCase.generators.map((g) => [g]) : [[activeCase.a], [activeCase.b]]),
+    [generatorCount, activeThreeCase, activeCase],
+  );
+
+  const growthResultant: Resultant = useMemo(() => {
+    const elements = higherOrderElements(growthSeeds, growthOrder);
+    return resultantFromSegments(elements.flat().map((duration) => ({ duration, sources: [] })));
+  }, [growthSeeds, growthOrder]);
+
+  const baseResultant = extendMode === "growth" ? growthResultant : techniqueResultant;
+
+  const repeatedResultant = useMemo(() => {
+    if (extendMode === "growth" || repeatCount <= 1) return baseResultant;
+    return resultantFromSegments(Array.from({ length: repeatCount }, () => baseResultant.segments).flat());
+  }, [baseResultant, repeatCount, extendMode]);
+
+  const totalSegments = repeatedResultant.segments.length;
+
+  // Motif length / window (the "cycle contract/expand" control).
+  const [loopSelection, setLoopSelection] = useState({ start: 0, length: 4 });
+  const [lengthMode, setLengthMode] = useState<LengthMode>("events");
+  const [targetBeats, setTargetBeats] = useState(4);
+
+  useEffect(() => {
+    setLoopSelection({ start: 0, length: Math.max(2, Math.min(4, totalSegments)) });
+    // Reset the window to a sensible default whenever the underlying shape changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generatorCount, activeCase, activeThreeCase, technique, repeatCount, extendMode, growthOrder]);
+
+  const clampedStart = Math.max(0, Math.min(loopSelection.start, totalSegments - 1));
+
+  const windowLength = useMemo(() => {
+    if (lengthMode === "events") {
+      return Math.max(1, Math.min(loopSelection.length, totalSegments - clampedStart));
+    }
+    let sum = 0;
+    let count = 0;
+    for (let i = clampedStart; i < totalSegments && sum < targetBeats; i++) {
+      sum += repeatedResultant.segments[i].duration;
+      count++;
+    }
+    return Math.max(1, count);
+  }, [lengthMode, loopSelection.length, targetBeats, repeatedResultant, clampedStart, totalSegments]);
+
+  const windowDurations = useMemo(
+    () => repeatedResultant.segments.slice(clampedStart, clampedStart + windowLength).map((s) => s.duration),
+    [repeatedResultant, clampedStart, windowLength],
+  );
+
+  // Up/down browsing of which of the current window's attacks are rests --
+  // restCombinations at every rest count from 0 up to "all positions,"
+  // concatenated into one steppable list (see allRestVariations above).
+  // Shared across voices: every variation has the same total duration, only
+  // which positions sound differs, so this doesn't affect cycle length.
+  const restVariations = useMemo(() => allRestVariations(windowDurations), [windowDurations]);
+  const totalUnits = useMemo(() => windowDurations.reduce((sum, v) => sum + v, 0), [windowDurations]);
+
   const [voices, setVoices] = useState<VoiceState[]>([defaultVoice("Closed hi-hat")]);
   const [activeVoiceTab, setActiveVoiceTab] = useState(0);
 
@@ -317,62 +287,41 @@ export default function MotifExplorerPage() {
     setActiveVoiceTab(0);
   }
 
-  // Motif length / window (the "cycle contract/expand" control) -- shared
-  // and linked across voices, per explicit direction: only the resultant
-  // choice, technique, and instrument are independent per voice.
-  const [loopSelection, setLoopSelection] = useState<LoopSelection>({ start: 0, length: 4 });
-  const [lengthMode, setLengthMode] = useState<LengthMode>("events");
-  const [targetBeats, setTargetBeats] = useState(4);
+  useEffect(() => {
+    setVoices((vs) => vs.map((v) => ({ ...v, restIndex: 0 })));
+  }, [clampedStart, windowLength]);
 
-  const voiceA = voices[0];
   const voiceB = voices[1];
-  const voiceAOutput = useMemo(
-    () => computeVoiceOutput(voiceA, 0, loopSelection, lengthMode, targetBeats, VOICE_COLORS[0].color, VOICE_COLORS[0].highlight),
-    [voiceA, loopSelection, lengthMode, targetBeats],
-  );
-  const voiceBOutput = useMemo(
+  const editingVoice = voices[activeVoiceTab] ?? voices[0];
+
+  const voiceOutputs = useMemo(
     () =>
-      voiceB
-        ? computeVoiceOutput(voiceB, 1, loopSelection, lengthMode, targetBeats, VOICE_COLORS[1].color, VOICE_COLORS[1].highlight)
-        : null,
-    [voiceB, loopSelection, lengthMode, targetBeats],
+      voices.map((voice, i) => {
+        const activeSigned = restVariations[Math.min(voice.restIndex, restVariations.length - 1)];
+        const activeRestCount = activeSigned.filter((v) => v < 0).length;
+        const instrument = PERCUSSION_VOICE_OPTIONS[voice.instrumentIndex];
+        const notes = buildNoteEventsFromSignedSegments(activeSigned, instrument.midiNote, i, 100).map((note) => ({
+          ...note,
+          channel: GM_DRUM_CHANNEL,
+        }));
+        const lane: PianoRollLane = {
+          label: `voice-${i}`,
+          color: VOICE_COLORS[i].color,
+          highlight: VOICE_COLORS[i].highlight,
+          segments: activeSigned.map((v) => ({ duration: Math.abs(v), rest: v < 0 })),
+        };
+        return { activeSigned, activeRestCount, notes, lane };
+      }),
+    [voices, restVariations],
   );
 
-  // Reset the shared window to a sensible default whenever voice 1's shape
-  // changes (voice 2, if present, simply clamps its own window against its
-  // own segment count -- see computeVoiceOutput).
-  useEffect(() => {
-    setLoopSelection({ start: 0, length: Math.max(2, Math.min(4, voiceAOutput.totalSegments)) });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voiceA.generatorCount, voiceA.caseIndex, voiceA.threeCaseIndex, voiceA.technique, voiceA.repeatCount, voiceA.extendMode, voiceA.growthOrder]);
+  const editingOutput = voiceOutputs[activeVoiceTab] ?? voiceOutputs[0];
+  const lanes: PianoRollLane[] = useMemo(() => voiceOutputs.map((o) => o.lane), [voiceOutputs]);
+  const notes: NoteEvent[] = useMemo(() => voiceOutputs.flatMap((o) => o.notes), [voiceOutputs]);
 
-  useEffect(() => {
-    updateVoice(0, { restIndex: 0 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voiceAOutput.clampedStart, voiceAOutput.windowLength]);
-
-  useEffect(() => {
-    if (!voiceBOutput) return;
-    updateVoice(1, { restIndex: 0 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voiceBOutput?.clampedStart, voiceBOutput?.windowLength]);
-
-  const editingVoice = voices[activeVoiceTab] ?? voiceA;
-  const editingOutput = activeVoiceTab === 1 && voiceBOutput ? voiceBOutput : voiceAOutput;
-
-  const cycleUnits = Math.max(voiceAOutput.totalUnits, voiceBOutput?.totalUnits ?? 0);
-  const lanes: PianoRollLane[] = useMemo(
-    () => (voiceBOutput ? [voiceAOutput.lane, voiceBOutput.lane] : [voiceAOutput.lane]),
-    [voiceAOutput, voiceBOutput],
-  );
-  const notes: NoteEvent[] = useMemo(
-    () => (voiceBOutput ? [...voiceAOutput.notes, ...voiceBOutput.notes] : voiceAOutput.notes),
-    [voiceAOutput, voiceBOutput],
-  );
-
-  const timeSignatureOptions = useMemo(() => computeLoopTimeSignatureOptions(cycleUnits), [cycleUnits]);
+  const timeSignatureOptions = useMemo(() => computeLoopTimeSignatureOptions(totalUnits), [totalUnits]);
   const [timeSignatureIndex, setTimeSignatureIndex] = useState(0);
-  useEffect(() => setTimeSignatureIndex(0), [timeSignatureOptions.length, cycleUnits]);
+  useEffect(() => setTimeSignatureIndex(0), [timeSignatureOptions.length, totalUnits]);
   const selectedTimeSignature = timeSignatureOptions[Math.min(timeSignatureIndex, timeSignatureOptions.length - 1)];
 
   // Playback.
@@ -384,7 +333,7 @@ export default function MotifExplorerPage() {
   const cycleStartRef = useRef(0);
 
   const secondsPerUnit = 60 / bpm;
-  const cycleSeconds = cycleUnits * secondsPerUnit;
+  const cycleSeconds = totalUnits * secondsPerUnit;
 
   function scheduleLoopPass(token: number) {
     const context = audioContextRef.current;
@@ -462,7 +411,7 @@ export default function MotifExplorerPage() {
     URL.revokeObjectURL(url);
   }
 
-  // Keyboard shortcuts: Left/Right slide the (shared) window, Up/Down browse
+  // Keyboard shortcuts: Left/Right slide the shared window, Up/Down browse
   // the active voice's rests, Space plays/stops.
   const handlersRef = useRef({
     moveWindow: (_delta: number) => {},
@@ -471,10 +420,10 @@ export default function MotifExplorerPage() {
   });
   handlersRef.current = {
     moveWindow: (delta: number) =>
-      setLoopSelection((sel) => ({ ...sel, start: Math.max(0, Math.min(sel.start + delta, voiceAOutput.totalSegments - 1)) })),
+      setLoopSelection((sel) => ({ ...sel, start: Math.max(0, Math.min(sel.start + delta, totalSegments - 1)) })),
     shiftRest: (delta: number) =>
       updateVoice(activeVoiceTab, {
-        restIndex: (editingVoice.restIndex + delta + editingOutput.restVariations.length) % editingOutput.restVariations.length,
+        restIndex: (editingVoice.restIndex + delta + restVariations.length) % restVariations.length,
       }),
     togglePlayback,
   };
@@ -543,7 +492,7 @@ export default function MotifExplorerPage() {
           {selectedTimeSignature && <div className="motif-transport__timesig">{selectedTimeSignature.label}</div>}
 
           <div className="motif-transport__info">
-            {editingOutput.totalUnits} units · {editingOutput.activeSigned.length} events
+            {totalUnits} units · {editingOutput.activeSigned.length} events
             {editingOutput.activeRestCount > 0 && (
               <>
                 {" "}
@@ -571,6 +520,75 @@ export default function MotifExplorerPage() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="motif-transport__row">
+          <select
+            value={generatorCount}
+            onChange={(e) => setGeneratorCount(Number(e.target.value) as 2 | 3)}
+            aria-label="Number of generators"
+          >
+            <option value={2}>2 gen</option>
+            <option value={3}>3 gen</option>
+          </select>
+
+          {generatorCount === 2 ? (
+            <select value={caseIndex} onChange={(e) => setCaseIndex(Number(e.target.value))} aria-label="Resultant case">
+              {BINARY_SYNCHRONIZATION_CASES.map((c, i) => (
+                <option key={c.label} value={i}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <select value={threeCaseIndex} onChange={(e) => setThreeCaseIndex(Number(e.target.value))} aria-label="Resultant case">
+              {THREE_GENERATOR_CASES.map((c, i) => (
+                <option key={c.label} value={i}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          )}
+
+          <select value={extendMode} onChange={(e) => setExtendMode(e.target.value as ExtendMode)} aria-label="Extend mode">
+            <option value="technique">Technique (Ch. 4-5)</option>
+            <option value="growth">Higher-order growth (Ch. 10)</option>
+          </select>
+
+          {extendMode === "technique" ? (
+            <>
+              {generatorCount === 2 && (
+                <select value={technique} onChange={(e) => setTechnique(e.target.value as Technique)} aria-label="Technique">
+                  <option value="plain">Plain</option>
+                  <option value="fractioned">Fractioned</option>
+                  <option value="expansion">Expansion (append)</option>
+                  <option value="contraction">Contraction (prepend)</option>
+                  <option value="balance">Balance (combine)</option>
+                </select>
+              )}
+              <label className="motif-transport__tempo">
+                <input
+                  type="number"
+                  min={1}
+                  max={4}
+                  value={repeatCount}
+                  onChange={(e) => setRepeatCount(Math.max(1, Math.min(4, Number(e.target.value))))}
+                />
+                ×
+              </label>
+            </>
+          ) : (
+            <label className="motif-transport__tempo">
+              Order
+              <input
+                type="number"
+                min={1}
+                max={6}
+                value={growthOrder}
+                onChange={(e) => setGrowthOrder(Math.max(1, Math.min(6, Number(e.target.value))))}
+              />
+            </label>
+          )}
         </div>
 
         <div className="motif-transport__row">
@@ -607,89 +625,6 @@ export default function MotifExplorerPage() {
           </div>
 
           <select
-            value={editingVoice.generatorCount}
-            onChange={(e) => updateVoice(activeVoiceTab, { generatorCount: Number(e.target.value) as 2 | 3 })}
-            aria-label="Number of generators"
-          >
-            <option value={2}>2 gen</option>
-            <option value={3}>3 gen</option>
-          </select>
-
-          {editingVoice.generatorCount === 2 ? (
-            <select
-              value={editingVoice.caseIndex}
-              onChange={(e) => updateVoice(activeVoiceTab, { caseIndex: Number(e.target.value) })}
-              aria-label="Resultant case"
-            >
-              {BINARY_SYNCHRONIZATION_CASES.map((c, i) => (
-                <option key={c.label} value={i}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <select
-              value={editingVoice.threeCaseIndex}
-              onChange={(e) => updateVoice(activeVoiceTab, { threeCaseIndex: Number(e.target.value) })}
-              aria-label="Resultant case"
-            >
-              {THREE_GENERATOR_CASES.map((c, i) => (
-                <option key={c.label} value={i}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          )}
-
-          <select
-            value={editingVoice.extendMode}
-            onChange={(e) => updateVoice(activeVoiceTab, { extendMode: e.target.value as ExtendMode })}
-            aria-label="Extend mode"
-          >
-            <option value="technique">Technique (Ch. 4-5)</option>
-            <option value="growth">Higher-order growth (Ch. 10)</option>
-          </select>
-
-          {editingVoice.extendMode === "technique" ? (
-            <>
-              {editingVoice.generatorCount === 2 && (
-                <select
-                  value={editingVoice.technique}
-                  onChange={(e) => updateVoice(activeVoiceTab, { technique: e.target.value as Technique })}
-                  aria-label="Technique"
-                >
-                  <option value="plain">Plain</option>
-                  <option value="fractioned">Fractioned</option>
-                  <option value="expansion">Expansion (append)</option>
-                  <option value="contraction">Contraction (prepend)</option>
-                  <option value="balance">Balance (combine)</option>
-                </select>
-              )}
-              <label className="motif-transport__tempo">
-                <input
-                  type="number"
-                  min={1}
-                  max={4}
-                  value={editingVoice.repeatCount}
-                  onChange={(e) => updateVoice(activeVoiceTab, { repeatCount: Math.max(1, Math.min(4, Number(e.target.value))) })}
-                />
-                ×
-              </label>
-            </>
-          ) : (
-            <label className="motif-transport__tempo">
-              Order
-              <input
-                type="number"
-                min={1}
-                max={6}
-                value={editingVoice.growthOrder}
-                onChange={(e) => updateVoice(activeVoiceTab, { growthOrder: Math.max(1, Math.min(6, Number(e.target.value))) })}
-              />
-            </label>
-          )}
-
-          <select
             value={editingVoice.instrumentIndex}
             onChange={(e) => updateVoice(activeVoiceTab, { instrumentIndex: Number(e.target.value) })}
             aria-label="Drum voice"
@@ -716,8 +651,8 @@ export default function MotifExplorerPage() {
             <input
               type="number"
               min={0}
-              max={Math.max(0, voiceAOutput.totalSegments - 1)}
-              value={voiceAOutput.clampedStart}
+              max={Math.max(0, totalSegments - 1)}
+              value={clampedStart}
               onChange={(e) => setLoopSelection((sel) => ({ ...sel, start: Number(e.target.value) }))}
             />
           </label>
@@ -727,7 +662,7 @@ export default function MotifExplorerPage() {
               <input
                 type="number"
                 min={1}
-                max={voiceAOutput.totalSegments}
+                max={totalSegments}
                 value={loopSelection.length}
                 onChange={(e) => setLoopSelection((sel) => ({ ...sel, length: Number(e.target.value) }))}
               />
@@ -756,17 +691,17 @@ export default function MotifExplorerPage() {
             {selectedTimeSignature && (
               <MidiPreview
                 lanes={lanes}
-                cycleLength={cycleUnits}
+                cycleLength={totalUnits}
                 timeSignature={selectedTimeSignature}
                 playheadFraction={isPlaying ? playheadFraction : undefined}
                 hideLabels
                 onShiftLeft={() => handlersRef.current.moveWindow(-1)}
                 onShiftRight={() => handlersRef.current.moveWindow(1)}
-                canShiftLeft={voiceAOutput.clampedStart > 0}
-                canShiftRight={voiceAOutput.clampedStart < voiceAOutput.totalSegments - 1}
+                canShiftLeft={clampedStart > 0}
+                canShiftRight={clampedStart < totalSegments - 1}
                 onCycleUp={() => handlersRef.current.shiftRest(1)}
                 onCycleDown={() => handlersRef.current.shiftRest(-1)}
-                canCycle={editingOutput.restVariations.length > 1}
+                canCycle={restVariations.length > 1}
               />
             )}
           </section>

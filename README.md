@@ -27,18 +27,23 @@ project's zero-dependency approach.
 **Deliberately rhythm-only for now** — pitched scale/melody (Book II/Ch. 7
 territory) is a deliberate, later step, not missing by accident, per the
 same "build it back up in the *same order* the books introduce it"
-principle. Within that scope, though, the page now supports **one or two
-independent motifs heard together**: each voice picks its own generators,
-resultant case, technique/growth, and drum sound, while the motif's
-position and length window is *linked* — both voices always share the
-same `{start, length}` window (see below), so they read as one composition
-rather than two unrelated loops. A "+ Voice 2" control adds the second
-motif; a small tab pair (with a color swatch matching its piano-roll lane)
-switches which voice's controls the transport is currently showing, and
-`×` removes voice 2 again. Playback runs both voices' notes against a
-shared cycle length (the longer voice's own total), so a shorter second
-voice simply falls silent for the remainder of the bar rather than being
-stretched or truncated.
+principle. Within that scope, the page now supports **one or two voices
+heard together, sharing one underlying rhythm**: generators, resultant
+case, technique/growth, and the motif-length window are all single, shared
+settings (as is tempo) — per direct instruction, "all voices should share
+the same settings for resultant... technique... and length." What each
+voice keeps independently is just its **drum sound** and its own point in
+the rest-browsing sequence (see below), which is enough on its own for two
+voices to read as a real duet rather than a doubled unison: e.g. a
+continuous hi-hat against a kick that only sounds on part of the same
+underlying pattern. A "+ Voice 2" control adds the second voice; a small
+tab pair (with a color swatch matching its piano-roll lane) switches which
+voice's drum-sound and rest-pattern the transport and D-pad currently
+apply to, and `×` removes voice 2 again. Because every rest-variation of a
+given window has the same total duration (rests hold their position's
+duration, they just go silent), both voices always stay in the same cycle
+length regardless of their independent rest choices — no stretching,
+truncating, or separate cycle-length bookkeeping needed.
 
 Each voice picks its own **drum sound** from the same
 `PERCUSSION_VOICE_OPTIONS` list `src/core/percussion.ts` already defined
@@ -73,20 +78,21 @@ All three are guarded to no-op while a text/number input has focus.
 no status text or lane labels** — cycle info and per-voice labeling live in
 the transport bar instead (`SchillingerPianoRoll` takes a `hideLabels` prop
 for this; the main Chapter Tour page still shows its own lane labels as
-before). A Logic-style transport bar sits above the roll, stacked into
-three always-visible rows rather than hidden behind disclosure panels:
-**(1)** Play/Pause, the current time signature (always shown, per direct
-request, not just available on request), a compact cycle-length readout
-(units/events/rests) for whichever voice is active, Tempo, and an overflow
-(`⋯`) menu holding Download MIDI, kept a couple of clicks away rather than
-a primary button; **(2)** the voice tabs plus that voice's own
-generators/case/technique-or-growth/drum-sound controls (Extend); **(3)**
-the shared motif-length window (Length) — start/length or "by beats," and
-the time-signature choice. Built mobile-first (rows wrap; the whole
-transport stacks cleanly at narrow widths) — a deliberate exception to this
-project's otherwise desktop-first convention (see "What's portable"
-below), specifically because this page is meant to eventually work as a
-distributable mobile app.
+before). A Logic-style transport bar sits above the roll, stacked into four
+always-visible rows rather than hidden behind disclosure panels: **(1)**
+Play/Pause, the current time signature (always shown, per direct request,
+not just available on request), a compact cycle-length readout
+(units/events/rests) for whichever voice tab is active, Tempo, and an
+overflow (`⋯`) menu holding Download MIDI, kept a couple of clicks away
+rather than a primary button; **(2)** the shared
+generators/case/technique-or-growth controls (Extend), the same for every
+voice; **(3)** the voice tabs plus that voice's own drum-sound choice —
+the only per-voice row; **(4)** the shared motif-length window (Length) —
+start/length or "by beats," and the time-signature choice. Built
+mobile-first (rows wrap; the whole transport stacks cleanly at narrow
+widths) — a deliberate exception to this project's otherwise desktop-first
+convention (see "What's portable" below), specifically because this page
+is meant to eventually work as a distributable mobile app.
 
 Every piece of it reuses already-tested core modules — no new `src/core`
 code was needed for the resultant/technique/growth machinery. **Extend the
