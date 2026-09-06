@@ -45,23 +45,38 @@ duration, they just go silent), both voices always stay in the same cycle
 length regardless of their independent rest choices — no stretching,
 truncating, or separate cycle-length bookkeeping needed.
 
-Each voice picks its own **drum sound** from the same
+**Voices live in their own card**, below the transport, separate from the
+rhythm controls above it — sound design (what each voice actually plays)
+is a distinct concern from what the rhythm *is*, and it's the natural
+place to grow as pitched scales get introduced later. Each voice's row
+shows its own instrument/waveform picker directly (no tab-hiding needed
+for this one — only the D-pad's rest-browsing still needs "which voice is
+focused," via the same small tab buttons, now living in this card instead
+of the transport). Each voice picks either a **drum sound**, from the same
 `PERCUSSION_VOICE_OPTIONS` list `src/core/percussion.ts` already defined
 (Kick, Snare, Rim shot, Clap, Closed/Open hi-hat, Ride, Crash, three toms,
-Cowbell) — this doubles as "choose a specific note to play," since each
-option is just a fixed GM percussion note number. Web Audio has no built-in
-GM synth patches of its own — a MIDI note number only becomes "a kick" once
-a real synth or soundfont interprets it — so rather than pull in sample
-files or a soundfont library (real download weight, at odds with this
-project's zero-dependency, bandwidth-conscious setup), the live preview
-synthesizes a small kit directly: a pitch-dropping sine for the kick,
-triangle tones for the toms, a plain square blip for the cowbell, and
-filtered white-noise bursts (bandpass for snare/rim/clap, highpass with a
-sound-specific decay for the hi-hats/ride/crash) for everything else — see
-`scheduleDrumHit` in `MotifExplorerPage.tsx`. The *downloaded* MIDI file is
-unaffected by any of this: it just encodes the correct GM channel-10 note
-numbers, so it plays back with real drum sounds in any DAW or soundfont
-player regardless of how the in-browser preview synthesizes it.
+Cowbell), or a **basic synth waveform** (Sine, Triangle, Square,
+Sawtooth) at one fixed reference pitch (C4 — no scale/pitch selection yet,
+per "we're fine tuning the rhythm-only workflow" for now; this is
+explicitly a bridge toward scales, not scales themselves). Percussion
+doubles as "choose a specific note to play," since each option is just a
+fixed GM percussion note number. Web Audio has no built-in GM synth
+patches of its own — a MIDI note number only becomes "a kick" once a real
+synth or soundfont interprets it — so rather than pull in sample files or
+a soundfont library (real download weight, at odds with this project's
+zero-dependency, bandwidth-conscious setup), the live preview synthesizes
+both kinds of voice directly: percussion via a small kit (a pitch-dropping
+sine for the kick, triangle tones for the toms, a plain square blip for
+the cowbell, filtered white-noise bursts for everything else — see
+`scheduleDrumHit`), and synth voices via one oscillator of the chosen type
+with a short attack/decay envelope and nothing else — **deliberately no
+delay, reverb, or other effects**, per direct instruction (see
+`scheduleSynthTone`). The *downloaded* MIDI file is unaffected by any of
+this live synthesis: percussion still encodes correct GM channel-10 note
+numbers, and synth voices export as ordinary melodic tracks (channel
+assigned by track index, not pinned to the drum channel), so it plays back
+correctly in any real DAW or soundfont player regardless of how the
+in-browser preview makes its sound.
 
 **Keyboard, the first in the codebase**: **←/→** slides the (shared) motif
 length window; **↑/↓** progressively introduces rests in whichever voice's
@@ -95,7 +110,10 @@ fixed-position notation-style time signature badge** (two stacked digits,
 no dividing bar — the bold digits alone say enough, so alternate readings
 sit behind a bare chevron rather than a second text label repeating the
 same information; clicking it opens a small on-demand menu, the only place
-the plain-text readings appear), and Tempo (defaults to 124bpm) — laid out
+the plain-text readings appear), a **note-value toggle** (♩ quarter /
+♪ eighth — real notation glyphs, not text, since the interface should read
+as musical rather than technical wherever that's possible) for actual
+**double-time** playback, and Tempo (defaults to 124bpm) — laid out
 on a 3-column grid
 (`1fr auto 1fr`), not flexbox, specifically so the badge's position can't
 drift when Play/Pause's icon or Tempo's digit count changes width; the two
@@ -106,11 +124,10 @@ weight; **(3)** the rarely-touched generator count and Extend-mode/
 Repeat-or-Order controls, visually quieter (smaller, muted) and explicitly
 labeled ("Generators," "Extend," "Repeat") since a control you touch once
 a session benefits from a label more than one you're already fluent with;
-**(4)** the voice tabs plus that voice's own drum-sound choice; **(5)**
-the motif-length window — an Events/Beats mode toggle compacted into a
-small segmented control (beats is the default, since that's the more
-musically meaningful unit — "set once and forget it," not a choice most
-sessions revisit), then **paired range-slider + number-input + Max
+**(4)** the motif-length window — an Events/Beats mode toggle compacted
+into a small segmented control (beats is the default, since that's the
+more musically meaningful unit — "set once and forget it," not a choice
+most sessions revisit), then **paired range-slider + number-input + Max
 button** groups for both **Start** and **Length** — dragging handles
 coarse positioning, the number field handles exact fine-tuning, Max jumps
 straight to the far end. **Download MIDI — rarely used — isn't in this
@@ -118,15 +135,35 @@ page's transport at all**: it lives in the app's own top header, in an
 overflow (`⋯`) menu next to the Chapter Tour/Motif Explorer links, which
 Motif Explorer populates via a small `onHeaderActionChange` callback prop
 (`App.tsx` holds the actual `headerAction` state; `AppHeader` renders it
-generically enough that any future page could opt in the same way). A
-quiet **footer card** at the very bottom of the page holds the technical/
-status readout (units · events · rests) that used to compete for space in
-the transport itself — rarely useful info, given somewhere to live without
-crowding what actually gets used every session. Built mobile-first (rows
-wrap; the whole transport stacks cleanly at narrow widths) — a deliberate
-exception to this project's otherwise desktop-first convention (see
-"What's portable" below), specifically because this page is meant to
-eventually work as a distributable mobile app.
+generically enough that any future page could opt in the same way). Below
+the transport, the separate **Voices card** (see above) holds the voice
+tabs and each voice's own instrument/waveform choice — pulled out of the
+transport entirely once it grew a second axis (drum vs. synth) worth its
+own card. A quiet **footer card** at the very bottom of the page holds the
+technical/status readout (units · events · rests) that used to compete
+for space in the transport itself — rarely useful info, given somewhere to
+live without crowding what actually gets used every session. Built
+mobile-first (rows wrap; the whole transport stacks cleanly at narrow
+widths) — a deliberate exception to this project's otherwise desktop-first
+convention (see "What's portable" below), specifically because this page
+is meant to eventually work as a distributable mobile app.
+
+**Double time, via a real note-value control, not just a relabeling.**
+The alternate time-signature readings above are deliberately just that —
+*notations* of the exact same audio (see `timeSignature.ts`'s own
+docstring: "12 beats becomes 3×4/4 or 4×3/4... they differ only in how the
+bar lines fall"), so picking among them was never going to change how
+fast anything actually sounds, and it didn't. What "the smallest unit
+sounds like a quarter note no matter what the reading says" actually
+needed was a *separate*, real tempo-feel control: the ♩/♪ toggle sets
+whether one abstract unit is a quarter note (`60 / bpm` seconds — the
+prior, only, behavior) or an eighth note (`30 / bpm` seconds — literally
+double speed) at the current tempo. Switching it mid-playback doesn't
+interrupt anything either, for the same live-ref reason described above —
+the current pass finishes at its old speed, and the next one picks up the
+new one. The downloaded MIDI file's own tempo is scaled to match (doubled
+when eighth is selected) so a DAW plays back at the same physical speed
+as the preview did.
 
 **Playback never restarts on a live edit.** Earlier, ANY change to the
 computed `notes` (a blob click, an instrument swap, even just switching

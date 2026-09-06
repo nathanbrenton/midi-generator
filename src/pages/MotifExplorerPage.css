@@ -63,8 +63,14 @@
   justify-self: start;
 }
 
-.motif-transport__row--playback > .motif-transport__tempo {
+.motif-transport__row--playback > .motif-transport__righttools {
   justify-self: end;
+}
+
+.motif-transport__righttools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .motif-transport__timesig-dominant {
@@ -245,6 +251,13 @@
   font-weight: 600;
 }
 
+/* Note-value glyphs (quarter/eighth note) need to actually read as musical
+   symbols, not tiny text -- bigger than the Events/Beats word-buttons. */
+.motif-transport__segmented--notevalue .motif-transport__segbtn {
+  font-size: 1.1rem;
+  padding: 0.15rem 0.6rem;
+}
+
 /* The time-signature reading picker: a bare chevron, not a second text
    label repeating what the bold digits already show. The menu itself only
    appears on demand, so it's the one place the plain-text readings show. */
@@ -298,6 +311,45 @@
 .motif-transport__timesig-menuitem--active {
   background: color-mix(in srgb, currentColor 14%, transparent);
   font-weight: 600;
+}
+
+/* Voices card: its own card rather than a row buried in the transport,
+   since sound design (which drum/synth each voice plays) is a distinct
+   concern from the rhythm controls above it -- and the natural next thing
+   to grow as scales/pitch get introduced later. */
+.motif-voices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  font-size: 0.8rem;
+}
+
+.motif-voices select {
+  font-size: 0.8rem;
+}
+
+.motif-voices__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.motif-voices__add {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+}
+
+.motif-voices__add:hover {
+  color: currentColor;
 }
 
 /* Workspace: just the stage now -- Extend and Length live in the transport. */

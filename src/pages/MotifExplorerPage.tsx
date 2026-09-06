@@ -66,8 +66,8 @@ type LengthMode = "events" | "beats";
 
 /**
  * A voice's own choices, independent of every other voice -- for now, per
- * direct instruction, that's just which drum sound it plays and which of
- * the shared rhythm's rest-variations it applies. The resultant/technique/
+ * direct instruction, that's just which sound it plays and which of the
+ * shared rhythm's rest-variations it applies. The resultant/technique/
  * length/tempo are shared, top-level state below.
  */
 interface VoiceState {
@@ -75,10 +75,35 @@ interface VoiceState {
   instrumentIndex: number;
 }
 
-function defaultVoice(instrumentLabel: string): VoiceState {
+/**
+ * A voice's sound source is either a GM percussion hit (existing
+ * synthesized kit, pinned to the drum channel on export) or a basic synth
+ * waveform at a fixed reference pitch -- no scale/pitch selection yet
+ * ("we're fine tuning the rhythm-only workflow" first), just timbre.
+ * Deliberately no delay/reverb or other effects: a plain oscillator with a
+ * short amplitude envelope, nothing more.
+ */
+interface VoiceSound {
+  kind: "percussion" | "synth";
+  label: string;
+  midiNote: number;
+  waveform?: OscillatorType;
+}
+
+const SYNTH_REFERENCE_NOTE = 60; // C4 -- no scale yet, so every synth voice shares one fixed pitch.
+
+const VOICE_SOUND_OPTIONS: readonly VoiceSound[] = [
+  ...PERCUSSION_VOICE_OPTIONS.map((p): VoiceSound => ({ kind: "percussion", label: p.label, midiNote: p.midiNote })),
+  { kind: "synth", label: "Sine", midiNote: SYNTH_REFERENCE_NOTE, waveform: "sine" },
+  { kind: "synth", label: "Triangle", midiNote: SYNTH_REFERENCE_NOTE, waveform: "triangle" },
+  { kind: "synth", label: "Square", midiNote: SYNTH_REFERENCE_NOTE, waveform: "square" },
+  { kind: "synth", label: "Sawtooth", midiNote: SYNTH_REFERENCE_NOTE, waveform: "sawtooth" },
+];
+
+function defaultVoice(soundLabel: string): VoiceState {
   const instrumentIndex = Math.max(
     0,
-    PERCUSSION_VOICE_OPTIONS.findIndex((p) => p.label === instrumentLabel),
+    VOICE_SOUND_OPTIONS.findIndex((s) => s.label === soundLabel),
   );
   return { restIndex: 0, instrumentIndex };
 }
@@ -208,6 +233,34 @@ function scheduleDrumHit(context: AudioContext, destination: AudioNode, midiNote
   noise.stop(time + decay + 0.02);
 }
 
+/**
+ * A basic synth voice: one oscillator of the chosen waveform at the
+ * note's pitch, a short linear attack into an exponential decay, nothing
+ * else -- no delay, reverb, or other processing, by direct request.
+ */
+function scheduleSynthTone(
+  context: AudioContext,
+  destination: AudioNode,
+  waveform: OscillatorType,
+  midiNote: number,
+  time: number,
+  durationSeconds: number,
+  velocity: number,
+) {
+  const osc = context.createOscillator();
+  const gain = context.createGain();
+  osc.type = waveform;
+  osc.frequency.value = 440 * Math.pow(2, (midiNote - 69) / 12);
+  const peak = (velocity / 127) * 0.2;
+  const end = time + Math.max(durationSeconds, 0.03);
+  gain.gain.setValueAtTime(0, time);
+  gain.gain.linearRampToValueAtTime(peak, time + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, end);
+  osc.connect(gain).connect(destination);
+  osc.start(time);
+  osc.stop(end);
+}
+
 export default function MotifExplorerPage({
   onHeaderActionChange,
 }: {
@@ -334,11 +387,11 @@ export default function MotifExplorerPage({
       voices.map((voice, i) => {
         const activeSigned = restVariations[Math.min(voice.restIndex, restVariations.length - 1)];
         const activeRestCount = activeSigned.filter((v) => v < 0).length;
-        const instrument = PERCUSSION_VOICE_OPTIONS[voice.instrumentIndex];
-        const notes = buildNoteEventsFromSignedSegments(activeSigned, instrument.midiNote, i, 100).map((note) => ({
-          ...note,
-          channel: GM_DRUM_CHANNEL,
-        }));
+        const sound = VOICE_SOUND_OPTIONS[voice.instrumentIndex];
+        const rawNotes = buildNoteEventsFromSignedSegments(activeSigned, sound.midiNote, i, 100);
+        // Only percussion pins the GM drum channel; synth voices export as
+        // ordinary melodic tracks (channel assigned by track index instead).
+        const notes = sound.kind === "percussion" ? rawNotes.map((note) => ({ ...note, channel: GM_DRUM_CHANNEL })) : rawNotes;
         const lane: PianoRollLane = {
           label: `voice-${i}`,
           color: VOICE_COLORS[i].color,
@@ -361,14 +414,22 @@ export default function MotifExplorerPage({
 
   // Playback.
   const [bpm, setBpm] = useState(124);
+  // "Double time": how many seconds one abstract unit takes is otherwise
+  // always a quarter note's worth at the given tempo. Reading a unit as an
+  // eighth note instead halves that -- literally twice the speed -- via a
+  // dedicated selector rather than tying it to whichever time-signature
+  // reading happens to be picked (those are equivalent notations of the
+  // SAME audio by design; this is a real, independent playback-speed choice).
+  const [noteValue, setNoteValue] = useState<"quarter" | "eighth">("quarter");
   const [isPlaying, setIsPlaying] = useState(false);
   const [playheadFraction, setPlayheadFraction] = useState(0);
   const audioContextRef = useRef<AudioContext | null>(null);
   const playTokenRef = useRef(0);
   const cycleStartRef = useRef(0);
 
-  const secondsPerUnit = 60 / bpm;
+  const secondsPerUnit = (noteValue === "eighth" ? 30 : 60) / bpm;
   const cycleSeconds = totalUnits * secondsPerUnit;
+  const voiceSounds = useMemo(() => voices.map((v) => VOICE_SOUND_OPTIONS[v.instrumentIndex]), [voices]);
 
   // A live-values ref, not a dependency array: `scheduleLoopPass` re-reads
   // this at the START OF EVERY PASS rather than closing over whatever
@@ -378,19 +439,24 @@ export default function MotifExplorerPage({
   // `cycleStartRef` -- the currently-playing pass finishes exactly as
   // scheduled, and the very next pass simply picks up whatever is current.
   // No restart, no playhead jump, no audible glitch.
-  const liveRef = useRef({ notes, secondsPerUnit, cycleSeconds });
-  liveRef.current = { notes, secondsPerUnit, cycleSeconds };
+  const liveRef = useRef({ notes, secondsPerUnit, cycleSeconds, voiceSounds });
+  liveRef.current = { notes, secondsPerUnit, cycleSeconds, voiceSounds };
 
   function scheduleLoopPass(token: number) {
     const context = audioContextRef.current;
     if (!context || token !== playTokenRef.current) return;
-    const { notes: liveNotes, secondsPerUnit: liveSpu, cycleSeconds: liveCycleSeconds } = liveRef.current;
+    const { notes: liveNotes, secondsPerUnit: liveSpu, cycleSeconds: liveCycleSeconds, voiceSounds: liveSounds } = liveRef.current;
 
     const cycleStart = context.currentTime;
     cycleStartRef.current = cycleStart;
     for (const note of liveNotes) {
       const noteStart = cycleStart + note.startUnits * liveSpu;
-      scheduleDrumHit(context, context.destination, note.midiNote, noteStart, note.velocity);
+      const sound = liveSounds[note.voice];
+      if (sound?.kind === "synth") {
+        scheduleSynthTone(context, context.destination, sound.waveform ?? "sine", note.midiNote, noteStart, note.durationUnits * liveSpu, note.velocity);
+      } else {
+        scheduleDrumHit(context, context.destination, note.midiNote, noteStart, note.velocity);
+      }
     }
 
     window.setTimeout(() => {
@@ -439,7 +505,11 @@ export default function MotifExplorerPage({
 
   function downloadMidi() {
     if (notes.length === 0) return;
-    const bytes = buildMidiFile(notes, { bpm, ticksPerUnit: 120 });
+    // Match the exported file's physical tempo to whatever the preview is
+    // actually playing at -- an eighth-note unit is double time, so the
+    // exported bpm doubles too, rather than only affecting live playback.
+    const exportBpm = noteValue === "eighth" ? bpm * 2 : bpm;
+    const bytes = buildMidiFile(notes, { bpm: exportBpm, ticksPerUnit: 120 });
     const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
     const blob = new Blob([buffer], { type: "audio/midi" });
     const url = URL.createObjectURL(blob);
@@ -607,10 +677,31 @@ export default function MotifExplorerPage({
             </div>
           )}
 
-          <label className="motif-transport__tempo">
-            <input type="number" min={40} max={220} value={bpm} onChange={(e) => setBpm(Number(e.target.value))} />
-            bpm
-          </label>
+          <div className="motif-transport__righttools">
+            <div className="motif-transport__segmented motif-transport__segmented--notevalue" role="group" aria-label="Note value (double-time)">
+              <button
+                type="button"
+                className={noteValue === "quarter" ? "motif-transport__segbtn motif-transport__segbtn--active" : "motif-transport__segbtn"}
+                aria-label="Quarter note"
+                onClick={() => setNoteValue("quarter")}
+              >
+                ♩
+              </button>
+              <button
+                type="button"
+                className={noteValue === "eighth" ? "motif-transport__segbtn motif-transport__segbtn--active" : "motif-transport__segbtn"}
+                aria-label="Eighth note (double time)"
+                onClick={() => setNoteValue("eighth")}
+              >
+                ♪
+              </button>
+            </div>
+
+            <label className="motif-transport__tempo">
+              <input type="number" min={40} max={220} value={bpm} onChange={(e) => setBpm(Number(e.target.value))} />
+              bpm
+            </label>
+          </div>
         </div>
 
         {/* Frequently used: what the resultant is, and how it's read rhythmically. */}
@@ -690,52 +781,6 @@ export default function MotifExplorerPage({
               />
             </label>
           )}
-        </div>
-
-        <div className="motif-transport__row">
-          <div className="motif-transport__voicetabs">
-            <button
-              type="button"
-              className={activeVoiceTab === 0 ? "motif-transport__voicetab motif-transport__voicetab--active" : "motif-transport__voicetab"}
-              onClick={() => setActiveVoiceTab(0)}
-            >
-              <span className="motif-transport__swatch" style={{ background: VOICE_COLORS[0].color }} />
-              Voice 1
-            </button>
-            {voiceB ? (
-              <>
-                <button
-                  type="button"
-                  className={
-                    activeVoiceTab === 1 ? "motif-transport__voicetab motif-transport__voicetab--active" : "motif-transport__voicetab"
-                  }
-                  onClick={() => setActiveVoiceTab(1)}
-                >
-                  <span className="motif-transport__swatch" style={{ background: VOICE_COLORS[1].color }} />
-                  Voice 2
-                </button>
-                <button type="button" className="motif-transport__voiceremove" aria-label="Remove voice 2" onClick={removeSecondVoice}>
-                  ×
-                </button>
-              </>
-            ) : (
-              <button type="button" className="motif-transport__voiceadd" onClick={addSecondVoice}>
-                + Voice 2
-              </button>
-            )}
-          </div>
-
-          <select
-            value={editingVoice.instrumentIndex}
-            onChange={(e) => updateVoice(activeVoiceTab, { instrumentIndex: Number(e.target.value) })}
-            aria-label="Drum voice"
-          >
-            {PERCUSSION_VOICE_OPTIONS.map((p, i) => (
-              <option key={p.label} value={i}>
-                {p.label}
-              </option>
-            ))}
-          </select>
         </div>
 
         <div className="motif-transport__row">
@@ -825,6 +870,55 @@ export default function MotifExplorerPage({
           )}
         </div>
       </div>
+
+      <section className="motif-voices">
+        {voices.map((voice, i) => (
+          <div key={i} className="motif-voices__row">
+            <button
+              type="button"
+              className={
+                activeVoiceTab === i ? "motif-transport__voicetab motif-transport__voicetab--active" : "motif-transport__voicetab"
+              }
+              onClick={() => setActiveVoiceTab(i)}
+            >
+              <span className="motif-transport__swatch" style={{ background: VOICE_COLORS[i].color }} />
+              Voice {i + 1}
+            </button>
+
+            <select
+              value={voice.instrumentIndex}
+              onChange={(e) => updateVoice(i, { instrumentIndex: Number(e.target.value) })}
+              aria-label={`Voice ${i + 1} instrument`}
+            >
+              <optgroup label="Percussion">
+                {VOICE_SOUND_OPTIONS.filter((s) => s.kind === "percussion").map((s) => (
+                  <option key={s.label} value={VOICE_SOUND_OPTIONS.indexOf(s)}>
+                    {s.label}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Synth">
+                {VOICE_SOUND_OPTIONS.filter((s) => s.kind === "synth").map((s) => (
+                  <option key={s.label} value={VOICE_SOUND_OPTIONS.indexOf(s)}>
+                    {s.label}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+
+            {i === 1 && (
+              <button type="button" className="motif-transport__voiceremove" aria-label="Remove voice 2" onClick={removeSecondVoice}>
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+        {!voiceB && (
+          <button type="button" className="motif-voices__add" onClick={addSecondVoice}>
+            + Add Voice 2
+          </button>
+        )}
+      </section>
 
       <div className="motif-workspace">
         <div className="motif-stage-wrap">
