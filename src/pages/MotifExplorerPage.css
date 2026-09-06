@@ -245,15 +245,59 @@
   font-weight: 600;
 }
 
-/* The time-signature reading picker, grouped directly into the notation
-   badge rather than living apart from it in the Length row. */
-.motif-transport__timesig-select {
+/* The time-signature reading picker: a bare chevron, not a second text
+   label repeating what the bold digits already show. The menu itself only
+   appears on demand, so it's the one place the plain-text readings show. */
+.motif-transport__timesig-picker {
+  position: relative;
+  margin-left: 0.25rem;
+}
+
+.motif-transport__timesig-chevron {
   border: none;
   background: transparent;
-  color: color-mix(in srgb, currentColor 65%, transparent);
-  font-size: 0.7rem;
-  padding: 0;
-  margin-left: 0.15rem;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0.1rem 0.15rem;
+  cursor: pointer;
+}
+
+.motif-transport__timesig-menu {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  margin-top: 0.4rem;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px color-mix(in srgb, black 30%, transparent);
+  padding: 0.3rem;
+  white-space: nowrap;
+}
+
+.motif-transport__timesig-menuitem {
+  border: none;
+  background: transparent;
+  padding: 0.35rem 0.7rem;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.78rem;
+  border-radius: 6px;
+  color: currentColor;
+}
+
+.motif-transport__timesig-menuitem:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.motif-transport__timesig-menuitem--active {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  font-weight: 600;
 }
 
 /* Workspace: just the stage now -- Extend and Length live in the transport. */

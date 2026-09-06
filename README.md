@@ -92,8 +92,11 @@ scheduled, and the very next pass simply reflects the edit (see
 not just by what kind of setting it is. A Logic-style transport bar sits
 above the roll, stacked into rows: **(1)** Play/Pause, a **dominant,
 fixed-position notation-style time signature badge** (two stacked digits,
-no dividing bar, with its own reading-picker grouped directly into it),
-and Tempo (defaults to 124bpm) — laid out on a 3-column grid
+no dividing bar — the bold digits alone say enough, so alternate readings
+sit behind a bare chevron rather than a second text label repeating the
+same information; clicking it opens a small on-demand menu, the only place
+the plain-text readings appear), and Tempo (defaults to 124bpm) — laid out
+on a 3-column grid
 (`1fr auto 1fr`), not flexbox, specifically so the badge's position can't
 drift when Play/Pause's icon or Tempo's digit count changes width; the two
 side columns absorb the size difference equally, keeping the badge exactly

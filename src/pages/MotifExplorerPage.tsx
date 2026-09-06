@@ -500,6 +500,29 @@ export default function MotifExplorerPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes.length]);
 
+  // The time-signature reading picker: a bare chevron next to the bold
+  // digits, not another text label repeating what's already shown --
+  // opens a small menu of the alternate readings on click.
+  const [timesigMenuOpen, setTimesigMenuOpen] = useState(false);
+  const timesigMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!timesigMenuOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      if (timesigMenuRef.current?.contains(e.target as Node)) return;
+      setTimesigMenuOpen(false);
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setTimesigMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [timesigMenuOpen]);
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const tag = (document.activeElement?.tagName ?? "").toLowerCase();
@@ -549,18 +572,37 @@ export default function MotifExplorerPage({
             <div className="motif-transport__timesig-dominant">
               <TimeSignatureGlyph option={selectedTimeSignature} />
               {timeSignatureOptions.length > 1 && (
-                <select
-                  className="motif-transport__timesig-select"
-                  value={timeSignatureIndex}
-                  onChange={(e) => setTimeSignatureIndex(Number(e.target.value))}
-                  aria-label="Time signature reading"
-                >
-                  {timeSignatureOptions.map((o, i) => (
-                    <option key={o.label} value={i}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="motif-transport__timesig-picker" ref={timesigMenuRef}>
+                  <button
+                    type="button"
+                    className="motif-transport__timesig-chevron"
+                    aria-label="Choose time signature reading"
+                    onClick={() => setTimesigMenuOpen((v) => !v)}
+                  >
+                    ▾
+                  </button>
+                  {timesigMenuOpen && (
+                    <div className="motif-transport__timesig-menu">
+                      {timeSignatureOptions.map((o, i) => (
+                        <button
+                          key={o.label}
+                          type="button"
+                          className={
+                            i === timeSignatureIndex
+                              ? "motif-transport__timesig-menuitem motif-transport__timesig-menuitem--active"
+                              : "motif-transport__timesig-menuitem"
+                          }
+                          onClick={() => {
+                            setTimeSignatureIndex(i);
+                            setTimesigMenuOpen(false);
+                          }}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
