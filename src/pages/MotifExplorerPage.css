@@ -1,5 +1,5 @@
 /* Mobile-first: base rules target a narrow viewport; the min-width block
-   below layers on the wider desktop layout (side rail, floating flyout). */
+   below layers on the wider desktop layout. */
 
 .motif-page {
   display: flex;
@@ -12,12 +12,13 @@
 }
 
 /* Transport bar: Logic-style summary of current settings, playback, and
-   the overflow menu. Always visible, deliberately terse. */
+   the overflow menu. Always visible, deliberately terse. Stacked rows: (1)
+   playback/time-signature/tempo, (2) the active voice's rhythm+extend
+   controls, (3) length/window, shared and linked across voices. */
 .motif-transport {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.4rem;
   padding: 0.5rem 0.6rem;
   border-radius: 8px;
   background: color-mix(in srgb, currentColor 6%, transparent);
@@ -27,6 +28,13 @@
 .motif-transport select,
 .motif-transport input {
   font-size: 0.8rem;
+}
+
+.motif-transport__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .motif-transport__play {
@@ -43,6 +51,17 @@
 .motif-transport__group {
   display: flex;
   gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.motif-transport__timesig {
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  white-space: nowrap;
 }
 
 .motif-transport__info {
@@ -55,6 +74,46 @@
 .motif-transport__spacer {
   flex: 1 1 0;
   min-width: 0.5rem;
+}
+
+.motif-transport__voicetabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-right: 0.15rem;
+}
+
+.motif-transport__voicetab {
+  padding: 0.25rem 0.55rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.motif-transport__voicetab--active {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: currentColor;
+  font-weight: 600;
+}
+
+.motif-transport__voicetab .motif-transport__swatch {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  margin-right: 0.3rem;
+}
+
+.motif-transport__voiceadd,
+.motif-transport__voiceremove {
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.15rem 0.4rem;
 }
 
 .motif-transport__tempo {
@@ -110,58 +169,11 @@
   background: color-mix(in srgb, currentColor 8%, transparent);
 }
 
-/* Workspace: rail + flyout + stage. Stacked on mobile, side-by-side on desktop. */
+/* Workspace: just the stage now -- Extend and Length live in the transport. */
 .motif-workspace {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}
-
-.motif-rail {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.motif-rail__btn {
-  padding: 0.45rem 0.7rem;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: color-mix(in srgb, currentColor 60%, transparent);
-  font-size: 0.78rem;
-  cursor: pointer;
-}
-
-.motif-rail__btn:hover {
-  background: color-mix(in srgb, currentColor 8%, transparent);
-  color: currentColor;
-}
-
-.motif-rail__btn--active {
-  background: color-mix(in srgb, currentColor 12%, transparent);
-  color: currentColor;
-  font-weight: 600;
-}
-
-.motif-flyout {
-  width: 100%;
-  background: var(--bg);
-  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
-  border-radius: 10px;
-  padding: 0.9rem;
-}
-
-.motif-flyout__panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.motif-flyout__panel h3 {
-  margin: 0;
-  font-size: 0.85rem;
 }
 
 .motif-stage-wrap {
@@ -185,36 +197,6 @@
 @media (min-width: 42rem) {
   .motif-page {
     padding: 2rem;
-  }
-
-  .motif-workspace {
-    position: relative;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 1.25rem;
-  }
-
-  .motif-rail {
-    flex-direction: column;
-    width: 6rem;
-    flex-shrink: 0;
-    gap: 0.2rem;
-  }
-
-  .motif-flyout {
-    position: absolute;
-    left: 6.75rem;
-    top: 0;
-    z-index: 5;
-    width: 24rem;
-    max-width: calc(100vw - 9rem);
-    box-shadow: 0 12px 32px color-mix(in srgb, black 30%, transparent);
-  }
-
-  .motif-stage-wrap {
-    flex: 1;
-    display: flex;
-    justify-content: center;
   }
 
   .motif-page__stage {

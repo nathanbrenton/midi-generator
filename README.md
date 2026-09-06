@@ -24,52 +24,74 @@ idea at a time. It's reached via a plain `location.hash` check in
 `App.tsx` (`useHashRoute.ts`) — no router, matching the rest of the
 project's zero-dependency approach.
 
-**Deliberately monophonic and rhythm-only for now.** This page (and a
-short-lived standalone "Compose" mode that briefly existed alongside it)
-had drifted toward exposing everything at once — voices, scale, multiple
-generators' worth of options — which cuts against the actual goal:
-building the UI back up in the *same order* Schillinger's own books
-introduce the ideas, starting with Book I's rhythm. So it was
-consolidated to one page and cut back down to a single looping monophonic
-resultant (every attack is a short click, GM closed hi-hat on channel
-10) — voices and scale (Book II/Ch. 7 territory) are a deliberate, later
-step, not missing by accident.
+**Deliberately rhythm-only for now** — pitched scale/melody (Book II/Ch. 7
+territory) is a deliberate, later step, not missing by accident, per the
+same "build it back up in the *same order* the books introduce it"
+principle. Within that scope, though, the page now supports **one or two
+independent motifs heard together**: each voice picks its own generators,
+resultant case, technique/growth, and drum sound, while the motif's
+position and length window is *linked* — both voices always share the
+same `{start, length}` window (see below), so they read as one composition
+rather than two unrelated loops. A "+ Voice 2" control adds the second
+motif; a small tab pair (with a color swatch matching its piano-roll lane)
+switches which voice's controls the transport is currently showing, and
+`×` removes voice 2 again. Playback runs both voices' notes against a
+shared cycle length (the longer voice's own total), so a shorter second
+voice simply falls silent for the remainder of the bar rather than being
+stretched or truncated.
 
-**Keyboard, the first in the codebase**: **←/→** slides the motif's length
-window; **↑/↓** progressively introduces rests — `restCombinations` (built
-earlier for sample analysis) enumerates every way of choosing exactly N of
-the current window's positions to go silent, holding their position and
-duration fixed; concatenating that across every rest count from 0 up to
-"all positions" gives one continuous, steppable sequence — pressing up
-from a clean loop introduces one rest, walks through every single-rest
-position, then moves on to two-rest combinations, and so on. (An earlier
-pass here had up/down browsing circular-permutation *rotations* instead —
-that was this project's own drift from the original request, corrected
-during consolidation.) **Space** plays/stops. All three are guarded to
-no-op while a text/number input has focus.
+Each voice picks its own **drum sound** from the same
+`PERCUSSION_VOICE_OPTIONS` list `src/core/percussion.ts` already defined
+(Kick, Snare, Rim shot, Clap, Closed/Open hi-hat, Ride, Crash, three toms,
+Cowbell) — this doubles as "choose a specific note to play," since each
+option is just a fixed GM percussion note number. Web Audio has no built-in
+GM synth patches of its own — a MIDI note number only becomes "a kick" once
+a real synth or soundfont interprets it — so rather than pull in sample
+files or a soundfont library (real download weight, at odds with this
+project's zero-dependency, bandwidth-conscious setup), the live preview
+synthesizes a small kit directly: a pitch-dropping sine for the kick,
+triangle tones for the toms, a plain square blip for the cowbell, and
+filtered white-noise bursts (bandpass for snare/rim/clap, highpass with a
+sound-specific decay for the hi-hats/ride/crash) for everything else — see
+`scheduleDrumHit` in `MotifExplorerPage.tsx`. The *downloaded* MIDI file is
+unaffected by any of this: it just encodes the correct GM channel-10 note
+numbers, so it plays back with real drum sounds in any DAW or soundfont
+player regardless of how the in-browser preview synthesizes it.
 
-**Layout: the piano roll is the whole point, so almost every parameter is
-hidden by default, and the D-pad itself carries no status text** — cycle
-info lives in the transport bar instead (below), not as a caption under
-the roll. A Logic-style transport bar sits above the roll — Play/Pause,
-the generators/case selector (2 or 3 generators, then the active
-resultant, Ch. 2A Figure 19 / `THREE_GENERATOR_CASES` Ch. 6), a compact
-cycle-length readout (units/events/rests), Tempo, and an overflow (`⋯`)
-menu holding Download MIDI, kept a couple of clicks away rather than a
-primary button. The remaining two parameter groups (Extend, Length) live
-behind a slim rail of buttons below that; clicking one opens a floating
-panel next to the rail without shifting or shrinking the stage — clicking
-the same button again, clicking outside, or pressing Escape closes it.
-Built mobile-first (the rail becomes a horizontal button row and the
-flyout becomes a full-width inline panel below `42rem`; both switch to
-the side-by-side desktop layout above it) — a deliberate exception to
-this project's otherwise desktop-first convention (see "What's portable"
+**Keyboard, the first in the codebase**: **←/→** slides the (shared) motif
+length window; **↑/↓** progressively introduces rests in whichever voice's
+tab is currently active — `restCombinations` (built earlier for sample
+analysis) enumerates every way of choosing exactly N of the current
+window's positions to go silent, holding their position and duration
+fixed; concatenating that across every rest count from 0 up to "all
+positions" gives one continuous, steppable sequence — pressing up from a
+clean loop introduces one rest, walks through every single-rest position,
+then moves on to two-rest combinations, and so on. **Space** plays/stops.
+All three are guarded to no-op while a text/number input has focus.
+
+**Layout: the piano roll is the whole point, and the D-pad itself carries
+no status text or lane labels** — cycle info and per-voice labeling live in
+the transport bar instead (`SchillingerPianoRoll` takes a `hideLabels` prop
+for this; the main Chapter Tour page still shows its own lane labels as
+before). A Logic-style transport bar sits above the roll, stacked into
+three always-visible rows rather than hidden behind disclosure panels:
+**(1)** Play/Pause, the current time signature (always shown, per direct
+request, not just available on request), a compact cycle-length readout
+(units/events/rests) for whichever voice is active, Tempo, and an overflow
+(`⋯`) menu holding Download MIDI, kept a couple of clicks away rather than
+a primary button; **(2)** the voice tabs plus that voice's own
+generators/case/technique-or-growth/drum-sound controls (Extend); **(3)**
+the shared motif-length window (Length) — start/length or "by beats," and
+the time-signature choice. Built mobile-first (rows wrap; the whole
+transport stacks cleanly at narrow widths) — a deliberate exception to this
+project's otherwise desktop-first convention (see "What's portable"
 below), specifically because this page is meant to eventually work as a
 distributable mobile app.
 
 Every piece of it reuses already-tested core modules — no new `src/core`
-code was needed. **Extend the motif** has two independent modes: Technique
-swaps in Fractioned/Expansion/Contraction/Balance via the same
+code was needed for the resultant/technique/growth machinery. **Extend the
+motif** has two independent modes: Technique swaps in
+Fractioned/Expansion/Contraction/Balance via the same
 `buildResultantForTechnique` dispatcher the main generator uses — Expansion
 is literally "append the fractioned form," Contraction "prepend" it, Balance
 "combine" them, plus a plain repeat count. **Higher-order growth (Ch. 10)**
@@ -84,7 +106,8 @@ mechanisms, not composable). **Motif length** is a sliding `{start,
 length}` window over the resultant's segments — the same mechanic as the
 main generator's "Loop a range" control, generalized here into the primary
 length control, with an added "by beats" mode that grows the window to the
-smallest number of events reaching a target beat count.
+smallest number of events reaching a target beat count, and linked across
+both voices so they stay positioned relative to each other.
 
 **The preview itself is `src/components/MidiPreview.tsx`** — a standalone,
 reusable D-pad wrapper around `SchillingerPianoRoll` (purely presentational,

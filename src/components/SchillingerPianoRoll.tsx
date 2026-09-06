@@ -25,11 +25,12 @@ export interface SchillingerPianoRollProps {
   timeSignature: { beatsPerBar: number; unitsPerBeat: number };
   /** Fraction (0-1) of the cycle currently playing; omit to hide the playhead. */
   playheadFraction?: number;
+  /** Drops the left-hand lane-label column entirely, giving the roll the full width. */
+  hideLabels?: boolean;
 }
 
 const LABEL_WIDTH = 130;
 const ROLL_WIDTH = 800;
-const TOTAL_WIDTH = LABEL_WIDTH + ROLL_WIDTH;
 const RULER_HEIGHT = 22;
 const LANE_HEIGHT = 34;
 const LANE_GAP = 8;
@@ -44,7 +45,10 @@ export default function SchillingerPianoRoll({
   cycleLength,
   timeSignature,
   playheadFraction,
+  hideLabels = false,
 }: SchillingerPianoRollProps) {
+  const labelWidth = hideLabels ? 0 : LABEL_WIDTH;
+  const totalWidth = labelWidth + ROLL_WIDTH;
   const totalHeight = laneY(lanes.length) - LANE_GAP;
   const { beatsPerBar, unitsPerBeat } = timeSignature;
   const barLength = beatsPerBar * unitsPerBeat;
@@ -57,7 +61,7 @@ export default function SchillingerPianoRoll({
   for (let bar = 0; bar < barCount; bar++) {
     for (let beat = 0; beat < beatsPerBar; beat++) {
       const unit = bar * barLength + beat * unitsPerBeat;
-      const x = LABEL_WIDTH + (unit / safeCycleLength) * ROLL_WIDTH;
+      const x = labelWidth + (unit / safeCycleLength) * ROLL_WIDTH;
       const isBarStart = beat === 0;
       ruler.push(
         <line
@@ -79,8 +83,8 @@ export default function SchillingerPianoRoll({
   ruler.push(
     <line
       key="line-end"
-      x1={LABEL_WIDTH + ROLL_WIDTH}
-      x2={LABEL_WIDTH + ROLL_WIDTH}
+      x1={labelWidth + ROLL_WIDTH}
+      x2={labelWidth + ROLL_WIDTH}
       y1={0}
       y2={totalHeight}
       className="piano-roll__barline piano-roll__barline--edge"
@@ -89,7 +93,7 @@ export default function SchillingerPianoRoll({
 
   return (
     <svg
-      viewBox={`0 0 ${TOTAL_WIDTH} ${totalHeight}`}
+      viewBox={`0 0 ${totalWidth} ${totalHeight}`}
       className="piano-roll"
       preserveAspectRatio="none"
       role="img"
@@ -99,7 +103,7 @@ export default function SchillingerPianoRoll({
         const y = laneY(laneIndex);
         let cursor = 0;
         const blocks = lane.segments.map((segment, segmentIndex) => {
-          const x = LABEL_WIDTH + (cursor / safeCycleLength) * ROLL_WIDTH;
+          const x = labelWidth + (cursor / safeCycleLength) * ROLL_WIDTH;
           const width = (segment.duration / safeCycleLength) * ROLL_WIDTH;
           cursor += segment.duration;
           const isRest = segment.rest ?? false;
@@ -139,9 +143,11 @@ export default function SchillingerPianoRoll({
         });
         return (
           <g key={lane.label}>
-            <text x={4} y={y + LANE_HEIGHT / 2 + 4} className="piano-roll__lanelabel">
-              {lane.label}
-            </text>
+            {!hideLabels && (
+              <text x={4} y={y + LANE_HEIGHT / 2 + 4} className="piano-roll__lanelabel">
+                {lane.label}
+              </text>
+            )}
             {blocks}
           </g>
         );
@@ -149,8 +155,8 @@ export default function SchillingerPianoRoll({
       {ruler}
       {playheadFraction != null && (
         <line
-          x1={LABEL_WIDTH + playheadFraction * ROLL_WIDTH}
-          x2={LABEL_WIDTH + playheadFraction * ROLL_WIDTH}
+          x1={labelWidth + playheadFraction * ROLL_WIDTH}
+          x2={labelWidth + playheadFraction * ROLL_WIDTH}
           y1={0}
           y2={totalHeight}
           className="piano-roll__playhead"
