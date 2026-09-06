@@ -108,9 +108,37 @@ function defaultVoice(soundLabel: string): VoiceState {
   return { restIndex: 0, instrumentIndex };
 }
 
+const MAX_VOICES = 12;
+
 const VOICE_COLORS: readonly { color: string; highlight: string }[] = [
-  { color: "#3d7ddb", highlight: "#7fb0ef" },
-  { color: "#d9542b", highlight: "#f2926a" },
+  { color: "#3d7ddb", highlight: "#7fb0ef" }, // blue
+  { color: "#d9542b", highlight: "#f2926a" }, // orange
+  { color: "#43a047", highlight: "#81c784" }, // green
+  { color: "#8e24aa", highlight: "#ce93d8" }, // purple
+  { color: "#d81b60", highlight: "#f48fb1" }, // pink
+  { color: "#00acc1", highlight: "#4dd0e1" }, // cyan
+  { color: "#ffa000", highlight: "#ffcc80" }, // amber
+  { color: "#6d4c41", highlight: "#a1887f" }, // brown
+  { color: "#546e7a", highlight: "#90a4ae" }, // blue-grey
+  { color: "#7cb342", highlight: "#aed581" }, // lime
+  { color: "#e53935", highlight: "#ef9a9a" }, // red
+  { color: "#3949ab", highlight: "#9fa8da" }, // indigo
+];
+
+/** One distinct default drum sound per new voice slot, so 12 freshly-added voices don't all start identical. */
+const DEFAULT_VOICE_SOUND_LABELS: readonly string[] = [
+  "Closed hi-hat",
+  "Kick",
+  "Snare",
+  "Ride",
+  "Rim shot",
+  "Clap",
+  "Low tom",
+  "Mid tom",
+  "High tom",
+  "Cowbell",
+  "Open hi-hat",
+  "Crash",
 ];
 
 /** A short-lived white-noise buffer, one per AudioContext, for the noise-based drum hits below. */
@@ -365,21 +393,44 @@ export default function MotifExplorerPage({
     setVoices((vs) => vs.map((v, i) => (i === index ? { ...v, ...patch } : v)));
   }
 
-  function addSecondVoice() {
-    setVoices((vs) => (vs.length > 1 ? vs : [...vs, defaultVoice("Kick")]));
-    setActiveVoiceTab(1);
+  // Both derive everything from the functional-updater's own `vs`, never
+  // from the `voices`/`activeVoiceTab` closed over at render time -- two
+  // clicks landing in the same React batch (a fast double-click, or a
+  // burst of automated clicks) would otherwise both compute against the
+  // same stale length/index and collide (confirmed live: rapid-adding many
+  // voices gave every one past the second the same default sound, since
+  // `newIndex` was frozen at the pre-batch length for every call).
+  function addVoice() {
+    setVoices((vs) => {
+      if (vs.length >= MAX_VOICES) return vs;
+      return [...vs, defaultVoice(DEFAULT_VOICE_SOUND_LABELS[vs.length % DEFAULT_VOICE_SOUND_LABELS.length])];
+    });
   }
 
-  function removeSecondVoice() {
-    setVoices((vs) => vs.slice(0, 1));
-    setActiveVoiceTab(0);
+  function removeVoice(index: number) {
+    setVoices((vs) => vs.filter((_, i) => i !== index));
   }
+
+  // `activeVoiceTab` reacts to `voices.length` changing rather than being
+  // set directly inside addVoice/removeVoice above -- those only have
+  // access to the array via setVoices's own functional updater, which
+  // can't also reach into a *different* piece of state safely. Growing
+  // focuses the newly-added voice; shrinking just clamps back into bounds.
+  const prevVoiceCountRef = useRef(voices.length);
+  useEffect(() => {
+    if (voices.length > prevVoiceCountRef.current) {
+      setActiveVoiceTab(voices.length - 1);
+    } else if (activeVoiceTab > voices.length - 1) {
+      setActiveVoiceTab(Math.max(0, voices.length - 1));
+    }
+    prevVoiceCountRef.current = voices.length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voices.length]);
 
   useEffect(() => {
     setVoices((vs) => vs.map((v) => ({ ...v, restIndex: 0 })));
   }, [clampedStart, windowLength]);
 
-  const voiceB = voices[1];
   const editingVoice = voices[activeVoiceTab] ?? voices[0];
 
   const voiceOutputs = useMemo(
@@ -906,16 +957,21 @@ export default function MotifExplorerPage({
               </optgroup>
             </select>
 
-            {i === 1 && (
-              <button type="button" className="motif-transport__voiceremove" aria-label="Remove voice 2" onClick={removeSecondVoice}>
+            {voices.length > 1 && (
+              <button
+                type="button"
+                className="motif-transport__voiceremove"
+                aria-label={`Remove voice ${i + 1}`}
+                onClick={() => removeVoice(i)}
+              >
                 ×
               </button>
             )}
           </div>
         ))}
-        {!voiceB && (
-          <button type="button" className="motif-voices__add" onClick={addSecondVoice}>
-            + Add Voice 2
+        {voices.length < MAX_VOICES && (
+          <button type="button" className="motif-voices__add" onClick={addVoice}>
+            + Add Voice
           </button>
         )}
       </section>

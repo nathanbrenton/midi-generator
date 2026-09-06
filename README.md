@@ -27,23 +27,30 @@ project's zero-dependency approach.
 **Deliberately rhythm-only for now** — pitched scale/melody (Book II/Ch. 7
 territory) is a deliberate, later step, not missing by accident, per the
 same "build it back up in the *same order* the books introduce it"
-principle. Within that scope, the page now supports **one or two voices
+principle. Within that scope, the page now supports **up to 12 voices
 heard together, sharing one underlying rhythm**: generators, resultant
 case, technique/growth, and the motif-length window are all single, shared
 settings (as is tempo) — per direct instruction, "all voices should share
 the same settings for resultant... technique... and length." What each
-voice keeps independently is just its **drum sound** and its own point in
-the rest-browsing sequence (see below), which is enough on its own for two
-voices to read as a real duet rather than a doubled unison: e.g. a
-continuous hi-hat against a kick that only sounds on part of the same
-underlying pattern. A "+ Voice 2" control adds the second voice; a small
-tab pair (with a color swatch matching its piano-roll lane) switches which
-voice's drum-sound and rest-pattern the transport and D-pad currently
-apply to, and `×` removes voice 2 again. Because every rest-variation of a
-given window has the same total duration (rests hold their position's
-duration, they just go silent), both voices always stay in the same cycle
-length regardless of their independent rest choices — no stretching,
-truncating, or separate cycle-length bookkeeping needed.
+voice keeps independently is just its **instrument/waveform** and its own
+point in the rest-browsing sequence (see below), which is enough on its
+own for voices to read as a real ensemble rather than a doubled unison:
+e.g. a continuous hi-hat against a kick that only sounds on part of the
+same underlying pattern. A "+ Add Voice" control appends another (up to
+`MAX_VOICES = 12`, each defaulting to a distinct drum sound so a freshly
+added voice never starts out silently identical to an existing one); each
+voice's own row has an `×` to remove it, and any voice can be removed, not
+just the most recent. A small tab per voice (color swatch matching its
+piano-roll lane) marks which one the D-pad's rest-browsing currently
+targets. Because every rest-variation of a given window has the same
+total duration (rests hold their position's duration, they just go
+silent), every voice always stays in the same cycle length regardless of
+its own independent rest choice — no stretching, truncating, or
+per-voice cycle-length bookkeeping needed, no matter how many voices are
+active. (12 isn't an arbitrary UI cap chosen for its own sake — it's
+comfortably inside MIDI's 16-channel ceiling with room to spare, since
+`buildMidiFile` reserves channel 9 for percussion and cycles the other 15
+open, non-drum channels for melodic tracks; see below.)
 
 **Voices live in their own card**, below the transport, separate from the
 rhythm controls above it — sound design (what each voice actually plays)
@@ -76,7 +83,18 @@ this live synthesis: percussion still encodes correct GM channel-10 note
 numbers, and synth voices export as ordinary melodic tracks (channel
 assigned by track index, not pinned to the drum channel), so it plays back
 correctly in any real DAW or soundfont player regardless of how the
-in-browser preview makes its sound.
+in-browser preview makes its sound. **`buildMidiFile`'s track-index-based
+channel assignment now explicitly skips General MIDI's reserved
+percussion channel (9)** when auto-assigning channels to melodic (non-
+percussion) tracks — with only ever 1-2 voices this was unreachable, but
+raising the cap to 12 makes it a real, checkable case: without the fix, a
+synth voice landing at track position 9 would get channel 9 by plain
+`index % 16` arithmetic, and a GM-compliant player reinterprets *any* note
+on channel 9 through the drum map regardless of program, silently turning
+a melodic voice into random percussion. Covered by two new tests in
+`tests/midi.test.mjs` (11 melodic voices land on channels
+0-8,10,11 — never 9; a percussion track's explicit channel doesn't shift
+where the melodic voices around it land).
 
 **Keyboard, the first in the codebase**: **←/→** slides the (shared) motif
 length window; **↑/↓** progressively introduces rests in whichever voice's

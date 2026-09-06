@@ -107,16 +107,34 @@ export interface MidiFileOptions {
   ticksPerUnit?: number;
 }
 
+/**
+ * The next channel for a track that has no explicit `NoteEvent.channel`
+ * override, cycling 0-15 but skipping 9 -- General MIDI reserves channel
+ * 9 (channel 10 in 1-indexed DAW UIs) exclusively for percussion, and a
+ * compliant player will reinterpret ANY note sent there through the GM
+ * drum map regardless of program, garbling a melodic voice that happened
+ * to land on it by plain positional bad luck. Only reachable in practice
+ * once enough simultaneous voices exist for position 9 to come up at all.
+ */
+function nextMelodicChannel(cursor: number): number {
+  const channel = cursor % 15;
+  return channel >= 9 ? channel + 1 : channel;
+}
+
 /** Builds a multi-track .mid file, one track per distinct `voice` value in `notes`. */
 export function buildMidiFile(notes: readonly NoteEvent[], options: MidiFileOptions = {}): Uint8Array {
   const { bpm = 120, ticksPerUnit = 120 } = options;
 
   const voices = [...new Set(notes.map((note) => note.voice))].sort((a, b) => a - b);
+  let melodicCursor = 0;
   const tracks = [
     tempoTrack(bpm),
-    ...voices.map((voice, index) =>
-      noteTrack(notes.filter((note) => note.voice === voice), ticksPerUnit, index % 16),
-    ),
+    ...voices.map((voice) => {
+      const voiceNotes = notes.filter((note) => note.voice === voice);
+      const hasExplicitChannel = voiceNotes[0]?.channel != null;
+      const defaultChannel = hasExplicitChannel ? 0 : nextMelodicChannel(melodicCursor++);
+      return noteTrack(voiceNotes, ticksPerUnit, defaultChannel);
+    }),
   ];
 
   const headerChunk = [
