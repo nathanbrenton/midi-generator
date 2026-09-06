@@ -34,9 +34,23 @@ function resultantFromSegments(segments: ResultantSegment[]): Resultant {
  * Every variation has the same total duration -- only which positions
  * sound changes, not the underlying rhythm's length.
  */
+// The full enumeration is 2^n entries (every subset of positions can be
+// rests, independent of each other) -- fine for the small windows this was
+// designed around, but a real crash for a long one: a 5:2 Fractioned
+// resultant alone has 21 segments, and "Max" gladly asks for a 21-event
+// window, which would try to materialize 2^21 (~2 million) arrays and
+// exhaust the tab's memory. Cap the total instead of the window length
+// itself (which has other legitimate reasons to go long, like browsing a
+// big pattern with only a few rests) -- windows small enough to matter in
+// practice get the exact same exhaustive list as before; only pathologically
+// long ones lose the tail (very-high-rest-count combinations), degrading
+// gracefully rather than crashing.
+const MAX_REST_VARIATIONS = 4096;
+
 function allRestVariations(durations: readonly number[]): number[][] {
   const variations: number[][] = [];
   for (let restCount = 0; restCount <= durations.length; restCount++) {
+    if (variations.length >= MAX_REST_VARIATIONS) break;
     variations.push(...restCombinations(durations, restCount));
   }
   return variations;

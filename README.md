@@ -107,6 +107,18 @@ clean loop introduces one rest, walks through every single-rest position,
 then moves on to two-rest combinations, and so on. **Space** plays/stops.
 All three are guarded to no-op while a text/number input has focus.
 
+That full enumeration is `2^n` entries for an `n`-event window (every
+position independently rest-or-not) — fine for the small windows this was
+designed around, but a real crash for a long one: a 5:2 **Fractioned**
+resultant alone has 21 segments, and clicking **Max** happily asks for the
+full 21-event window, which tried to materialize `2^21` (~2 million)
+arrays and took the tab down. `allRestVariations` now caps the total at
+4096 entries — small/typical windows (anything ≤12 events) get the exact
+same exhaustive list as before, unaffected; only pathologically long ones
+quietly lose the high-rest-count tail rather than crashing. The cap lives
+on the total, not on the window length itself, since a long window with
+only a few rests is a perfectly reasonable thing to want to browse.
+
 **Click a blob to toggle it between note and rest directly**, rather than
 only browsing rests with ↑/↓. Since `restCombinations` concatenated across
 every rest count already enumerates *every* possible note/rest pattern for
