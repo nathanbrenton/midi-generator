@@ -10,6 +10,7 @@ import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
 import { type PianoRollLane } from "../components/SchillingerPianoRoll";
 import MidiPreview from "../components/MidiPreview";
+import type { HeaderAction } from "../components/AppHeader";
 import "../components/SchillingerGenerator.css";
 import "./MotifExplorerPage.css";
 
@@ -207,7 +208,11 @@ function scheduleDrumHit(context: AudioContext, destination: AudioNode, midiNote
   noise.stop(time + decay + 0.02);
 }
 
-export default function MotifExplorerPage() {
+export default function MotifExplorerPage({
+  onHeaderActionChange,
+}: {
+  onHeaderActionChange?: (action: HeaderAction | null) => void;
+}) {
   // Deliberately rhythm-only for now: "build this out in the same order
   // Schillinger's own chapters introduce it," starting with Book I. Scale
   // (pitched melody) comes back later, in sequence.
@@ -355,7 +360,7 @@ export default function MotifExplorerPage() {
   const selectedTimeSignature = timeSignatureOptions[Math.min(timeSignatureIndex, timeSignatureOptions.length - 1)];
 
   // Playback.
-  const [bpm, setBpm] = useState(112);
+  const [bpm, setBpm] = useState(124);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playheadFraction, setPlayheadFraction] = useState(0);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -365,20 +370,32 @@ export default function MotifExplorerPage() {
   const secondsPerUnit = 60 / bpm;
   const cycleSeconds = totalUnits * secondsPerUnit;
 
+  // A live-values ref, not a dependency array: `scheduleLoopPass` re-reads
+  // this at the START OF EVERY PASS rather than closing over whatever
+  // `notes`/timing were current when it was first scheduled. That means an
+  // edit made mid-cycle (clicking a blob to mute/unmute, swapping an
+  // instrument, nudging tempo) never tears down the AudioContext or resets
+  // `cycleStartRef` -- the currently-playing pass finishes exactly as
+  // scheduled, and the very next pass simply picks up whatever is current.
+  // No restart, no playhead jump, no audible glitch.
+  const liveRef = useRef({ notes, secondsPerUnit, cycleSeconds });
+  liveRef.current = { notes, secondsPerUnit, cycleSeconds };
+
   function scheduleLoopPass(token: number) {
     const context = audioContextRef.current;
     if (!context || token !== playTokenRef.current) return;
+    const { notes: liveNotes, secondsPerUnit: liveSpu, cycleSeconds: liveCycleSeconds } = liveRef.current;
 
     const cycleStart = context.currentTime;
     cycleStartRef.current = cycleStart;
-    for (const note of notes) {
-      const noteStart = cycleStart + note.startUnits * secondsPerUnit;
+    for (const note of liveNotes) {
+      const noteStart = cycleStart + note.startUnits * liveSpu;
       scheduleDrumHit(context, context.destination, note.midiNote, noteStart, note.velocity);
     }
 
     window.setTimeout(() => {
       if (token === playTokenRef.current) scheduleLoopPass(token);
-    }, cycleSeconds * 1000);
+    }, liveCycleSeconds * 1000);
   }
 
   function stopPlayback() {
@@ -404,14 +421,6 @@ export default function MotifExplorerPage() {
       audioContextRef.current?.close();
     };
   }, []);
-
-  useEffect(() => {
-    if (!isPlaying || !audioContextRef.current) return;
-    audioContextRef.current.close();
-    audioContextRef.current = new AudioContext();
-    scheduleLoopPass(++playTokenRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes, secondsPerUnit, cycleSeconds]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -476,18 +485,20 @@ export default function MotifExplorerPage() {
     if (matchIndex >= 0) updateVoice(voiceIndex, { restIndex: matchIndex });
   }
 
-  const [overflowOpen, setOverflowOpen] = useState(false);
-  const overflowRef = useRef<HTMLDivElement>(null);
+  // Download MIDI is rarely used, so it lives in the top app header's own
+  // overflow menu rather than this page's transport at all. `stableDownload`
+  // never changes identity (it just calls whatever `downloadMidi` currently
+  // is via a ref), so this effect only re-fires when `notes.length` itself
+  // changes -- not on every render -- avoiding a parent/child re-render loop.
+  const downloadRef = useRef(downloadMidi);
+  downloadRef.current = downloadMidi;
+  const stableDownload = useRef(() => downloadRef.current()).current;
 
   useEffect(() => {
-    if (!overflowOpen) return;
-    function onPointerDown(e: PointerEvent) {
-      if (overflowRef.current?.contains(e.target as Node)) return;
-      setOverflowOpen(false);
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [overflowOpen]);
+    onHeaderActionChange?.({ label: "Download MIDI", onClick: stableDownload, disabled: notes.length === 0 });
+    return () => onHeaderActionChange?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notes.length]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -520,9 +531,6 @@ export default function MotifExplorerPage() {
           e.preventDefault();
           handlersRef.current.togglePlayback();
           break;
-        case "Escape":
-          setOverflowOpen(false);
-          break;
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -540,6 +548,20 @@ export default function MotifExplorerPage() {
           {selectedTimeSignature && (
             <div className="motif-transport__timesig">
               <TimeSignatureGlyph option={selectedTimeSignature} />
+              {timeSignatureOptions.length > 1 && (
+                <select
+                  className="motif-transport__timesig-select"
+                  value={timeSignatureIndex}
+                  onChange={(e) => setTimeSignatureIndex(Number(e.target.value))}
+                  aria-label="Time signature reading"
+                >
+                  {timeSignatureOptions.map((o, i) => (
+                    <option key={o.label} value={i}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
 
@@ -559,31 +581,10 @@ export default function MotifExplorerPage() {
             <input type="number" min={40} max={220} value={bpm} onChange={(e) => setBpm(Number(e.target.value))} />
             bpm
           </label>
-
-          <div className="motif-transport__overflow" ref={overflowRef}>
-            <button type="button" aria-label="More options" onClick={() => setOverflowOpen((v) => !v)}>
-              ⋯
-            </button>
-            {overflowOpen && (
-              <div className="motif-transport__menu">
-                <button type="button" onClick={downloadMidi} disabled={notes.length === 0}>
-                  Download MIDI
-                </button>
-              </div>
-            )}
-          </div>
         </div>
 
-        <div className="motif-transport__row">
-          <select
-            value={generatorCount}
-            onChange={(e) => setGeneratorCount(Number(e.target.value) as 2 | 3)}
-            aria-label="Number of generators"
-          >
-            <option value={2}>2 gen</option>
-            <option value={3}>3 gen</option>
-          </select>
-
+        {/* Frequently used: what the resultant is, and how it's read rhythmically. */}
+        <div className="motif-transport__row motif-transport__row--primary">
           {generatorCount === 2 ? (
             <select value={caseIndex} onChange={(e) => setCaseIndex(Number(e.target.value))} aria-label="Resultant case">
               {BINARY_SYNCHRONIZATION_CASES.map((c, i) => (
@@ -602,35 +603,53 @@ export default function MotifExplorerPage() {
             </select>
           )}
 
-          <select value={extendMode} onChange={(e) => setExtendMode(e.target.value as ExtendMode)} aria-label="Extend mode">
-            <option value="technique">Technique (Ch. 4-5)</option>
-            <option value="growth">Higher-order growth (Ch. 10)</option>
-          </select>
+          {extendMode === "technique" && generatorCount === 2 && (
+            <select value={technique} onChange={(e) => setTechnique(e.target.value as Technique)} aria-label="Technique">
+              <option value="plain">Plain</option>
+              <option value="fractioned">Fractioned</option>
+              <option value="expansion">Expansion (append)</option>
+              <option value="contraction">Contraction (prepend)</option>
+              <option value="balance">Balance (combine)</option>
+            </select>
+          )}
+        </div>
+
+        {/* Rarely touched: how many generators, and the alternate (unused so far) growth path. */}
+        <div className="motif-transport__row motif-transport__row--secondary">
+          <label className="motif-transport__labeled">
+            Generators
+            <select
+              value={generatorCount}
+              onChange={(e) => setGeneratorCount(Number(e.target.value) as 2 | 3)}
+              aria-label="Number of generators"
+            >
+              <option value={2}>2</option>
+              <option value={3}>3</option>
+            </select>
+          </label>
+
+          <label className="motif-transport__labeled">
+            Extend
+            <select value={extendMode} onChange={(e) => setExtendMode(e.target.value as ExtendMode)} aria-label="Extend mode">
+              <option value="technique">Technique (Ch. 4-5)</option>
+              <option value="growth">Higher-order growth (Ch. 10)</option>
+            </select>
+          </label>
 
           {extendMode === "technique" ? (
-            <>
-              {generatorCount === 2 && (
-                <select value={technique} onChange={(e) => setTechnique(e.target.value as Technique)} aria-label="Technique">
-                  <option value="plain">Plain</option>
-                  <option value="fractioned">Fractioned</option>
-                  <option value="expansion">Expansion (append)</option>
-                  <option value="contraction">Contraction (prepend)</option>
-                  <option value="balance">Balance (combine)</option>
-                </select>
-              )}
-              <label className="motif-transport__tempo">
-                <input
-                  type="number"
-                  min={1}
-                  max={4}
-                  value={repeatCount}
-                  onChange={(e) => setRepeatCount(Math.max(1, Math.min(4, Number(e.target.value))))}
-                />
-                ×
-              </label>
-            </>
+            <label className="motif-transport__labeled">
+              Repeat
+              <input
+                type="number"
+                min={1}
+                max={4}
+                value={repeatCount}
+                onChange={(e) => setRepeatCount(Math.max(1, Math.min(4, Number(e.target.value))))}
+              />
+              ×
+            </label>
           ) : (
-            <label className="motif-transport__tempo">
+            <label className="motif-transport__labeled">
               Order
               <input
                 type="number"
@@ -690,16 +709,34 @@ export default function MotifExplorerPage() {
         </div>
 
         <div className="motif-transport__row">
-          <label className="schillinger__checkbox">
-            <input type="radio" name="lengthMode" checked={lengthMode === "events"} onChange={() => setLengthMode("events")} />
-            By events
-          </label>
-          <label className="schillinger__checkbox">
-            <input type="radio" name="lengthMode" checked={lengthMode === "beats"} onChange={() => setLengthMode("beats")} />
-            By beats
-          </label>
-          <label className="motif-transport__tempo">
-            Start
+          {/* "Fire and forget": set once per session and rarely touched again, so it's a
+              compact toggle rather than a pair of full radio+label controls. */}
+          <div className="motif-transport__segmented" role="group" aria-label="Length mode">
+            <button
+              type="button"
+              className={lengthMode === "events" ? "motif-transport__segbtn motif-transport__segbtn--active" : "motif-transport__segbtn"}
+              onClick={() => setLengthMode("events")}
+            >
+              Events
+            </button>
+            <button
+              type="button"
+              className={lengthMode === "beats" ? "motif-transport__segbtn motif-transport__segbtn--active" : "motif-transport__segbtn"}
+              onClick={() => setLengthMode("beats")}
+            >
+              Beats
+            </button>
+          </div>
+
+          <div className="motif-transport__rangegroup">
+            <span>Start</span>
+            <input
+              type="range"
+              min={0}
+              max={Math.max(0, totalSegments - 1)}
+              value={clampedStart}
+              onChange={(e) => setLoopSelection((sel) => ({ ...sel, start: Number(e.target.value) }))}
+            />
             <input
               type="number"
               min={0}
@@ -707,9 +744,10 @@ export default function MotifExplorerPage() {
               value={clampedStart}
               onChange={(e) => setLoopSelection((sel) => ({ ...sel, start: Number(e.target.value) }))}
             />
-          </label>
+          </div>
+
           {lengthMode === "events" ? (
-            <div className="motif-transport__lengthslider">
+            <div className="motif-transport__rangegroup">
               <span>Length</span>
               <input
                 type="range"
@@ -734,7 +772,7 @@ export default function MotifExplorerPage() {
               </button>
             </div>
           ) : (
-            <div className="motif-transport__lengthslider">
+            <div className="motif-transport__rangegroup">
               <span>Beats</span>
               <input
                 type="range"
@@ -754,15 +792,6 @@ export default function MotifExplorerPage() {
                 Max
               </button>
             </div>
-          )}
-          {timeSignatureOptions.length > 1 && (
-            <select value={timeSignatureIndex} onChange={(e) => setTimeSignatureIndex(Number(e.target.value))} aria-label="Time signature">
-              {timeSignatureOptions.map((o, i) => (
-                <option key={o.label} value={i}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
           )}
         </div>
       </div>

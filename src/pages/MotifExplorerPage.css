@@ -48,12 +48,6 @@
   font-size: 0.85rem;
 }
 
-.motif-transport__group {
-  display: flex;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-}
-
 .motif-transport__timesig {
   display: flex;
   align-items: center;
@@ -149,7 +143,7 @@
   width: 3.2rem;
 }
 
-.motif-transport__lengthslider {
+.motif-transport__rangegroup {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -157,18 +151,18 @@
   min-width: 9rem;
 }
 
-.motif-transport__lengthslider span {
+.motif-transport__rangegroup span {
   white-space: nowrap;
   color: color-mix(in srgb, currentColor 65%, transparent);
 }
 
-.motif-transport__lengthslider input[type="range"] {
+.motif-transport__rangegroup input[type="range"] {
   flex: 1 1 auto;
   min-width: 5rem;
   accent-color: #3d7ddb;
 }
 
-.motif-transport__lengthslider input[type="number"] {
+.motif-transport__rangegroup input[type="number"] {
   width: 3.4rem;
   flex-shrink: 0;
 }
@@ -189,46 +183,68 @@
   background: color-mix(in srgb, currentColor 18%, transparent);
 }
 
-.motif-transport__overflow {
-  position: relative;
+/* Frequency-of-use hierarchy: primary rows (resultant/technique, length)
+   read at full weight; secondary rows (generator count, extend mode,
+   repeat/order -- all rarely touched) are visually quieter so the eye
+   lands on what actually gets used session to session. */
+.motif-transport__row--primary select {
+  font-weight: 600;
 }
 
-.motif-transport__overflow > button {
-  border: none;
-  background: transparent;
-  font-size: 1.1rem;
-  line-height: 1;
-  padding: 0.3rem 0.5rem;
-  cursor: pointer;
+.motif-transport__row--secondary {
+  font-size: 0.72rem;
   color: color-mix(in srgb, currentColor 65%, transparent);
 }
 
-.motif-transport__menu {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  margin-top: 0.35rem;
-  z-index: 6;
-  background: var(--bg);
-  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px color-mix(in srgb, black 30%, transparent);
-  padding: 0.35rem;
+.motif-transport__row--secondary select,
+.motif-transport__row--secondary input {
+  font-size: 0.72rem;
+}
+
+.motif-transport__labeled {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
   white-space: nowrap;
 }
 
-.motif-transport__menu button {
-  border: none;
-  background: transparent;
-  padding: 0.4rem 0.7rem;
-  text-align: left;
-  cursor: pointer;
-  font-size: 0.8rem;
-  border-radius: 6px;
+.motif-transport__labeled input[type="number"] {
+  width: 2.6rem;
 }
 
-.motif-transport__menu button:hover {
+/* Compact toggle for a "set once, forget it" choice -- avoids spending a
+   full radio+label pair's worth of width on something rarely revisited. */
+.motif-transport__segmented {
+  display: flex;
+  border-radius: 6px;
+  overflow: hidden;
   background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.motif-transport__segbtn {
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.motif-transport__segbtn--active {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  color: currentColor;
+  font-weight: 600;
+}
+
+/* The time-signature reading picker, grouped directly into the notation
+   badge rather than living apart from it in the Length row. */
+.motif-transport__timesig-select {
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+  font-size: 0.7rem;
+  padding: 0;
+  margin-left: 0.15rem;
 }
 
 /* Workspace: just the stage now -- Extend and Length live in the transport. */

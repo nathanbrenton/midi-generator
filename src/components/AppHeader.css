@@ -8,10 +8,62 @@
 
 .app-header__nav {
   display: flex;
+  align-items: center;
   gap: 1.5rem;
   max-width: 60rem;
   margin: 0 auto;
   padding: 0.75rem 2rem;
+}
+
+.app-header__spacer {
+  flex: 1 1 0;
+}
+
+.app-header__overflow {
+  position: relative;
+}
+
+.app-header__overflow > button {
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+.app-header__menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.35rem;
+  z-index: 11;
+  background: var(--bg);
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px color-mix(in srgb, black 30%, transparent);
+  padding: 0.35rem;
+  white-space: nowrap;
+}
+
+.app-header__menu button {
+  border: none;
+  background: transparent;
+  padding: 0.4rem 0.7rem;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.8rem;
+  border-radius: 6px;
+}
+
+.app-header__menu button:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.app-header__menu button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .app-header__link {

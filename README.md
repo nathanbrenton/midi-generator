@@ -82,27 +82,52 @@ it flips that one position's sign and looks up which existing entry in
 that same list the result matches, then jumps the active voice's position
 in the list straight there. The next ↑/↓ press continues from that exact
 spot, browsing its neighbors, rather than losing the manual edit or
-restarting from the clean pattern.
+restarting from the clean pattern. Doing this **never disturbs playback**:
+toggling a blob mid-loop doesn't restart the AudioContext or reset the
+cycle position — the currently-sounding pass finishes exactly as
+scheduled, and the very next pass simply reflects the edit (see
+"Playback never restarts on a live edit" below).
 
-**Layout: the piano roll is the whole point, and the D-pad itself carries
-no status text or lane labels** — cycle info and per-voice labeling live in
-the transport bar instead (`SchillingerPianoRoll` takes a `hideLabels` prop
-for this; the main Chapter Tour page still shows its own lane labels as
-before). A Logic-style transport bar sits above the roll, stacked into four
-always-visible rows rather than hidden behind disclosure panels: **(1)**
-Play/Pause, the current time signature (always shown, per direct request,
-not just available on request), a compact cycle-length readout
-(units/events/rests) for whichever voice tab is active, Tempo, and an
-overflow (`⋯`) menu holding Download MIDI, kept a couple of clicks away
-rather than a primary button; **(2)** the shared
-generators/case/technique-or-growth controls (Extend), the same for every
-voice; **(3)** the voice tabs plus that voice's own drum-sound choice —
-the only per-voice row; **(4)** the shared motif-length window (Length) —
-start/length or "by beats," and the time-signature choice. Built
+**Layout is organized by how often each control actually gets touched**,
+not just by what kind of setting it is. A Logic-style transport bar sits
+above the roll, stacked into rows: **(1)** Play/Pause, a notation-style
+time signature badge (two stacked digits, no dividing bar — see below)
+with its own reading-picker grouped directly into it, a compact
+cycle-length readout for whichever voice tab is active, and Tempo
+(defaults to 124bpm); **(2)** the frequently-changed resultant case and
+technique picker, at full visual weight; **(3)** the rarely-touched
+generator count and Extend-mode/Repeat-or-Order controls, visually
+quieter (smaller, muted) and explicitly labeled ("Generators," "Extend,"
+"Repeat") since a control you touch once a session benefits from a label
+more than one you're already fluent with; **(4)** the voice tabs plus that
+voice's own drum-sound choice; **(5)** the motif-length window — an
+Events/Beats mode toggle compacted into a small segmented control (a
+"set once and forget it" choice doesn't need two full radio+label pairs'
+worth of width), then **paired range-slider + number-input + Max button**
+groups for both **Start** and **Length** — dragging handles coarse
+positioning, the number field handles exact fine-tuning, Max jumps
+straight to the far end. **Download MIDI — rarely used — isn't in this
+page's transport at all**: it lives in the app's own top header, in an
+overflow (`⋯`) menu next to the Chapter Tour/Motif Explorer links, which
+Motif Explorer populates via a small `onHeaderActionChange` callback prop
+(`App.tsx` holds the actual `headerAction` state; `AppHeader` renders it
+generically enough that any future page could opt in the same way). Built
 mobile-first (rows wrap; the whole transport stacks cleanly at narrow
 widths) — a deliberate exception to this project's otherwise desktop-first
 convention (see "What's portable" below), specifically because this page
 is meant to eventually work as a distributable mobile app.
+
+**Playback never restarts on a live edit.** Earlier, ANY change to the
+computed `notes` (a blob click, an instrument swap, even just switching
+voice tabs) tore down and recreated the whole `AudioContext`, which reset
+the loop's phase to zero and produced an audible restart/jump — a
+regression from a design that was trying to make live edits audible at
+all, at the cost of interrupting playback. `scheduleLoopPass` now reads
+`notes`/tempo/cycle-length from a live ref *at the start of every pass*
+instead of closing over whatever was current when the pass was first
+scheduled, so the currently-playing pass is never touched — a live edit
+takes effect starting with the very next natural loop boundary, with zero
+interruption in between.
 
 Every piece of it reuses already-tested core modules — no new `src/core`
 code was needed for the resultant/technique/growth machinery. **Extend the
