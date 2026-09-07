@@ -1522,6 +1522,40 @@ first basis only," p.498) — function 7 (the seventh) appears in the full
 Figure 211 table but isn't realized here, since it needs an S(7) chord,
 not a plain triad.
 
+## The passing seventh generalized (Book V, Ch. 15, Section A)
+
+`PassingSeventhPanel.tsx` (`src/core/passingSeventh.ts`). Only Section A
+is built — a symmetric triad (Ch. 3) at every tonic of a 3- or 4-tonic
+system (Book II Ch. 7's `symmetricTonics`), each with a passing seventh
+above it. "In a system of three tonics the interval between the roots
+equals 4 semitones... giving a choice of three forms of the seventh: the
+major, the minor and the diminished" (p.534); "in four tonics the
+interval... equals 3 semitones. This gives us a choice of a major and a
+minor seventh" (p.535) — the book's own two worked root-sequences, "C-E-
+Ab-C for the three tonics" and "C-Eb-F#-A for the four tonics," are
+reproduced exactly (confirmed by test and live in the panel), and turn
+out to be nothing more than `symmetricTonics(3, root)`/`symmetricTonics(4,
+root)` reused directly — no new tonic-spacing logic needed.
+
+**The chapter's own opening idea (Figure 254, "passing seventh," p.531)
+was investigated and explicitly NOT modeled, after a wrong first guess
+got caught before shipping.** The prose reads as if it might just be
+Ch. 9's own C3 seventh-chord voice-leading reused directly ("in C3 the
+seventh, while resolving, becomes a new root-tone... this permits a
+continuity of the passing seventh") — but computing that hypothesis out
+loud produced root motion jumping around unpredictably (60→76→67→71→50…),
+nothing like the smoothly descending bass the chapter describes. Rendering
+the actual figure (PDF p.292) resolved why: the treble stays on plain
+triads ("all chords must be S(5)") that change slowly, while an
+independent bass voice descends continuously *stepwise* underneath —
+a walking-bass-under-static-harmony texture, not a chord-to-chord
+function-relabeling at all. Pinning down exactly how many bass steps
+occur per triad change would need more figure-reading than felt safe to
+commit to a formula, so it's left undone rather than shipped on a guess
+that was already caught being wrong once. Sections B (Generalization of
+Passing Chromatic Tones, p.537-538) and C (Altered Chords, p.542+)
+weren't assessed.
+
 ## Book V, Chapter 4 (no core module) and Chapter 5 Section A
 
 Chapter 4 (Diatonic-Symmetric System of Harmony, Type II) contributes no
