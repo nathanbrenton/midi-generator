@@ -1401,6 +1401,35 @@ Harmony, p.478+) is a large, separate generalized voice-leading system
 of its own (Figures 190-191's "constant abc" transformation tables) —
 assessed only briefly, not attempted.
 
+## Generalization of symmetric progressions (Book V, Ch. 12)
+
+`GeneralizedSymmetricProgressionsPanel.tsx`
+(`src/core/generalizedSymmetricProgressions.ts`). This chapter is mostly
+glue, not a new formula — and turned out much more tractable than Ch. 9B/
+10B/11B/C's chord-family figures. "The system of enumeration of
+intervals may follow the upward or downward direction... it seems that
+the descending system is the more practical" (p.489) gives a clean table
+(c→c=0, c→b=1, c→bb=2 ... c→db=11) reproduced exactly by
+`descendingInterval` — e.g. c→g=5, not 7: G sits 5 semitones *below* C,
+the octave-complement of "up a fifth." "The total sum of all
+number-values... becomes a divisor of 12" (p.490): a rhythm-group whose
+descending steps sum to `S` takes `12/gcd(S,12)` repetitions to return to
+the starting pitch class — confirmed against both of the book's own
+worked examples (sum 5 → 12 repetitions; the 8-term group summing to 20 →
+3 repetitions, matching "closes after three cycles" exactly).
+
+Section A's modulation technique (p.492-493) is pure reuse: "detect the
+number-value expressing the interval between the two chords... compose a
+rhythmic group from [that] numeral." The book's own worked example,
+"breaking up number 9 into binomials: 8+1, 7+2, 6+3, 5+4, and their
+reciprocals," is exactly `generateCompositions(9, 2)` — the same function
+already built for Book II Ch. 7's sectional scales — confirmed to produce
+all 8 rows in the book's own order, and picking 5+4 for a C→Eb modulation
+reproduces the book's own C-G-Eb progression exactly, live in the panel.
+"When a number-value... is a small number, it is necessary to add the
+invariant 12" is the panel's "Wide octave" toggle, matching the book's
+own C→Bb example (2 → 14).
+
 ## Book V, Chapter 4 (no core module) and Chapter 5 Section A
 
 Chapter 4 (Diatonic-Symmetric System of Harmony, Type II) contributes no
