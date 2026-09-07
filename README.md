@@ -1354,6 +1354,22 @@ reference table. Natural next step if clearer scans turn up, or Book V
 Chapters 11+ (11th chord, generalized symmetric progressions, the
 chromatic system) in the meantime.
 
+**Section B (S(9) in the Symmetric System, p.464-467) was assessed but
+only partly built.** One clean, unambiguous piece came out of it: the
+"symmetric roots correspond to the respective cycles" correspondence
+(which C3/C5/C7 root-motion connects consecutive tonics of a 2/3/4/6/12-
+tonic system) is plain typeset text, no figure-reading needed — that's
+now `SYMMETRIC_CYCLE_FOR_TONIC_COUNT` in `symmetricHarmony.ts`, filling a
+gap Ch. 5's own section left open (see above). The rest of Section B —
+two "families" of symmetric seventh-chords (a minor-7th family 7♭S1-S4
+with adjectives large/diminished/minor/small, and a major-7th family
+7♮S1-S3 with major/augmented I/augmented II) — is real and named
+precisely in prose, but Figure 162/163's actual noteheads (which exact
+semitone structure each labeled chord has) did not resolve confidently
+enough after rendering PDF p.259 at high resolution to hand-verify a
+formula before coding, so it's not built. Same discipline as everything
+else deferred in this book so far — documented, not guessed.
+
 ## Book V, Chapter 4 (no core module) and Chapter 5 Section A
 
 Chapter 4 (Diatonic-Symmetric System of Harmony, Type II) contributes no
@@ -1372,12 +1388,17 @@ upper voice of harmony produces the scale... c-db-e-f#-g-a#" from a
 exactly the *sorted union of pitch classes* across every tonic's own
 triad — confirmed against both of the book's own worked examples (major
 gives c-db-e-f#-g-a#/bb; minor gives c-db-eb-f#-g-a), and verified again
-live in the browser, byte for byte. The exact root-motion cycle labels
-connecting consecutive tonics aren't yet precisely modeled. Sections B-E
-(Three/Four/Six/Twelve Tonics) need no new code — the same
-`symmetricHarmonyScale` generalizes cleanly across every tonic count; the
-book adds only qualitative recurrence-cycle properties there, no new
-checkable formula.
+live in the browser, byte for byte. Sections B-E (Three/Four/Six/Twelve
+Tonics) need no new code — the same `symmetricHarmonyScale` generalizes
+cleanly across every tonic count; the book adds only qualitative
+recurrence-cycle properties there, no new checkable formula. **The exact
+root-motion cycle labels connecting consecutive tonics are now filled
+in** (`SYMMETRIC_CYCLE_FOR_TONIC_COUNT`, shown in the panel's readout) —
+Book V Ch. 10 Section B (p.464) states them directly in clean typeset
+text, no figure-reading needed: "symmetric roots correspond to the
+respective cycles: C5, to root-2 [2 tonics]; C3, to cube-root-2 and
+4th-root-2 [3 and 4 tonics]; C7, to 6th-root-2 and 12th-root-2 [6 and 12
+tonics]" — reusing Ch. 2's diatonic C3/C5/C7 vocabulary directly.
 
 ## Variable doublings and inversions of S(5) (Book V, Ch. 6-7)
 

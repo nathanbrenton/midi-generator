@@ -3,6 +3,7 @@ import {
   S5_STRUCTURES,
   symmetricStructureProgression,
   symmetricHarmonyScale,
+  SYMMETRIC_CYCLE_FOR_TONIC_COUNT,
   type StructureId,
 } from "../core/symmetricHarmony";
 import { TONIC_COUNTS, symmetricTonics } from "../core/symmetricScales";
@@ -206,7 +207,8 @@ export default function SymmetricHarmonyPanel() {
           )
         ) : (
           <>
-            {tonicCount}-tonic system, {S5_STRUCTURES[scaleStructure].name} structure: tonics{" "}
+            {tonicCount}-tonic system ({SYMMETRIC_CYCLE_FOR_TONIC_COUNT[tonicCount]} between tonics),{" "}
+            {S5_STRUCTURES[scaleStructure].name} structure: tonics{" "}
             {tonics.map(noteName).join(", ")} → scale {scaleAsNotes.map((n) => noteName(n[0])).join("-")}
           </>
         )}

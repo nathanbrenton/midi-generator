@@ -5,6 +5,7 @@ import {
   symmetricTriad,
   symmetricStructureProgression,
   symmetricHarmonyScale,
+  SYMMETRIC_CYCLE_FOR_TONIC_COUNT,
 } from "../src/core/symmetricHarmony.ts";
 import { generalPermutations, generalPermutationsOf } from "../src/core/permutations.ts";
 import { compositionCount, symmetricTonics } from "../src/core/symmetricScales.ts";
@@ -155,4 +156,12 @@ test("symmetricHarmonyScale never has more than tonics.length * 3 pitch classes 
   const tonics = symmetricTonics(4, 0);
   const scale = symmetricHarmonyScale(tonics, 3); // augmented triads are especially prone to overlap
   assert.ok(scale.length <= tonics.length * 3);
+});
+
+test("SYMMETRIC_CYCLE_FOR_TONIC_COUNT matches the book's own stated pairing exactly (p.464)", () => {
+  assert.equal(SYMMETRIC_CYCLE_FOR_TONIC_COUNT[2], "C5");
+  assert.equal(SYMMETRIC_CYCLE_FOR_TONIC_COUNT[3], "C3");
+  assert.equal(SYMMETRIC_CYCLE_FOR_TONIC_COUNT[4], "C3");
+  assert.equal(SYMMETRIC_CYCLE_FOR_TONIC_COUNT[6], "C7");
+  assert.equal(SYMMETRIC_CYCLE_FOR_TONIC_COUNT[12], "C7");
 });

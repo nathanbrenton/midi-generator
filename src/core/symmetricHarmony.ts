@@ -60,9 +60,14 @@
  * Eb, F#, G, A} (matching "c-db-eb-f#-g-a" exactly). This reuses Book II
  * Ch.7's tonic machinery and this chapter's own `symmetricTriad` directly
  * -- no new combinatorial primitive, just their union. The exact
- * root-motion cycle labels connecting consecutive tonics (C5/C-5 for two
- * tonics, C3/C-3 for three, C7/C-7 for six and twelve) aren't yet
- * precisely modeled -- a natural next step.
+ * root-motion cycle labels connecting consecutive tonics are now filled
+ * in (`SYMMETRIC_CYCLE_FOR_TONIC_COUNT` below) -- Book V Ch.10 Section B
+ * (S(9) in the Symmetric System, p.464) states them directly in clean
+ * typeset text, no figure-reading needed: "symmetric roots correspond to
+ * the respective cycles: C5, to root-2 [2 tonics]; C3, to cube-root-2 and
+ * 4th-root-2 [3 and 4 tonics]; C7, to 6th-root-2 and 12th-root-2 [6 and
+ * 12 tonics]" -- reusing Ch.2's diatonic C3/C5/C7 root-motion vocabulary
+ * to name the step between consecutive symmetric tonics.
  */
 
 export type StructureId = 1 | 2 | 3 | 4;
@@ -103,3 +108,19 @@ export function symmetricHarmonyScale(tonics: readonly number[], structure: Stru
   }
   return [...pitchClasses].sort((a, b) => a - b);
 }
+
+export type SymmetricCycleLabel = "C3" | "C5" | "C7";
+
+/**
+ * Book V, Ch.10 Section B (p.464): which diatonic root-motion cycle
+ * connects consecutive tonics of a symmetric system, by tonic count.
+ * "Symmetric roots correspond to the respective cycles: C5, to root-2;
+ * C3, to cube-root-2 and 4th-root-2; C7, to 6th-root-2 and 12th-root-2."
+ */
+export const SYMMETRIC_CYCLE_FOR_TONIC_COUNT: Readonly<Record<number, SymmetricCycleLabel>> = {
+  2: "C5",
+  3: "C3",
+  4: "C3",
+  6: "C7",
+  12: "C7",
+};
