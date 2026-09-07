@@ -50,6 +50,7 @@ import VariableDoublingsPanel from "./VariableDoublingsPanel";
 import SeventhChordPanel from "./SeventhChordPanel";
 import NinthChordPanel from "./NinthChordPanel";
 import EleventhChordPanel from "./EleventhChordPanel";
+import HybridFourPartHarmonyPanel from "./HybridFourPartHarmonyPanel";
 import GeneralizedSymmetricProgressionsPanel from "./GeneralizedSymmetricProgressionsPanel";
 import ChromaticSystemPanel from "./ChromaticSystemPanel";
 import "./SchillingerGenerator.css";
@@ -900,6 +901,8 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
       <NinthChordPanel />
 
       <EleventhChordPanel />
+
+      <HybridFourPartHarmonyPanel />
 
       <GeneralizedSymmetricProgressionsPanel />
 

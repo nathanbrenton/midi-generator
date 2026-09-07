@@ -1396,10 +1396,60 @@ S(6)③) depends on Ch. 10 Section A's own S(9) resolution mechanic, which
 was deliberately left unbuilt there — not re-guessed here either.
 Section B (Preparation, p.470-472) and Section C (Symmetric System,
 p.473-477) lean on the same two-"family" combinatorics already deferred
-in Ch. 10 Section B, for the same reason. Section D (Hybrid Four-Part
-Harmony, p.478+) is a large, separate generalized voice-leading system
-of its own (Figures 190-191's "constant abc" transformation tables) —
-assessed only briefly, not attempted.
+in Ch. 10 Section B, for the same reason. **Section D (Hybrid Four-Part
+Harmony) is built — see below.**
+
+## Hybrid four-part harmony (Book V, Ch. 11, Section D)
+
+`HybridFourPartHarmonyPanel.tsx` (`src/core/hybridFourPartHarmony.ts`).
+Unlike Section D's own dense multi-column numeral tables (Figures
+192-200), its *foundation* — Figures 190 and 191 (p.478-479) — is fully
+legible typeset text and numbers, no note-by-note figure reading needed,
+and turned out to generalize this project's very first voice-leading
+primitive (Ch. 2's clockwise/counterclockwise triad transform) across
+every hybrid chord built so far.
+
+"The general technique of transformations for groups with three
+functions may now be adopted for... hybrid four-part harmony. The three
+upper parts perform the transformations corresponding to the groups with
+three functions, and the bass remains constant" (p.478). Figure 190
+("Forms of Hybrid Four-Part (3+1) Harmony") tabulates 9 concrete forms
+across all 5 tensions (S(5) through S(13)) as plain numerals —
+transcribed directly into `HYBRID_FORMS`. Two of those forms are exact
+cross-chapter confirmations: S(9)'s unmarked form (upper {3,7,9}) and
+S(11)'s only form (upper {7,9,11}) reproduce `ninthChords.ts` and
+`eleventhChords.ts`'s own chords exactly, confirmed by a `deepEqual`
+test — nice independent validation that both of those earlier chapters'
+scope decisions ("bass = root alone, upper = N contiguous stacked
+thirds") were reading the pattern correctly. S(13) is new: its upper
+voices must always drop one of {9, 11} to stay within "four-part" (three
+upper + bass), giving two forms, {7,9,13} and {7,11,13}.
+
+Figure 191 gives the 6 abstract transformations precisely, as arrow
+diagrams over three letter-slots a/b/c (sorted ascending — confirmed
+against the chapter's own two worked examples, "S(9): 3/9,7" and
+"S(13): 7/13,9," both reading as a=lowest, b=middle, c=highest, and
+matching Ch. 2's own root=a/third=b/fifth=c clockwise convention
+exactly): clockwise (a→b→c→a) and counterclockwise (a→c→b→a) — the same
+two transforms `diatonicHarmony.ts`'s `CLOCKWISE_NEXT`/
+`COUNTERCLOCKWISE_NEXT` already implement, just generalized past a
+literal root/third/fifth triad — plus three new "constant" transforms
+(hold one letter fixed, swap the other two) and a "constant abc"
+identity ("complete parallelism," used when two allied chords share
+identical numerals). These 6 are exactly the symmetric group on 3
+letters: two 3-cycles, three transpositions, one identity.
+`transformHybridVoicing` is the direct generalization of
+`transformVoicing`/`transformSeventhVoicing` — same `nearestPitch`
+minimal-movement idiom, just parameterized over which 3-function hybrid
+form is starting and which is next.
+
+Honest scope note: Figures 192-200 (p.479-487) additionally tabulate
+every one of 20 concrete "binomial" tension-pairs (S(5)↔S(7),
+S(5)↔S(9), ..., S(11)↔S(13)) with dense multi-column numeral tables for
+all 6 transformations pre-computed. This module builds the *general
+mechanic* (which works for any pair of forms, not just those 20) and was
+spot-checked against the chapter's own worked examples rather than
+transcribing those large tables by hand.
 
 ## Generalization of symmetric progressions (Book V, Ch. 12)
 
