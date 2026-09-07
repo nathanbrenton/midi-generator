@@ -1430,6 +1430,48 @@ reproduces the book's own C-G-Eb progression exactly, live in the panel.
 invariant 12" is the panel's "Wide octave" toggle, matching the book's
 own C→Bb example (2 → 14).
 
+## The chromatic system of harmony (Book V, Ch. 13)
+
+`ChromaticSystemPanel.tsx` (`src/core/chromaticSystem.ts`). Unlike the
+chord chapters (Ch. 9-11), this chapter's core mechanic is unambiguous
+clean prose and typeset numerals — no note-by-note figure reading needed.
+A "chromatic group" is 3 chords expressing balance-tension-release
+(p.495): one voice is chromatically raised or lowered by a semitone, then
+continues one more semitone the same direction, landing a whole tone from
+where it started ("g→g#→a" or "g→gb→f"). "Chromatic operations available
+from the major basis are: raising of the root-tone; lowering of the
+third; raising of the fifth. Note that they are the opposite of those of
+the minor basis" (p.498) — confirmed exactly against the book's own table
+(Major: 1♯/3♭/5♯; Minor: 1♭/3♯/5♭) and built directly as
+`MAJOR_BASIS_OPERATIONS`/`MINOR_BASIS_OPERATIONS`.
+
+That altered voice is reinterpreted as a different chord function at each
+of the 3 stages (Figure 211's "Numerical Table of Transformations,"
+p.497 — fully legible typeset numbers): "'1-3-5' means that a tone — say
+C of the major triad C-E-G — selected for chromatic alteration will be
+the 1 (root) of the first chord; it will be, when altered (say C#), the 3
+of the second chord; and it will be, when the alteration is completed
+(say D), the 5 of the third chord" — the chapter's one fully-worked
+example, reproduced exactly by `chromaticGroupRoots` and confirmed live
+in the panel (C major → A major → G major, i.e. c4-e4-g4 → a3-c#4-e4 →
+g3-b3-d4). The full function-triple table is exactly every ordered triple
+from {1,3,5,7} (`chromaticGroupFunctionTriples`, 64 total, "16 different
+versions for each starting function") — no new combinatorial primitive.
+The chapter's own total form-count is pure checkable arithmetic,
+reproduced by `chromaticGroupFormCount` and matching the book's own
+number exactly: 4,928.
+
+Figure 212's own realized musical examples (specific chord voicings) were
+not hand-verified note-by-note — this module builds the *mechanic*
+(which function moves where, and the arithmetic that governs it), not a
+transcription of that figure's specific register choices, same convention
+as `variableDoublings.ts` onward. The realization function itself is also
+scoped to the plain 1-3-5 triad basis the chapter restricts itself to
+("owing to practical limitations this section... will deal with the
+first basis only," p.498) — function 7 (the seventh) appears in the full
+Figure 211 table but isn't realized here, since it needs an S(7) chord,
+not a plain triad.
+
 ## Book V, Chapter 4 (no core module) and Chapter 5 Section A
 
 Chapter 4 (Diatonic-Symmetric System of Harmony, Type II) contributes no
