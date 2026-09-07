@@ -1316,6 +1316,44 @@ position-cycling through Ch. 2's open/closed voicings) needs an
 enumerable "positions" utility that Ch. 2's voice-leading work skipped
 over (it only built chord-to-chord transformation) — a natural next step.
 
+## The ninth chord (Book V, Ch. 10, Section A)
+
+`NinthChordPanel.tsx` (`src/core/ninthChords.ts`). "Ninth-chords in
+four-part harmony are used with the root-tone in the bass only, thus
+operating as a hybrid four-part harmony — like S(5) with the doubled
+root. The three upper parts are 3, 7 and 9" (p.460) — so unlike S(7),
+S(9) is *not* a plain 5-note stack of root+3+5+7+9: the fifth is omitted
+entirely, giving exactly 4 voices (bass = root alone, upper = third,
+seventh, ninth), a direct extension of `stackedSeventhChord`'s
+degree-stacking. "As the bass remains constant, the three upper voices
+are subject to six permutations resulting in corresponding distributions"
+(Figure 156) — the same "positions" mechanic already built for Ch. 6/7's
+doubling forms, reused via `generalPermutations` on the three always-
+distinct upper functions (always 6 positions, no repeated-pair case).
+The Table of Preparations (p.461) is clean typeset text (three methods —
+suspending, descending, ascending — each mapping a target-function pair
+to a resulting cycle: C7/C5/C3, C0/C-3/C-5, C-3/C-5/C-7) and is
+transcribed directly into `NINTH_PREPARATION_TABLE`, shown as reference
+data in the panel.
+
+**The resolution continuity itself (Figure 155/157) is not built.** A
+genuinely important finding first: "No consecutive S(9)'s are possible
+through this particular type of system, for S(9) alternates with S(7)
+and S(5)" (p.460) — resolving an S(9) does *not* cycle straight into
+another S(9) the way each of Ch. 9's seventh-chord cycles produces
+another seventh-chord; it collapses to a reduced triad or seventh-chord
+first, and a fresh S(9) has to be re-prepared afterward. That's a real
+structural difference from Ch. 9, not just "one more voice." Figure 157's
+own noteheads (the exact pitches each resolution lands on) were rendered
+at high resolution (PDF p.257) and cropped in tightly on individual
+chords — legible as engraving, but the precise pitches still didn't
+resolve unambiguously enough to hand-verify before coding, the same kind
+of wall Ch. 9 Section B hit. Rather than guess at the alternating
+S(9)↔S(7)/S(5) mechanic, this stops at construction + positions + the
+reference table. Natural next step if clearer scans turn up, or Book V
+Chapters 11+ (11th chord, generalized symmetric progressions, the
+chromatic system) in the meantime.
+
 ## Book V, Chapter 4 (no core module) and Chapter 5 Section A
 
 Chapter 4 (Diatonic-Symmetric System of Harmony, Type II) contributes no
