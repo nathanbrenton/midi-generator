@@ -1370,6 +1370,37 @@ enough after rendering PDF p.259 at high resolution to hand-verify a
 formula before coding, so it's not built. Same discipline as everything
 else deferred in this book so far — documented, not guessed.
 
+## The eleventh chord (Book V, Ch. 11, Section A)
+
+`EleventhChordPanel.tsx` (`src/core/eleventhChords.ts`). S(11) is another
+hybrid four-part chord, but its three upper voices are the seventh, ninth
+and eleventh — third *and* fifth are both omitted this time (p.469),
+unlike S(9) which only omits the fifth. "S(11) has an advantage over
+S(9) in that the upper functions form a complete S(5)" — 7-9-11 are
+themselves contiguous stacked thirds, "a triad corresponding to a root, a
+third and a fifth," so it gets the same 6-position treatment (Figure 176)
+via `generalPermutations`, reusing the exact mechanic from Ch. 6/7/10.
+
+The resolution chain is stated with unusual precision for this book: "An
+S(11) allows a continuous chain of resolutions: S(11) → S(9) → S(7) →
+S(6)③. An eleventh-chord through resolution of the eleventh becomes a
+ninth-chord... when S(11) resolves into S(9) in C0, S(9) has its proper
+structural constitution (i.e. 1, 3, 7, 9)" (p.469-470) — an exact,
+checkable claim, not prose to interpret: resolving the eleventh alone
+(C0) fills in the missing third an octave up, landing on precisely the
+same-root chord `stackedNinthChord` already builds for Ch. 10 Section A.
+`resolveEleventhToNinth` is a two-line function that calls it directly —
+confirmed in the panel (toggle "Resolve the eleventh") and by test.
+**Only this first link is built.** The rest of the chain (S(9)→S(7)→
+S(6)③) depends on Ch. 10 Section A's own S(9) resolution mechanic, which
+was deliberately left unbuilt there — not re-guessed here either.
+Section B (Preparation, p.470-472) and Section C (Symmetric System,
+p.473-477) lean on the same two-"family" combinatorics already deferred
+in Ch. 10 Section B, for the same reason. Section D (Hybrid Four-Part
+Harmony, p.478+) is a large, separate generalized voice-leading system
+of its own (Figures 190-191's "constant abc" transformation tables) —
+assessed only briefly, not attempted.
+
 ## Book V, Chapter 4 (no core module) and Chapter 5 Section A
 
 Chapter 4 (Diatonic-Symmetric System of Harmony, Type II) contributes no
