@@ -10,6 +10,12 @@ import {
   type TransformDirection,
   type Voicing,
 } from "../core/diatonicHarmony";
+import {
+  buildFourSixGroup,
+  orderForDirection,
+  type FourSixDoubling,
+  type FourSixGroupChord,
+} from "../core/passingFourthSixthChords";
 import { intervalCellScale } from "../core/scales";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
@@ -35,6 +41,10 @@ function voicingToArray(voicing: Voicing): number[] {
   return [voicing.bass, voicing.root, voicing.third, voicing.fifth];
 }
 
+function fourSixChordToArray(chord: FourSixGroupChord): number[] {
+  return [chord.bass, ...chord.upper];
+}
+
 export default function DiatonicCyclesPanel() {
   const [root, setRoot] = useState(60);
   const [firstCycle, setFirstCycle] = useState<CycleType>(5);
@@ -44,6 +54,9 @@ export default function DiatonicCyclesPanel() {
   const [direction, setDirection] = useState<TransformDirection>("clockwise");
   const [form, setForm] = useState<"positive" | "negative">("positive");
   const [passingSixths, setPassingSixths] = useState(false);
+  const [showFourSix, setShowFourSix] = useState(false);
+  const [fourSixDoubling, setFourSixDoubling] = useState<FourSixDoubling>("third");
+  const [fourSixDirection, setFourSixDirection] = useState<"ascending" | "descending">("ascending");
 
   const [bpm, setBpm] = useState(100);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -70,10 +83,22 @@ export default function DiatonicCyclesPanel() {
     () => (passingSixths ? buildPassingSixthGroups(voiceLedProgression) : voiceLedProgression),
     [passingSixths, voiceLedProgression],
   );
-  const progression: number[][] = useMemo(
-    () => (voiceLead ? withPassingSixths.map(voicingToArray) : stackedProgression),
-    [voiceLead, withPassingSixths, stackedProgression],
-  );
+
+  // Ch.8 Section G: a self-contained 3-chord embellishment of the tonic
+  // (degree 0), not a whole-progression modifier like passing sixths --
+  // so it's an alternative source for `progression` below, not another
+  // layer threaded through the voice-led progression.
+  const fourSixGroup = useMemo(() => {
+    const [fifthRoot, third, fifth] = stackedTriad(MAJOR_SCALE, root, 0);
+    const start: Voicing = { bass: fifthRoot - 12, root: fifthRoot, third, fifth };
+    const ascending = buildFourSixGroup(start, MAJOR_SCALE, root, 0, fourSixDoubling);
+    return orderForDirection(ascending, fourSixDirection);
+  }, [root, fourSixDoubling, fourSixDirection]);
+
+  const progression: number[][] = useMemo(() => {
+    if (showFourSix) return fourSixGroup.map(fourSixChordToArray);
+    return voiceLead ? withPassingSixths.map(voicingToArray) : stackedProgression;
+  }, [showFourSix, fourSixGroup, voiceLead, withPassingSixths, stackedProgression]);
 
   const notes: NoteEvent[] = useMemo(() => {
     return progression.flatMap((chord, i) =>
@@ -183,6 +208,12 @@ export default function DiatonicCyclesPanel() {
         consecutive pair of chords: the passing chord keeps the first chord's own root/third/fifth
         completely unmoved, shifting only the bass to the nearest pitch sharing the third's pitch class
         — "3 in the bass under S(6) is a third above its preceding position" (p.415), confirmed by hand.
+        Section G's "passing fourth-sixth chord" (G4/6) is a different, *reversible* 3-chord group on
+        the tonic: S(5) + S(4/6) + S(6), where the middle chord is genuinely borrowed from the
+        C-5-related key's own second inversion as a passing sonority, then the progression returns —
+        confirmed by hand that applying the book's own "clockwise, then the reverse to come back"
+        transformation (p.429) lands on the *exact* original chord for S(6), not a new one. The
+        doubling choice (S(6)③ vs S(6)①) only changes the final chord's upper voices.
       </p>
       <div className="schillinger__row">
         <label>
@@ -255,6 +286,33 @@ export default function DiatonicCyclesPanel() {
           <label>
             <input type="checkbox" checked={passingSixths} onChange={(e) => setPassingSixths(e.target.checked)} />
             Passing sixth-chords (Ch. 8): G6 = S(5)+S(6)+S(5)+...
+          </label>
+        )}
+      </div>
+      <div className="schillinger__row">
+        <label>
+          <input type="checkbox" checked={showFourSix} onChange={(e) => setShowFourSix(e.target.checked)} />
+          Passing fourth-sixth chords (Ch. 8G): G4/6 = S(5)+S(4/6)+S(6), on the tonic
+        </label>
+        {showFourSix && (
+          <label>
+            Doubling
+            <select value={fourSixDoubling} onChange={(e) => setFourSixDoubling(e.target.value as FourSixDoubling)}>
+              <option value="third">S(6)③ — doubled third</option>
+              <option value="root">S(6)① — doubled root</option>
+            </select>
+          </label>
+        )}
+        {showFourSix && (
+          <label>
+            Direction
+            <select
+              value={fourSixDirection}
+              onChange={(e) => setFourSixDirection(e.target.value as "ascending" | "descending")}
+            >
+              <option value="ascending">Ascending: S(5)→S(4/6)→S(6)</option>
+              <option value="descending">Descending: S(6)→S(4/6)→S(5)</option>
+            </select>
           </label>
         )}
       </div>

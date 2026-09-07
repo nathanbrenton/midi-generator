@@ -1211,20 +1211,43 @@ Section C describes — confirmed by reading the code, not by guessing.
 Sections D-F and H are pure combinatorics and compositional-sequencing
 guidance (counts like "4²=16 forms" and "2⁴=16 melodic forms," or how to
 lay out mixed cycle/group continuities by bar) — no formulas to
-implement, same disposition as Section B. **Section G (Passing
-Fourth-Sixth Chords, S(4/6), p.427-434)** is a genuinely new, well-defined
-technique — G4/6 = S(5)+S(4/6)+S(6), *reversible* (unlike G6), with 4
-variants (ascending/descending × two doubling choices) and an explicit
-"S(5) → C-5 → S(4/6) → C5 → S(6)" relations chain — but implementing it
-correctly hits a real architecture question: the book's own description
-needs the *variable-doubling* system (Ch. 6/7's S(6)①/S(6)③, "which
-function is doubled") for its final chord, and that system
-(`variableDoublings.ts`) uses a different chord representation (explicit
-semitone `TriadIntervals`, doubling-aware) than the scale-degree `Voicing`
-type Ch. 8's own G6 code is built on. Reconciling the two — or building
-G4/6 on top of `variableDoublings.ts` instead — is a real design choice,
-not something to guess at solo; flagged for discussion rather than forced
-through. Not yet implemented.
+implement, same disposition as Section B.
+
+**Section G (Passing Fourth-Sixth Chords, S(4/6), p.427-434)** is now
+built (`passingFourthSixthChords.ts`, wired into `DiatonicCyclesPanel`'s
+own "Passing fourth-sixth chords" checkbox). G4/6 = S(5)+S(4/6)+S(6), and
+unlike G6 it's *reversible* — the descending form is just the same three
+chords in reverse order, not a separate derivation. Implementing it hit a
+real architecture question first: the book's own description needs the
+*variable-doubling* system (Ch. 6/7's S(6)①/S(6)③, "which function is
+doubled") for the final chord, but that system (`variableDoublings.ts`)
+represents chords differently (semitone-based, doubling-aware) than the
+scale-degree `Voicing` type Ch. 8's own G6 code already uses — resolved by
+giving Section G its own small local type instead of touching either
+existing module, since working through the actual doubling math showed
+only *one* of the two doubling choices even needs it: S(6)③ (doubled
+third) turns out to be identical in shape to G6's own plain S(6) (bass and
+the upper third already coincide — no new code needed there at all), while
+S(6)① (doubled root) genuinely needs a fourth voice the plain `Voicing`
+type has no field for.
+
+The relations chain itself — "S(5) → C-5 → S(4/6) → C5 → S(6)" (p.429) —
+turned out to describe a literal round trip: apply the book's own stated
+"clockwise" transformation (p.429: "as the bass moves from 1 to 5... the
+three upper voices must move clockwise... to get the transformation of 1
+into 3") at a root degree stepped by a fifth down, express that as S(4/6)
+(fifth in the bass), then apply the *reverse* transformation back to the
+original root degree. Hand-verified numerically before writing any of the
+module: starting from a C-major S(5), that chain produces an F-major
+S(4/6) (correct — a fifth below C), and the return step lands on the
+*exact* original C-major pitch classes for S(6), not a new chord —
+confirming G4/6 is fundamentally one chord embellished by a passing detour
+through a neighboring key's own second inversion, not a modulation.
+Verified live for both doubling choices and both directions, plus one
+worked example starting from a non-C root to catch any accidental
+dependence on C specifically (which caught a real bug in the test itself —
+a mismatched scale-anchor argument — before it could hide a real one in
+the implementation). 7 new tests, all passing.
 
 ## The seventh chord (Book V, Ch. 9, Section A)
 
