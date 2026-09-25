@@ -1591,6 +1591,35 @@ worked table of the 6 possible pair-orderings (Figure 288) — the
 combinatorial *count* is confirmed, but the exact chord-by-chord
 realization wasn't built here, a natural next step.
 
+## Hybrid harmonic continuities (Book V, Ch. 17)
+
+`HybridHarmonicContinuityPanel.tsx`
+(`src/core/hybridHarmonicContinuity.ts`). Mostly a compositional essay
+("purity of harmonic style," mixing diatonic/symmetric/chromatic types)
+rather than a formula, but two checkable pieces sit inside it. First, a
+stated ratio: "the most desirable of the simple ratios... is: di + 2ch +
+sy," refined into concrete counts, "Hy = di3H + ch6H + sy3H" (p.552) —
+`HYBRID_CONTINUITY_RATIO`, with the chromatic type getting exactly twice
+the weight of either neighbor ("the chromatic type neutralizes the
+effect of the preceding type... it is necessary to have more of it").
+Second, a smoothness refinement: "maintaining an identical intervallic
+root-relation between the last two chords of the preceding chromatic
+group and... the first chord of the following symmetric group" — the
+book's own worked example, E→F (last step of the chromatic group) then
+F→F# (into the symmetric group), is reproduced exactly by
+`smoothJoinRoot`. The panel demonstrates one such join live: a Ch. 13
+chromatic group (`chromaticGroupRoots`) feeds its own last interval into
+a fresh Ch. 3 symmetric progression's starting root (`symmetricTonics`
++ `symmetricTriad`), reusing both chapters' machinery unchanged.
+
+Honest scope note: which specific diatonic cycle, chromatic operation, or
+symmetric structure to actually choose for a real continuity is left to
+"preferential selection" by the book itself — not modeled as a forced
+default. The full `Hy = di3H + ch6H + sy3H` shape (12 chords across three
+types) isn't assembled end-to-end here; the panel demonstrates the join
+rule at one boundary, which is the chapter's one genuinely new, checkable
+idea.
+
 ## Book V, Chapter 4 (no core module) and Chapter 5 Section A
 
 Chapter 4 (Diatonic-Symmetric System of Harmony, Type II) contributes no
