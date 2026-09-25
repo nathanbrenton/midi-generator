@@ -1556,6 +1556,41 @@ that was already caught being wrong once. Sections B (Generalization of
 Passing Chromatic Tones, p.537-538) and C (Altered Chords, p.542+)
 weren't assessed.
 
+## Automatic chromatic continuities (Book V, Ch. 16, Section A)
+
+`AutomaticChromaticContinuityPanel.tsx`
+(`src/core/automaticChromaticContinuity.ts`). "Automatic chromatic
+continuity may be devised by means of semitonal motion in which one
+direction is followed by whatever voice or voices happen to be moving"
+(p.544). The compressed prose summary alone ("three modifications to
+each group... each succeeding group starts one semitone lower... 3×12 =
+36 groups") admits more than one reading, so Figure 286 (PDF p.299) was
+rendered before writing any code: a plain S(5) triad (Soprano=fifth,
+Alto=third, Tenor=root) has its 3 voices chromatically altered ONE AT A
+TIME, cumulatively, in a chosen order, within each of 12 semitone-
+transposed "groups" — modification 1 alters only the first voice in the
+order, modification 2 alters that voice and the second, modification 3
+alters all three (visibly, in the figure, the same triad shape one
+semitone over — confirmed directly by this module's own construction).
+The next group starts fresh from the *original* structure transposed one
+semitone further, not from wherever the previous group's accumulated
+alterations left off (they coincide anyway). After 12 groups (36 chords),
+chord 37 lands exactly on chord 1, an octave over — "closes at 36+1, i.e.
+on the 37th chord" — confirmed by test.
+
+"SAT produce 6 variations of the sequence" is the 6 orderings of Ch. 3's
+symmetric structures' 3 voices, reusing `generalPermutationsOf` (Book I
+Ch. 9) directly; "4S produce 4 forms of intonation" is Ch. 3's own 4
+triad structures; "the 2 directions... double the quantity" gives the
+book's own stated total exactly: 4×6×2 = 48 forms.
+
+Honest scope note: the chapter continues into moving 2 of the 3 voices
+simultaneously ("the number of combinations out of three elements, taken
+two at a time... = 3," confirmed trivially — it's just `3C2`) with a
+worked table of the 6 possible pair-orderings (Figure 288) — the
+combinatorial *count* is confirmed, but the exact chord-by-chord
+realization wasn't built here, a natural next step.
+
 ## Book V, Chapter 4 (no core module) and Chapter 5 Section A
 
 Chapter 4 (Diatonic-Symmetric System of Harmony, Type II) contributes no
