@@ -1620,6 +1620,63 @@ types) isn't assembled end-to-end here; the panel demonstrates the join
 rule at one boundary, which is the chapter's one genuinely new, checkable
 idea.
 
+## Linking harmonic continuities (Book V, Ch. 18)
+
+`src/core/linkingHarmonicContinuities.ts` — core module only, no panel
+yet (built in a session without UI review). "Assuming that any form of
+harmonic progression is used either as continuity or as connection, we
+obtain the following nine forms" (p.554): every pairing of a
+progression type with a connection type from {diatonic, symmetric,
+chromatic}. `LINKING_FORMS` transcribes all nine with the book's own
+answer to the chapter's recurring question — does the connection gain
+an extra chord? (Yes for 1, 3, 6, 9; no for 2, 4, 7, 8; form 5 doesn't
+say, recorded as `null` rather than guessed.)
+
+Each precise mechanical claim is built and tested:
+
+- **Group connection** (p.555): "the first chord of the group is the
+  last chord of the preceding progression, the middle chord of the group
+  is the extra chord and the last chord of the group is the first chord
+  of the succeeding progression." `linkThroughGroup` enforces that
+  overlap exactly — it refuses a group whose ends don't coincide with the
+  progressions it claims to join — and is generic over chord
+  representation; a test joins two real voice-led C5 progressions
+  through Ch. 8's own G6 group and confirms exactly one chord (the
+  passing S(6)) is gained.
+- **Symmetric connection of diatonic progressions** (p.556):
+  `symmetricSectionStarts` — successive sections start one tonic-gap
+  apart, Book II Ch. 7's `gapSemitones` stepped section by section.
+- **Symmetric connection of symmetric progressions** (p.556): "must be
+  based on selection of such forms of symmetry as do not appear in the
+  progression itself." A form of symmetry is read as a tonic system, and
+  an interval's own system is 12/gcd(interval, 12) tonics
+  (`tonicSystemOfInterval`) — so 4 and 8 semitones are correctly the same
+  form. `isDistinctSymmetricConnection` checks the connection against
+  every step.
+- **Chromatic connection of symmetric progressions** (p.557): the
+  connection's extreme-chord interval must not duplicate a progression
+  step — `chromaticConnectionAvoidsSteps`, comparing pitch-class
+  intervals (+4 and −8 are the same step; +8 is not).
+- **Diatonic connection of symmetric/chromatic progressions** (p.555,
+  557): "assigning the last chord... to the key in which such a chord may
+  exist," then a diatonic cycle to another chord of that key.
+  `keysContaining` finds every key a chord exists in — checked against
+  standard theory for every triad quality (a major triad lives in
+  exactly 3 major keys, a diminished triad in 1, an augmented triad in
+  none) — and `diatonicCycleConnection` steps the root by C3/C5/C7 or a
+  negative cycle inside one chosen key, reusing Ch. 2's step sizes and
+  `stackedTriad`. The key genuinely decides the result: C major under C5
+  lands on G major in the keys of C and G, but G *minor* in F.
+  `keysContaining` is also the natural primitive for Ch. 14's
+  common-chord modulations, if that chapter is revisited.
+
+Not built: form 8's "selection of a root which does not produce
+chromatic steps in any voice." In this book a chromatic step keeps a
+tone's *name* (C → C#), and this project models pitch classes, not note
+spellings — a semitone can't be told apart from a diatonic one (B → C)
+without inventing a spelling system the chapter doesn't supply. Form 9's
+"contrasting forms of chromatics" is qualitative guidance.
+
 ## Book V, Chapter 4 (no core module) and Chapter 5 Section A
 
 Chapter 4 (Diatonic-Symmetric System of Harmony, Type II) contributes no
