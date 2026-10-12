@@ -548,9 +548,11 @@ P.S(12);                      // 1.0595…     ¹²√2
 covering p/i and the four groups, the First Group counts and tetrachords,
 dₖ and the interval-interference resultants, P.A. and the axis-relations
 U-U/U-P/P-U/P-P, Eₖ with N_E = N_p − 1, S = ⁿ√2, and the Third/Fourth
-Group tonic systems. `tests/notationRhythm.test.mjs` and
-`tests/notationPitchScales.test.mjs` check every symbol against a number
-the book itself prints.
+Group tonic systems. Book III is `notation/geometricalProjection.ts` —
+the positions ⓐ ⓑ ⓒ ⓓ, the axis of inversion, and the coefficients p, 2p …
+/ t, 2t …, with `formatUnit` naming each pitch coefficient's unit in root
+notation (2p → ⁶√2, 3p → ∜2, 4p → ∛2, 6p → √2). The `tests/notation*.test.mjs`
+files check every symbol against a number the book itself prints.
 
 Building this layer was part of a top-of-book audit of the underlying math,
 which also found and fixed two real bugs: generators were read as attack
