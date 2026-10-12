@@ -398,17 +398,79 @@ export function passingSixthChord(voicing: Voicing): Voicing {
 }
 
 /**
- * Inserts a passing S(6) between every consecutive pair of chords in an
- * existing S(5) progression, forming a chain of G6 groups: S(5) + S(6) +
- * S(5) + S(6) + S(5) + ... Generic over any `Voicing` progression (see
- * module docstring) -- the classical form passes a C-5-connected
- * `voiceLeadProgression`, but any cycle works equally well.
+ * Ch.8 Sections A, C: one group with a passing sixth-chord, "G6 = S(5) +
+ * S(6)③ + S(5)" (p.415). "Connect S(5) with the next S(5) through C-5 and
+ * add the intermediate third of the first chord in the bass, without
+ * moving the remaining voices"; "the transformation between the extreme
+ * chords of the group is always clockwise," and the bass runs 1 -> 3 -> 1:
+ * in the classical C-5 form "3 in the bass under S(6) is a third above its
+ * preceding position under the first S(5), and a third below its
+ * following position" -- c, e, g. Other cycles give G6(C3), G6(C-7) and
+ * so on, "each cycle [producing] its own characteristic bass pattern."
+ */
+export function passingSixthGroup(
+  start: Voicing,
+  scale: PitchScale,
+  rootMidiNote: number,
+  startDegree: number,
+  cycle: SignedCycleType = -5,
+): [Voicing, Voicing, Voicing] {
+  const sixth = passingSixthChord(start);
+  const last = transformVoicing(start, scale, rootMidiNote, startDegree + cycleDegreeStep(cycle), "clockwise");
+  return [start, sixth, { ...last, bass: nearestPitch(sixth.bass, last.root) }];
+}
+
+/**
+ * Ch.8 Sections B, D: a continuity of G6 groups, the groups' own cycles
+ * in `groups` and the cycles joining them in `connections` (repeated as
+ * needed) -- "H = G6(C-5) + C7 + G6(C3) + C5 + G6(C-7) + ..." (p.418).
+ * Each group starts from the last chord of the one before, joined by
+ * `connectBy`, and the book's octave variation keeps the range.
+ */
+export function passingSixthContinuity(
+  scale: PitchScale,
+  rootMidiNote: number,
+  groups: readonly SignedCycleType[],
+  connections: readonly SignedCycleType[],
+  connectBy: TransformDirection = "clockwise",
+  startDegree = 0,
+): Voicing[] {
+  const home = positionVoicing(scale, rootMidiNote, startDegree, S5_POSITIONS.close[1]);
+  let start = home;
+  let degree = startDegree;
+  const chords: Voicing[] = [];
+  groups.forEach((cycle, k) => {
+    if (k > 0) {
+      degree += cycleDegreeStep(connections[(k - 1) % connections.length]);
+      start = octaveVariation(transformVoicing(chords[chords.length - 1], scale, rootMidiNote, degree, connectBy), home);
+    }
+    chords.push(...passingSixthGroup(start, scale, rootMidiNote, degree, cycle));
+    degree += cycleDegreeStep(cycle);
+  });
+  return chords;
+}
+
+/**
+ * Ch.8 Section E, "Generalization of the Passing Third": "the passing 3
+ * can be used after any S(5), providing the transformation between the
+ * latter and the following S(5) is clockwise" (p.418) -- so a passing S(6)
+ * goes between every pair of an S(5) progression, the groups overlapping.
+ * Each following S(5) takes its bass from the passing third, as in G6,
+ * shifted by an octave only when it would leave a fifth around the first
+ * bass.
  */
 export function buildPassingSixthGroups(progression: readonly Voicing[]): Voicing[] {
-  const result: Voicing[] = [];
-  progression.forEach((voicing, i) => {
-    result.push(voicing);
-    if (i < progression.length - 1) result.push(passingSixthChord(voicing));
-  });
+  if (progression.length === 0) return [];
+  const home = progression[0].bass;
+  let previous = progression[0];
+  const result: Voicing[] = [previous];
+  for (let i = 1; i < progression.length; i++) {
+    const sixth = passingSixthChord(previous);
+    let bass = nearestPitch(sixth.bass, progression[i].root);
+    while (bass - home > 7) bass -= 12;
+    while (home - bass > 7) bass += 12;
+    previous = { ...progression[i], bass };
+    result.push(sixth, previous);
+  }
   return result;
 }

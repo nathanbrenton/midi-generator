@@ -77,8 +77,9 @@ export default function DiatonicCyclesPanel() {
     [root, rootDegrees, form],
   );
   const voiceLedProgression = useMemo(
-    () => voiceLeadProgression(MAJOR_SCALE, root, rootDegrees, direction),
-    [root, rootDegrees, direction],
+    // A passing third needs clockwise between the S(5) chords around it (p.415, 418).
+    () => voiceLeadProgression(MAJOR_SCALE, root, rootDegrees, passingSixths ? "clockwise" : direction),
+    [root, rootDegrees, direction, passingSixths],
   );
   const withPassingSixths = useMemo(
     () => (passingSixths ? buildPassingSixthGroups(voiceLedProgression) : voiceLedProgression),
@@ -283,7 +284,11 @@ export default function DiatonicCyclesPanel() {
         {voiceLead && (
           <label>
             Transformation
-            <select value={direction} onChange={(e) => setDirection(e.target.value as TransformDirection)}>
+            <select
+              value={passingSixths ? "clockwise" : direction}
+              disabled={passingSixths}
+              onChange={(e) => setDirection(e.target.value as TransformDirection)}
+            >
               <option value="clockwise">Clockwise (root→third→fifth→root)</option>
               <option value="counterclockwise">Counterclockwise (root→fifth→third→root)</option>
               <option value="const3">Const. 3 (3 stays 3, root↔fifth: close ↔ open)</option>
@@ -293,7 +298,7 @@ export default function DiatonicCyclesPanel() {
         {voiceLead && (
           <label>
             <input type="checkbox" checked={passingSixths} onChange={(e) => setPassingSixths(e.target.checked)} />
-            Passing sixth-chords (Ch. 8): G6 = S(5)+S(6)+S(5)+...
+            Passing sixth-chords (Ch. 8): G6 = S(5)+S(6)③+S(5)+... (clockwise)
           </label>
         )}
       </div>

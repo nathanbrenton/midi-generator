@@ -1334,31 +1334,23 @@ the third's pitch class, leaving root/third/fifth untouched. Confirmed by
 hand: a C major voicing (bass 48, root 60, third 64, fifth 67) produces a
 passing bass of 52 (E3) — exactly a third above 48, matching the book's
 own "3 in the bass under S(6) is a third above its preceding position"
-(p.415). The classical form connects the outer chords by C-5, but "we
-shall extend this principle to all cycles" (Section C generalizes to
-G6(C3)/G6(C5)/G6(C7) and their negative-direction counterparts) — so
-`buildPassingSixthGroups` is deliberately generic over *any* already-built
-`voiceLeadProgression`, chaining `S(5)+S(6)+S(5)+S(6)+...` by inserting a
-passing chord between every consecutive pair. In the panel, enabling
-Voice-led reveals a "Passing sixth-chords" checkbox that does exactly
-this. Not built: Section B's cadence-cycle framing and Section D's "16
-forms of G6" combinatorics for Type II/III (a plain 4×4 product of
-independent structure choices, confirmed by hand but not worth a
-dedicated function) are compositional guidance rather than reusable
-primitives.
-
-**The rest of Chapter 8, worked through page by page**: Section C
-("Generalization of G6... other than C-5 cycles within the group") turns
-out to need *no new code at all* — `passingSixthChord` already computes
-the passing chord purely from the first chord's own root/third/fifth,
-with no reference to whatever cycle connects to the next chord, so
-feeding `buildPassingSixthGroups` a progression built on C3/C7/C-5/etc.
-instead of C-5 already produces G6(C3), G6(C7), and so on, exactly as
-Section C describes — confirmed by reading the code, not by guessing.
-Sections D-F and H are pure combinatorics and compositional-sequencing
-guidance (counts like "4²=16 forms" and "2⁴=16 melodic forms," or how to
-lay out mixed cycle/group continuities by bar) — no formulas to
-implement, same disposition as Section B.
+(p.415). The audit rebuilt this against the text. `passingSixthGroup` is
+one group as the book defines it — G6 = S(5) + S(6)③ + S(5), the
+extremes related by C-5 (a fifth *up*, C→G) and connected "always
+clockwise for both the positive and the negative cycles," the bass
+running c-e-g: "3 in the bass under S(6) is a third above its preceding
+position... and a third below its following position." Section C's
+G6(C3), G6(C-7) and the rest are the same group with another cycle
+inside it. `passingSixthContinuity` chains groups with cycles between
+them, as in Section D's "H = G6(C-5) + C7 + G6(C3) + C5 + G6(C-7) + ...".
+Section E's "generalization of the passing third" — a passing S(6) after
+*every* S(5), "providing the transformation... is clockwise" — is
+`buildPassingSixthGroups`, which the panel's "Passing sixth-chords"
+checkbox uses (it now locks the transformation to clockwise, and takes
+each following bass from the passing third, as in G6, rather than from
+the chord before it). Section F's rule for Types II and III — the S(5)
+and its passing S(6) share a structure, the last S(5) is free — gives
+the book's 4² = 16 forms (`G6_STRUCTURE_FORMS`).
 
 **Section G (Passing Fourth-Sixth Chords, S(4/6), p.427-434)** is now
 built (`passingFourthSixthChords.ts`, wired into `DiatonicCyclesPanel`'s

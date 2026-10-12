@@ -18,6 +18,8 @@ import {
   S5_POSITIONS,
   passingSixthChord,
   buildPassingSixthGroups,
+  passingSixthGroup,
+  passingSixthContinuity,
 } from "../src/core/diatonicHarmony.ts";
 import { compositionCount } from "../src/core/symmetricScales.ts";
 import { intervalCellScale } from "../src/core/scales.ts";
@@ -280,18 +282,46 @@ test("passingSixthChord keeps root/third/fifth unmoved and puts the third's pitc
   assert.equal(((passing.bass % 12) + 12) % 12, ((voicing.third % 12) + 12) % 12);
 });
 
-test("buildPassingSixthGroups chains G6 = S(5)+S(6)+S(5)+S(6)+S(5)... inserting exactly one passing chord between every consecutive pair", () => {
+test("buildPassingSixthGroups puts a passing S(6) between every pair, upper voices unmoved, the next bass taken from the passing third (p.418)", () => {
   const progression = voiceLeadProgression(MAJOR, 60, diatonicCycle(5, 0), "clockwise");
   const withPassing = buildPassingSixthGroups(progression);
   assert.equal(withPassing.length, progression.length * 2 - 1);
+  const uppers = (v) => [v.root, v.third, v.fifth];
   for (let i = 0; i < progression.length - 1; i++) {
-    const original = withPassing[i * 2];
-    const passing = withPassing[i * 2 + 1];
-    const next = withPassing[i * 2 + 2];
-    assert.deepEqual(original, progression[i]);
-    assert.deepEqual(passing, passingSixthChord(progression[i]));
-    assert.deepEqual(next, progression[i + 1]);
+    const [original, passing, next] = withPassing.slice(i * 2, i * 2 + 3);
+    assert.deepEqual(uppers(original), uppers(progression[i]));
+    assert.deepEqual(passing, passingSixthChord(original));
+    assert.deepEqual(uppers(next), uppers(progression[i + 1]));
+    assert.equal(((next.bass - next.root) % 12 + 12) % 12, 0);
+    assert.ok(Math.abs(next.bass - withPassing[0].bass) <= 7);
   }
+});
+
+test("classical G6 = S(5) + S(6)③ + S(5) by C-5: c, e, g in the bass -- a third up, then a third up again (p.415)", () => {
+  const start = { bass: 48, root: 60, third: 64, fifth: 67 };
+  const [first, sixth, last] = passingSixthGroup(start, MAJOR, 60, 0);
+  assert.deepEqual(first, start);
+  assert.deepEqual(sixth, { ...start, bass: 52 });
+  assert.deepEqual(last, { bass: 55, root: 67, third: 59, fifth: 62 }); // G: c -> b, e -> d, g holds -- clockwise
+});
+
+test("generalized G6 (p.417): every cycle gives a bass 1 -> 3 -> 1 with the upper voices held through the S(6)", () => {
+  const start = { bass: 48, root: 60, third: 64, fifth: 67 };
+  for (const cycle of [3, 5, 7, -3, -5, -7]) {
+    const [first, sixth, last] = passingSixthGroup(start, MAJOR, 60, 0, cycle);
+    assert.deepEqual([sixth.root, sixth.third, sixth.fifth], [first.root, first.third, first.fifth]);
+    assert.equal(sixth.bass % 12, 4);
+    assert.equal(last.bass % 12, [0, 2, 4, 5, 7, 9, 11][diatonicCycle(cycle)[1]]);
+  }
+});
+
+test("a G6 continuity: H = G6(C-5) + C7 + G6(C3) + C5 + G6(C-7), three chords a group (p.418)", () => {
+  const h = passingSixthContinuity(MAJOR, 60, [-5, 3, -7], [7, 5]);
+  assert.equal(h.length, 9);
+  const names = ["c", "d", "e", "f", "g", "a", "b"];
+  const rootName = (v) => names[[0, 2, 4, 5, 7, 9, 11].indexOf(((v.root % 12) + 12) % 12)];
+  // c (G6 by C-5) g, C7 -> a (G6 by C3) f, C5 -> b (G6 by C-7) a
+  assert.deepEqual([0, 2, 3, 5, 6, 8].map((k) => rootName(h[k])), ["c", "g", "a", "f", "b", "a"]);
 });
 
 test("buildPassingSixthGroups on a single chord returns just that chord (no passing chord to insert)", () => {

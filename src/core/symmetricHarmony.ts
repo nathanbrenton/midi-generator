@@ -300,3 +300,13 @@ export function symmetricProgression(
   }
   return { tonics, structures, voicings };
 }
+
+/**
+ * Ch.8 Section F: G6 in Type II and III progressions -- "the adjacent S(5)
+ * and S(6)③ of one group must have identical structures," while the last
+ * S(5) is free, so "the number of structural combinations for the
+ * individual groups equals 4² = 16" (p.419): [first, passing, last].
+ */
+export const G6_STRUCTURE_FORMS: readonly (readonly [StructureId, StructureId, StructureId])[] = ([1, 2, 3, 4] as StructureId[]).flatMap(
+  (last) => ([1, 2, 3, 4] as StructureId[]).map((first) => [first, first, last] as const),
+);

@@ -13,6 +13,7 @@ import {
   symmetricRoots,
   recurrenceCycles,
   symmetricProgression,
+  G6_STRUCTURE_FORMS,
 } from "../src/core/symmetricHarmony.ts";
 import { generalPermutations, generalPermutationsOf } from "../src/core/permutations.ts";
 import { compositionCount, symmetricTonics } from "../src/core/symmetricScales.ts";
@@ -268,4 +269,10 @@ test("a structural group interferes with the tonics: 9 structures over 2 tonics 
   const { tonics, structures } = symmetricProgression(60, 2, [[2, 1], [1, 2], [1, 1], [1, 2], [1, 1], [1, 2], [2, 2]], "clockwise");
   assert.equal(structures.length, 18);
   assert.deepEqual(tonics.slice(0, 3), [60, 66, 60]);
+});
+
+test("Ch.8 F: G6 in Types II/III -- S(5) and its passing S(6) share a structure, the last S(5) is free: 4² = 16 forms (p.419)", () => {
+  assert.equal(G6_STRUCTURE_FORMS.length, 16);
+  assert.ok(G6_STRUCTURE_FORMS.every(([first, passing]) => first === passing));
+  assert.equal(new Set(G6_STRUCTURE_FORMS.map((f) => f.join())).size, 16);
 });
