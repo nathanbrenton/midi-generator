@@ -48,9 +48,11 @@ import { midiNoteForDegree, type PitchScale } from "./scales.ts";
 import { cycleBetween, cycleDegreeStep, nearestPitch, type SignedCycleType } from "./diatonicHarmony.ts";
 
 export type SeventhCycleType = 3 | 5 | 7;
+/** With the negative cycles of Section C (p.443-444). */
+export type SignedSeventhCycle = SeventhCycleType | -3 | -5 | -7;
 
 /** One full diatonic cycle of seventh-chord roots, stepping downward exactly like Ch.2's triad cycles (p.362-363). */
-export function seventhCycle(cycleType: SeventhCycleType, startDegree = 0): number[] {
+export function seventhCycle(cycleType: SignedSeventhCycle, startDegree = 0): number[] {
   const step = cycleDegreeStep(cycleType);
   return Array.from({ length: 7 }, (_, k) => (((startDegree + k * step) % 7) + 7) % 7);
 }
@@ -96,9 +98,17 @@ const CROSSWISE_SEVENTH_NEXT: Record<SeventhFunction, SeventhFunction> = {
   seventh: "third",
 };
 
-function nextMapForCycle(cycle: SeventhCycleType): Record<SeventhFunction, SeventhFunction> {
-  if (cycle === 3) return CLOCKWISE_SEVENTH_NEXT;
-  if (cycle === 7) return COUNTERCLOCKWISE_SEVENTH_NEXT;
+/**
+ * Section C: "the negative system is in reality a geometrical inversion of
+ * the positive system... clockwise transformations become counterclockwise
+ * and vice versa" (p.443); read with positive chords, "the C-3 requires
+ * the ascending of 1; the C-5... of 1 and 3; the C-7... of 1, 3 and 5"
+ * (p.444). So C-3 takes the counterclockwise map (Cmaj7 -> Em7, only c
+ * moves, up to d), C-5 the crosswise one, C-7 the clockwise one.
+ */
+function nextMapForCycle(cycle: SignedSeventhCycle): Record<SeventhFunction, SeventhFunction> {
+  if (cycle === 3 || cycle === -7) return CLOCKWISE_SEVENTH_NEXT;
+  if (cycle === 7 || cycle === -3) return COUNTERCLOCKWISE_SEVENTH_NEXT;
   return CROSSWISE_SEVENTH_NEXT;
 }
 
@@ -108,7 +118,7 @@ export function transformSeventhVoicing(
   scale: PitchScale,
   rootMidiNote: number,
   nextRootDegree: number,
-  cycle: SeventhCycleType,
+  cycle: SignedSeventhCycle,
 ): SeventhVoicing {
   const [nextRoot, nextThird, nextFifth, nextSeventh] = stackedSeventhChord(scale, rootMidiNote, nextRootDegree);
   const pitchClassFor: Record<SeventhFunction, number> = { root: nextRoot, third: nextThird, fifth: nextFifth, seventh: nextSeventh };
@@ -127,7 +137,7 @@ export function seventhVoiceLeadProgression(
   scale: PitchScale,
   rootMidiNote: number,
   rootDegrees: readonly number[],
-  cycle: SeventhCycleType,
+  cycle: SignedSeventhCycle,
 ): SeventhVoicing[] {
   const [root, third, fifth, seventh] = stackedSeventhChord(scale, rootMidiNote, rootDegrees[0]);
   let current: SeventhVoicing = { root, third, fifth, seventh };

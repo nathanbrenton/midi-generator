@@ -118,3 +118,14 @@ test("the same rule gives Ch.10's S(9) Table of Preparations (p.461): the tone t
     assert.equal(cycle === 0 ? "C0" : `C${cycle}`, entry.cycle, `${entry.method} ${entry.fromSeventh}`);
   }
 });
+
+test("negative cycles: C-3 moves 1 up, C-5 moves 1 and 3 up, C-7 moves 1, 3 and 5 up (p.444)", () => {
+  for (const [cycle, ascending] of [[-3, ["root"]], [-5, ["root", "third"]], [-7, ["root", "third", "fifth"]]]) {
+    const next = transformSeventhVoicing(CMAJ7, C_MAJOR, C4, seventhCycle(cycle)[1], cycle);
+    // Which of the old voices moved, and which way: compare each old voice with the nearest new pitch.
+    const newPitches = Object.values(next);
+    const moved = ["root", "third", "fifth", "seventh"].filter((fn) => !newPitches.includes(CMAJ7[fn]));
+    assert.deepEqual(moved, ascending, `C${cycle}`);
+    assert.ok(newPitches.every((n) => Object.values(CMAJ7).includes(n) || Object.values(CMAJ7).some((m) => n - m === 1 || n - m === 2)));
+  }
+});
