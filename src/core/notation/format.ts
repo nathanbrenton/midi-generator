@@ -34,3 +34,21 @@ export function formatSum(values: readonly number[]): string {
 export function formatRepeat(count: number, group: number | readonly number[]): string {
   return `${count}(${typeof group === "number" ? group : formatSum(group)})`;
 }
+
+const SUPERSCRIPT: Record<string, string> = {
+  "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+  "+": "⁺", "-": "⁻", "=": "⁼", "(": "⁽", ")": "⁾",
+};
+
+/** Superscripts every digit and sign: superscript("12") = "¹²". */
+export function superscript(text: string): string {
+  return [...text].map((ch) => SUPERSCRIPT[ch] ?? ch).join("");
+}
+
+/** The book's root notation for a symmetric system: formatRoot(2) = "√2", formatRoot(3) = "∛2", formatRoot(12) = "¹²√2". */
+export function formatRoot(index: number, radicand: number | string = 2): string {
+  if (index === 2) return `√${radicand}`;
+  if (index === 3) return `∛${radicand}`;
+  if (index === 4) return `∜${radicand}`;
+  return `${superscript(String(index))}√${radicand}`;
+}

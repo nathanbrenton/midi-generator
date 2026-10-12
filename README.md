@@ -531,9 +531,26 @@ grouping formulas, N_b and Q, B/E/C (Balance, Expansion, Contraction),
 places, element names a₁…f₂, distributive powers and S, iₙ, the series
 determinant, and rubato τ — the full symbol-to-function table is in
 `notation/rhythm.ts`'s header. `notation/format.ts` prints the written forms
-(subscripts, the underline of r̲, primes, sums, and k(n) repetitions).
-`tests/notationRhythm.test.mjs` checks every symbol against a number the
-book itself prints.
+(subscripts, the underline of r̲, primes, sums, k(n) repetitions, and the
+root notation √2, ∛2 … ¹²√2). Book II is `notation/pitchScales.ts`:
+
+```ts
+import * as P from "./src/core/notation/pitchScales.ts"; // Book II
+
+P.i([60, 62, 64, 67, 69]);   // [2,2,3,2]   pitch-intervals of c-d-e-g-a
+P.tetrachordScale("m1", "h"); // harmonic minor, m₁ + 2 + h
+P.resultantScale(3, 2);       // [2,1,2]     5 = 3+2 / 2+3
+P.d(1, [2, 2, 3, 2, 3]);      // displacement scale d₁
+P.E(1, [60, 62, 64, 67, 69]); // E₁, ascending: c-e-a-d-g
+P.S(12);                      // 1.0595…     ¹²√2
+```
+
+covering p/i and the four groups, the First Group counts and tetrachords,
+dₖ and the interval-interference resultants, P.A. and the axis-relations
+U-U/U-P/P-U/P-P, Eₖ with N_E = N_p − 1, S = ⁿ√2, and the Third/Fourth
+Group tonic systems. `tests/notationRhythm.test.mjs` and
+`tests/notationPitchScales.test.mjs` check every symbol against a number
+the book itself prints.
 
 Building this layer was part of a top-of-book audit of the underlying math,
 which also found and fixed two real bugs: generators were read as attack
@@ -848,6 +865,27 @@ loopable pattern). Verified directly in the browser against the book's own
 numbers: `(3,1,2)` scaled by `1,2,3` gave exactly `3,1,2,6,2,4,9,3,6`
 (36 units total), and `(2,2)` shifted by τ=1 gave exactly `(3,1)` (both
 totaling 4) — matching `tests/variableVelocity.test.mjs`.
+
+## First group of pitch-scales (Book II, Ch. 2)
+
+`src/core/firstGroupScales.ts` — core module only. "All the scales are
+constructed from c," so an N-unit First Group scale is c plus any N−1 of
+the 11 units above it: C(11, N−1) scales. `firstGroupScaleCount`
+reproduces every count the book states — one one-unit scale, eleven
+two-unit (its table c-db … c-b), 55 three-unit, 165 four-unit, "462 seven
+unit scales," and "all 2,048 scales of this group" (2¹¹). A scale's melodic
+forms are its own units permuted, listed as a₂…f₂ in exactly Book I
+Ch. 10's order, so `melodicForms` is `higherOrderElements` at the second
+order.
+
+Section E (Scales of Seven Units) builds the seven-unit scales "of our
+civilization" from four tetrachords — **M** = 2+2+1, **m₁** = 2+1+2,
+**m₂** = 1+2+2, and the harmonic **h** = 1+3+1 — "uniting two tetrachords
+separated by the interval 2." `SEVEN_UNIT_TABLE` is the book's Table of
+Scales: natural/harmonic/melodic major as M+2+M, M+2+h, M+2+m₂, and
+natural/harmonic/melodic minor as m₁+2+m₂, m₁+2+h, m₁+2+M — each checked
+against standard theory. Until this audit, the project built major from a
+bare interval cell; this is the book's own construction.
 
 ## Evolution of pitch-scale styles
 
