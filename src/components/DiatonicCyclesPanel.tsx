@@ -4,6 +4,7 @@ import {
   binomialCycle,
   stackedTriad,
   negativeStackedTriad,
+  negativeFormCycle,
   voiceLeadProgression,
   buildPassingSixthGroups,
   type CycleType,
@@ -64,10 +65,10 @@ export default function DiatonicCyclesPanel() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const playTokenRef = useRef(0);
 
-  const rootDegrees = useMemo(
-    () => (useBinomial ? binomialCycle(firstCycle, secondCycle) : diatonicCycle(firstCycle)),
-    [useBinomial, firstCycle, secondCycle],
-  );
+  const rootDegrees = useMemo(() => {
+    const inForm = (cycle: CycleType) => (form === "negative" ? negativeFormCycle(cycle) : cycle);
+    return useBinomial ? binomialCycle(inForm(firstCycle), inForm(secondCycle)) : diatonicCycle(inForm(firstCycle));
+  }, [useBinomial, firstCycle, secondCycle, form]);
   const stackedProgression = useMemo(
     () =>
       rootDegrees.map((degree) =>
@@ -206,8 +207,10 @@ export default function DiatonicCyclesPanel() {
         root (p.376-381). Clockwise and counterclockwise keep the chord in its position (open or
         close) for the whole progression; const. 3 switches between them (p.381). The
         negative form (Section F) builds triads downward instead of upward: from c as the root, the
-        third and fifth land a third and a fifth below it — a and f — not above (p.386); voice-leading
-        isn't yet extended to the negative form, so it's only available in stacked (non-voice-led) mode.
+        third and fifth land a third and a fifth below it — a and f — not above (p.386) — and every
+        cycle runs the other way: negative C3 connects c-a-f to e-c-a, which read upward is F → A
+        (p.387). Voice-leading isn't yet extended to the negative form, so it's only available in
+        stacked (non-voice-led) mode.
         Chapter 8's "group with a passing sixth-chord" (G6) inserts an inversion (S(6)) between every
         consecutive pair of chords: the passing chord keeps the first chord's own root/third/fifth
         completely unmoved, shifting only the bass to the nearest pitch sharing the third's pitch class

@@ -170,6 +170,18 @@ export function stackedTriad(scale: PitchScale, rootMidiNote: number, rootDegree
   return [0, 2, 4].map((offset) => midiNoteForDegree(scale, rootMidiNote, rootDegree + offset));
 }
 
+/**
+ * Section F: the cycle a negative-form progression actually takes. With
+ * chords built downward from a negative root, every cycle runs the other
+ * way -- "CS(5) + C3 + ES(5)": c-a-f to e-c-a, the negative root moving UP
+ * a third (p.387). Read upward that is F -> A, "transposing this upward
+ * reading to C... this progression is C -> E": the positive form read in
+ * position ⓒ.
+ */
+export function negativeFormCycle(cycle: SignedCycleType): SignedCycleType {
+  return -cycle as SignedCycleType;
+}
+
 /** Section F: the negative form's triad, built downward instead of upward -- root, negative third, negative fifth (p.386). */
 export function negativeStackedTriad(scale: PitchScale, rootMidiNote: number, rootDegree: number): number[] {
   return [0, -2, -4].map((offset) => midiNoteForDegree(scale, rootMidiNote, rootDegree + offset));

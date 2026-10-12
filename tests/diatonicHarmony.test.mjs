@@ -8,6 +8,7 @@ import {
   trinomialCycle,
   stackedTriad,
   negativeStackedTriad,
+  negativeFormCycle,
   chordProgression,
   nearestPitch,
   transformVoicing,
@@ -296,4 +297,22 @@ test("buildPassingSixthGroups chains G6 = S(5)+S(6)+S(5)+S(6)+S(5)... inserting 
 test("buildPassingSixthGroups on a single chord returns just that chord (no passing chord to insert)", () => {
   const single = voiceLeadProgression(MAJOR, 60, [0], "clockwise");
   assert.deepEqual(buildPassingSixthGroups(single), single);
+});
+
+test("negative form: CS(5) + C3 + ES(5) is c-a-f into e-c-a -- the negative root moves up a third (p.387)", () => {
+  const [first, second] = diatonicCycle(negativeFormCycle(3));
+  assert.deepEqual(negativeStackedTriad(MAJOR, 60, first), [60, 57, 53]); // c a f
+  assert.deepEqual(negativeStackedTriad(MAJOR, 60, second), [64, 60, 57]); // e c a
+});
+
+test("read upward, the negative C3 progression is F major -> A minor: C -> E transposed, i.e. the positive form backwards (p.387)", () => {
+  const upward = diatonicCycle(negativeFormCycle(3)).slice(0, 2).map((d) => negativeStackedTriad(MAJOR, 60, d).reverse());
+  assert.deepEqual(upward, [stackedTriad(MAJOR, 48, 3), stackedTriad(MAJOR, 48, 5)]); // F (f a c), A (a c e)
+});
+
+test("C-3 holds two common tones under counterclockwise, as C3 does under clockwise -- the reversed transformation (p.387)", () => {
+  const close = { bass: 48, root: 60, third: 64, fifth: 67 };
+  const next = transformVoicing(close, MAJOR, 60, diatonicCycle(-3)[1], "counterclockwise"); // C -> E minor
+  const held = [close.root, close.third, close.fifth].filter((n) => [next.root, next.third, next.fifth].includes(n));
+  assert.deepEqual(held.sort(), [64, 67]); // e and g stay
 });
