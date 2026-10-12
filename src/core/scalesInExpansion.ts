@@ -20,11 +20,13 @@
  * units therein minus one. This includes the original scale" -- i.e. E0
  * (step 1, the identity walk) through E_{N-2} (step N-1), for N-1 total.
  *
- * Sections B-D (translating melodies between expansions, variable pitch
- * axes/modulation via common tones or identical motifs, chromatic-
- * alteration-based modulation) are compositional workflow guidance built
- * on top of this same primitive, not additional formulas -- the same
- * scoping call made throughout Book I and Book II Ch.4.
+ * An expansion is realized as a scale -- ascending, spanning more than an
+ * octave -- by `expandedScale` (Figure 24 writes every one that way), and
+ * Section B's translation of a melody between expansions is an exact
+ * procedure (unit n to unit n), built as `translateMelodyToExpansion`.
+ * Sections C-D (variable pitch axes/modulation via common tones, identical
+ * motifs, or chromatic alteration) are compositional workflow guidance on
+ * top of these, not additional formulas.
  */
 
 /**
@@ -64,4 +66,68 @@ export function allTonalExpansions<T>(units: readonly T[]): T[][] {
     expansions.push(tonalExpansion(units, k));
   }
   return expansions;
+}
+
+/**
+ * Realizes a sequence of units as an ascending scale, each unit raised by
+ * octaves until it sits above the previous one. "A pitch-scale is a
+ * sequence of pitch-units following in consecutive order" (p.101), and
+ * Figure 24 (p.135) writes every expansion that way -- natural major E1 is
+ * c-e-g-b-d-f-a climbing past the octave, its units renumbered I..VII from
+ * the root -- which is why expansions belong to the Second Group (one
+ * root-tone, range over 12). `tonalExpansion` alone only reorders units.
+ */
+export function ascendingRealization(midiNotes: readonly number[]): number[] {
+  const result: number[] = [];
+  for (const note of midiNotes) {
+    let placed = note;
+    if (result.length > 0) {
+      const previous = result[result.length - 1];
+      while (placed <= previous) placed += 12;
+    }
+    result.push(placed);
+  }
+  return result;
+}
+
+/** E_k of a scale as the book writes it: the expansion's units, ascending from the root. */
+export function expandedScale(scaleMidiNotes: readonly number[], k: number): number[] {
+  return ascendingRealization(tonalExpansion(scaleMidiNotes, k));
+}
+
+/**
+ * A melody note's unit number in its scale, counted from the root-tone in
+ * consecutive order and continuing past the octave (unit N is the root an
+ * octave up; -1 is the top unit an octave down). Throws if the note isn't
+ * one of the scale's own pitch classes.
+ */
+export function unitNumber(note: number, scaleMidiNotes: readonly number[]): number {
+  const root = scaleMidiNotes[0];
+  const offsets = scaleMidiNotes.map((n) => (((n - root) % 12) + 12) % 12);
+  const index = offsets.indexOf((((note - root) % 12) + 12) % 12);
+  if (index < 0) throw new Error(`note ${note} is not a unit of the scale`);
+  const octave = Math.floor((note - root - offsets[index]) / 12);
+  return index + octave * scaleMidiNotes.length;
+}
+
+/**
+ * Section B (p.134): "transcribing a melody from one expansion into another
+ * consists in... enumerating all the units in consecutive order from the
+ * root-tone (scale axis) in both scales, and in translating units of one
+ * melody into the units of another through the identical numbers," with
+ * "the root-tone... of all the expansions on the same pitch level." Unit n
+ * of the original scale becomes unit n of E_k; units past the expanded
+ * scale's top continue into its next cycle, which starts on the root-tone
+ * above its last unit.
+ */
+export function translateMelodyToExpansion(melodyMidiNotes: readonly number[], scaleMidiNotes: readonly number[], k: number): number[] {
+  const expanded = expandedScale(scaleMidiNotes, k);
+  const n = expanded.length;
+  const [first] = ascendingRealization([...expanded, expanded[0]]).slice(-1);
+  const period = first - expanded[0];
+  return melodyMidiNotes.map((note) => {
+    const unit = unitNumber(note, scaleMidiNotes);
+    const cycle = Math.floor(unit / n);
+    return expanded[unit - cycle * n] + cycle * period;
+  });
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { allTonalExpansions } from "../core/scalesInExpansion";
+import { allTonalExpansions, ascendingRealization } from "../core/scalesInExpansion";
 import { intervalsToMidiNotes } from "../core/pitchScaleEvolution";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
@@ -36,7 +36,7 @@ export default function ScalesInExpansionPanel() {
     intervals,
     tonic,
   ]);
-  const expansions = useMemo(() => (scale.length >= 2 ? allTonalExpansions(scale) : []), [scale]);
+  const expansions = useMemo(() => (scale.length >= 2 ? allTonalExpansions(scale).map(ascendingRealization) : []), [scale]);
 
   function preview(label: string, values: readonly number[]) {
     setSelectedLabel(label);

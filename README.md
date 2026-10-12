@@ -925,15 +925,28 @@ units in a circle stepping by 2 positions each time; E_k steps by k+1.
 When that step doesn't divide the scale evenly, the walk splits into
 several passes — "the recurring unit is omitted," and the next pass
 restarts from the smallest not-yet-visited unit (p. 132-133). There are
-always N-1 expansions total, including the unchanged original (E0).
-Sections B-D (translating melodies between expansions, modulation via
-common tones or identical motifs) are workflow guidance built on this
-one primitive, not additional formulas, so aren't implemented. Verified
-against the book's own two worked examples, confirmed against the
-rendered page image since the odd-count example's figure wasn't in the
-OCR text layer: the 5-unit `c-d-e-f-g` gives E1 = `c-e-g-d-f`; the
-6-unit `c-d-e-f-g-b` gives E1 = `c-e-g-d-f-b` (the second cycle
-restarting at `d` once `c` recurs) — both exact.
+always N-1 expansions total, including the unchanged original (E0) —
+the book's N_E = N_P − 1. Verified against the book's own two worked
+examples, confirmed against the rendered page image since the
+odd-count example's figure wasn't in the OCR text layer: the 5-unit
+`c-d-e-f-g` gives E1 = `c-e-g-d-f`; the 6-unit `c-d-e-f-g-b` gives
+E1 = `c-e-g-d-f-b` (the second cycle restarting at `d` once `c`
+recurs) — both exact.
+
+An expansion is a *scale*, which the book defines as units "in
+consecutive order (increasing or decreasing frequency)" — and Figure 24
+writes every one ascending, past the octave (natural major E1 is
+c-e-g-b-d-f-a, units renumbered I…VII from the root), which is why
+expansions are Second Group scales (one root-tone, range over 12).
+`expandedScale` realizes them that way; the panel used to keep each unit
+in its original octave (E1 of `c-d-e-g-a` read `c4-e4-a4-d4-g4`, not a
+scale at all) and now reads `c4-e4-a4-d5-g5`. Section B's translation of
+a melody between expansions is an exact procedure — number the units
+from the root in both scales and map unit n to unit n, root-tones on the
+same pitch level — and is built as `translateMelodyToExpansion`, the
+book's "device for modernization of the music of the past." Sections C-D
+(modulation via common tones, identical motifs, chromatic alteration)
+remain workflow guidance.
 
 ## Symmetrical scales (third and fourth groups)
 
