@@ -216,7 +216,8 @@ is literally "append the fractioned form," Contraction "prepend" it, Balance
 "combine" them, plus a plain repeat count. **Higher-order growth (Ch. 10)**
 is a second, unrelated way to lengthen the same cycle: the 2 (or 3)
 generator values themselves become `higherOrderElements`'s seeds — exactly
-the book's own Figure 120 example — grown to a chosen order (capped 1-6)
+the book's own Figure 120 example — grown to a chosen order (capped 1-6
+for two generators; 1-2 for three, whose element count grows factorially)
 and concatenated into one long cycle; at order 4 with a 3:2 case this
 reproduces the book's classic `abbabaab`+`baababba` shape exactly, just
 spelled in durations instead of letters. The two modes are mutually
@@ -391,19 +392,24 @@ elements through successive "orders": Figure 120's own formula states
 `a2 = a1+b1`, `b2 = b1+a1`, then `a3 = a2+b2`, `b3 = b2+a2`, and so on —
 each order concatenates the *previous* order's own (already-grown) a and b,
 so the pair keeps exactly 2 simultaneous voices forever while their length
-doubles every order. `higherOrderElements` (`src/core/higherOrderPermutations.ts`)
-generalizes this to any number of seeds — element *i* at order *k* is the
-concatenation of element *i* and element *(i+1 mod n)* from order *k-1* —
-and reproduces the book's own exact numbers for two seeds `[2],[1]` at
-every order in `tests/higherOrderPermutations.test.mjs` (`a3=[2,1,1,2]`,
-`b3=[1,2,2,1]`, `a4=[2,1,1,2,1,2,2,1]`, ...). One honest flag: the book's
-own prose separately claims the *element count* itself grows ("3 elements
-→ 9 on the second order, 27 on the third... through circular
-permutations"), which doesn't square with Figure 120's own formula (which
-keeps the count fixed, only the length grows) or even with itself (9 fits
-"square of 3," but 27 doesn't fit "square of 9"=81) — this implementation
-follows the formula, which is unambiguous and directly verifiable, over
-the prose claim, which isn't internally consistent.
+doubles every order. The general rule (p.63-65) is that each element of
+the next order is one *general permutation* of all the previous order's
+elements: with two elements that's just a+b and b+a (2! = 2, so the count
+never grows), but with three it's the book's own six second-order elements
+`a2 = a1+b1+c1`, `b2 = a1+c1+b1`, `c2 = c1+a1+b1`, `d2 = b1+a1+c1`,
+`e2 = b1+c1+a1`, `f2 = c1+b1+a1` — and 6! = 720 on the third order,
+exactly as the prose says. `higherOrderElements`
+(`src/core/higherOrderPermutations.ts`) follows that rule in the book's own
+naming order, reproducing the two-seed numbers at every order
+(`a3=[2,1,1,2]`, `b3=[1,2,2,1]`, `a4=[2,1,1,2,1,2,2,1]`, ...) and the
+three-seed a2..f2 exactly; `combinationCases` reproduces the book's "total
+number of cases" for building continuity from those six (15×2 = 30, 20×6 =
+120, 15×24 = 360, 6×120 = 720, 1×720 = 720). An earlier version kept n
+elements per order (each joined only to its neighbor) — right for two
+seeds, wrong for three — and wrongly called the book's prose inconsistent;
+a top-of-book audit caught it. Because three seeds grow factorially, the
+Motif Explorer's growth mode stops at the second order for three
+generators.
 
 Chapter 11 (**Composition of Homogeneous Rhythmic Continuity**) splits a
 rhythmic group into n equal pieces (its simplest divisor, or its
@@ -570,8 +576,10 @@ has no formula and isn't implemented.
   reordering of a duration-group's values) and `circularPermutations` (its
   n rotations). Zero dependencies.
 - `src/core/higherOrderPermutations.ts` — Ch. 10: `higherOrderElements`
-  (grows n seed elements through successive orders via circular
-  concatenation, generalizing Figure 120's a/b formula). Zero dependencies.
+  (each next-order element is one general permutation of the previous
+  order's elements, in the book's own naming order), plus `combinationsBy`/
+  `combinationCases` for the book's "combinations by k". Depends on
+  `permutations.ts`.
 - `src/core/homogeneousContinuity.ts` — Ch. 11: `chunkIntoPieces`,
   `divisorsOf`, and `homogeneousContinuityParts` (the canon-of-rotations
   construction, built on Ch. 9's `circularPermutations`). Depends only on

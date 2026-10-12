@@ -337,10 +337,14 @@ export default function MotifExplorerPage({
     [generatorCount, activeThreeCase, activeCase],
   );
 
+  // Three seeds grow factorially (3 -> 6 -> 720 elements), so they stop at the book's own illustrated second order.
+  const maxGrowthOrder = growthSeeds.length > 2 ? 2 : 6;
+  const effectiveGrowthOrder = Math.min(growthOrder, maxGrowthOrder);
+
   const growthResultant: Resultant = useMemo(() => {
-    const elements = higherOrderElements(growthSeeds, growthOrder);
+    const elements = higherOrderElements(growthSeeds, effectiveGrowthOrder);
     return resultantFromSegments(elements.flat().map((duration) => ({ duration, sources: [] })));
-  }, [growthSeeds, growthOrder]);
+  }, [growthSeeds, effectiveGrowthOrder]);
 
   const baseResultant = extendMode === "growth" ? growthResultant : techniqueResultant;
 
@@ -360,7 +364,7 @@ export default function MotifExplorerPage({
     setLoopSelection({ start: 0, length: Math.max(2, Math.min(4, totalSegments)) });
     // Reset the window to a sensible default whenever the underlying shape changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [generatorCount, activeCase, activeThreeCase, technique, repeatCount, extendMode, growthOrder]);
+  }, [generatorCount, activeCase, activeThreeCase, technique, repeatCount, extendMode, effectiveGrowthOrder]);
 
   const clampedStart = Math.max(0, Math.min(loopSelection.start, totalSegments - 1));
 
@@ -841,9 +845,9 @@ export default function MotifExplorerPage({
               <input
                 type="number"
                 min={1}
-                max={6}
-                value={growthOrder}
-                onChange={(e) => setGrowthOrder(Math.max(1, Math.min(6, Number(e.target.value))))}
+                max={maxGrowthOrder}
+                value={effectiveGrowthOrder}
+                onChange={(e) => setGrowthOrder(Math.max(1, Math.min(maxGrowthOrder, Number(e.target.value))))}
               />
             </label>
           )}
