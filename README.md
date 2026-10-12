@@ -1450,7 +1450,7 @@ chords in motion" (p.388). Restricting a triad's two intervals to 3 or 4
 semitones each gives exactly four structures, built directly from
 semitones rather than scale degrees: S1=4+3 (major), S2=3+4 (minor),
 S3=4+4 (augmented), S4=3+3 (diminished). All sharing one common root is
-Section B's "symmetric zero cycle" (C0). Section A's own combinatorics
+Section B's "symmetric zero cycle" (C0), described below with Ch. 4. Section A's own combinatorics
 table (badly garbled by OCR, but every one of its 8 counts confirmed by
 hand) turns out to be nothing more than `generalPermutations`/
 `generalPermutationsOf` (Book I Ch. 9) applied to these 4 structure
@@ -1826,12 +1826,29 @@ spellings — a semitone can't be told apart from a diatonic one (B → C)
 without inventing a spelling system the chapter doesn't supply. Form 9's
 "contrasting forms of chromatics" is qualitative guidance.
 
-## Book V, Chapter 4 (no core module) and Chapter 5 Section A
+## Book V, Chapter 3 Section B, Chapter 4, and Chapter 5 Section A
 
-Chapter 4 (Diatonic-Symmetric System of Harmony, Type II) contributes no
-code — it's a worked example combining Ch. 2's diatonic root-motion
-cycles with Ch. 3's pre-selected symmetric structures directly, no new
-formula.
+Chapter 3 Section B, the **symmetric zero cycle** (C0): chords on one
+common root with variable positions and structures. The structural
+group's coefficients decide the positions — "a structure with a
+coefficient greater than one changes its positions until the next
+structure appears. The change of structure requires the preservation of
+the position" (p.391): 3S1 + S3 + 2S2 = S1 + S1 + S1 + S3 + S2 + S2,
+positions var. var. const. const. var. (`expandStructuralGroup`,
+`zeroCyclePositions`). `symmetricZeroCycle` voices it with Ch. 2's
+positions and transformations on the one root — by default Figure 46's
+own opening, c-g-e from the top, counterclockwise to g-e-c.
+
+Chapter 4, the **diatonic-symmetric system (Type II)**: roots from one
+scale of the First Group, moved by a group of tonal cycles with
+coefficients, carrying a pre-selected structural group "not affected by
+the intonation of scale formed by the root-tones" (p.393).
+`diatonicSymmetricProgression` reproduces Figure 47 exactly: in
+c-d-e-f-g-a-b♭, 2C7 + C3 + C5 gives c d e c f g a f b♭ c d b♭ e f g e a
+b♭ c a d e f d g a b♭ g (28 roots, back to c), each carrying S1 — so e
+major brings in a g♯ the scale doesn't have, the "new accidentals" the
+chapter describes. (The figure's root motion is one more confirmation
+that positive cycles run downward.)
 
 Chapter 5 (The Symmetric System of Harmony, Type III), Section A "Two
 Tonics": the panel's "scale" mode adds `symmetricHarmonyScale`. Its own

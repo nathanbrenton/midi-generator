@@ -6,9 +6,14 @@ import {
   symmetricStructureProgression,
   symmetricHarmonyScale,
   SYMMETRIC_CYCLE_FOR_TONIC_COUNT,
+  expandStructuralGroup,
+  zeroCyclePositions,
+  symmetricZeroCycle,
+  diatonicSymmetricProgression,
 } from "../src/core/symmetricHarmony.ts";
 import { generalPermutations, generalPermutationsOf } from "../src/core/permutations.ts";
 import { compositionCount, symmetricTonics } from "../src/core/symmetricScales.ts";
+import { intervalCellScale } from "../src/core/scales.ts";
 
 test("symmetricTriad matches the book's own table of S(5) structures exactly (p.389)", () => {
   assert.deepEqual(symmetricTriad(1, 60), [60, 64, 67]); // major: 4+3
@@ -164,4 +169,52 @@ test("SYMMETRIC_CYCLE_FOR_TONIC_COUNT matches the book's own stated pairing exac
   assert.equal(SYMMETRIC_CYCLE_FOR_TONIC_COUNT[4], "C3");
   assert.equal(SYMMETRIC_CYCLE_FOR_TONIC_COUNT[6], "C7");
   assert.equal(SYMMETRIC_CYCLE_FOR_TONIC_COUNT[12], "C7");
+});
+
+// Ch.3 B: the symmetric zero cycle C0 (p.391, Figure 46).
+const topDown = (v) => ["root", "third", "fifth"].sort((x, y) => v[y] - v[x]);
+const pcsTopDown = (v) => [v.root, v.third, v.fifth].sort((x, y) => y - x).map((n) => ((n % 12) + 12) % 12);
+
+test("C0: 3S1 + S3 + 2S2 = S1 + S1 + S1 + S3 + S2 + S2, positions var. var. const. const. var. (p.391)", () => {
+  const structures = expandStructuralGroup([[3, 1], [1, 3], [2, 2]]);
+  assert.deepEqual(structures, [1, 1, 1, 3, 2, 2]);
+  assert.deepEqual(zeroCyclePositions(structures), ["var", "var", "const", "const", "var"]);
+});
+
+test("C0: a repeated structure changes position, a new structure keeps it; the root stays in the bass (p.391)", () => {
+  const structures = expandStructuralGroup([[3, 1], [1, 3], [2, 2]]);
+  const voicings = symmetricZeroCycle(structures, 60);
+  zeroCyclePositions(structures).forEach((change, k) => {
+    const same = topDown(voicings[k]).join() === topDown(voicings[k + 1]).join();
+    assert.equal(same, change === "const", `connection ${k + 1}`);
+  });
+  assert.ok(voicings.every((v) => v.bass === 48));
+});
+
+test("C0: Figure 46 opens c-g-e (from the top) and moves to g-e-c; a change of structure moves only the altered tones, by a semitone", () => {
+  const voicings = symmetricZeroCycle([1, 1, 2], 60);
+  assert.deepEqual(pcsTopDown(voicings[0]), [0, 7, 4]);
+  assert.deepEqual(pcsTopDown(voicings[1]), [7, 4, 0]);
+  const moves = ["root", "third", "fifth"].map((fn) => voicings[2][fn] - voicings[1][fn]);
+  assert.deepEqual(moves, [0, -1, 0]); // e -> e-flat
+});
+
+// Ch.4: the diatonic-symmetric system, Type II (p.393, Figure 47).
+test("Type II: in c-d-e-f-g-a-bb, 2C7 + C3 + C5 moves the roots exactly as Figure 47 notates them, 28 roots back to c", () => {
+  const scale = intervalCellScale([2, 2, 1, 2, 2, 1, 2]); // c d e f g a bb
+  const { rootDegrees, chords } = diatonicSymmetricProgression(scale, 48, [[2, 7], [1, 3], [1, 5]], [[1, 1]]);
+  const names = ["c", "d", "e", "f", "g", "a", "bb"];
+  assert.equal(
+    rootDegrees.map((d) => names[d]).join(" "),
+    "c d e c f g a f bb c d bb e f g e a bb c a d e f d g a bb g",
+  );
+  // S1 const.: a major triad on every root, whatever the scale says -- e major brings in g#.
+  assert.ok(chords.every(([r, t, f]) => t - r === 4 && f - t === 3));
+  assert.deepEqual(chords[2].map((n) => n % 12), [4, 8, 11]);
+});
+
+test("Type II: a structural group repeats over the roots independently of the cycle group", () => {
+  const scale = intervalCellScale([2, 2, 1, 2, 2, 2, 1]);
+  const { structures } = diatonicSymmetricProgression(scale, 48, [[1, 5]], [[1, 1], [1, 2], [2, 4]]);
+  assert.deepEqual(structures, [1, 2, 4, 4, 1, 2, 4]);
 });

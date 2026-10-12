@@ -31,17 +31,29 @@
  * below, a thin wrapper that just counts `generalPermutationsOf` output,
  * plus the tests, which verify all 8 numbers directly.
  *
- * Section B (Symmetric Progressions, Symmetric Zero Cycle C0, p.391-392)
- * requires the chord "positions" enumeration from Ch.2 Section C (open
- * and closed voicings), which wasn't built when Ch.2's voice-leading was
- * implemented (only chord-to-chord transformation was) -- a natural next
- * step, not yet built.
+ * Section B (Symmetric Progressions, Symmetric Zero Cycle C0, p.391-392):
+ * "a group of chords with a common root-tone but with variable positions
+ * and variable structures produces a symmetric zero cycle (C0)." The
+ * structural group's coefficients of recurrence decide the positions: "a
+ * structure with a coefficient greater than one changes its positions
+ * until the next structure appears. The change of structure requires the
+ * preservation of the position" -- S const. with position var., S var.
+ * with position const. `zeroCyclePositions` labels each connection, and
+ * `symmetricZeroCycle` voices it, changing position by one of Ch.2's
+ * transformations on the same root (`transformChord`).
  *
  * Book V, Chapter 5: The Symmetric System of Harmony (Type III), Section
- * A (Two Tonics, p.396-397). Chapter 4 (Diatonic-Symmetric System, Type
- * II) contributes no code of its own -- it's a worked example combining
- * Ch.2's diatonic cycles with Ch.3's pre-selected structures directly, no
- * new formula.
+ * A (Two Tonics, p.396-397).
+ *
+ * Chapter 4 (Diatonic-Symmetric System, Type II, p.393-395): "all
+ * root-tones... must belong to one scale of the First Group" and "all
+ * chord structures must be pre-selected; they are not affected by the
+ * intonation of scale formed by the root-tones." `diatonicSymmetricProgression`
+ * moves the roots through the scale by a group of tonal cycles with
+ * coefficients ("2C7 + C3 + C5": C7, C7, C3, C5, repeated) and lays the
+ * structural group over them. Figure 47, read off the page: in
+ * c-d-e-f-g-a-bb, 2C7 + C3 + C5 gives c d e c f g a f bb c d bb e f g e
+ * a bb c a d e f d g a bb g and back to c, each root carrying S1.
  *
  * Chapter 5's own tonic-count table -- "symmetric C0 represents one
  * tonic; root 2 represents two tonics; cube-root 2 represents three...
@@ -69,6 +81,9 @@
  * 12 tonics]" -- reusing Ch.2's diatonic C3/C5/C7 root-motion vocabulary
  * to name the step between consecutive symmetric tonics.
  */
+
+import { midiNoteForDegree, type PitchScale } from "./scales.ts";
+import { alternatingCycles, nearestPitch, octaveVariation, positionVoicingFrom, transformChord, S5_POSITIONS, type S5Position, type SignedCycleType, type TransformDirection, type Voicing } from "./diatonicHarmony.ts";
 
 export type StructureId = 1 | 2 | 3 | 4;
 
@@ -124,3 +139,87 @@ export const SYMMETRIC_CYCLE_FOR_TONIC_COUNT: Readonly<Record<number, SymmetricC
   6: "C7",
   12: "C7",
 };
+
+/** A structural group with coefficients of recurrence: 3S1 + S3 + 2S2 is [[3, 1], [1, 3], [2, 2]] (p.390-391). */
+export type StructuralGroup = readonly (readonly [coefficient: number, structure: StructureId])[];
+
+/** Writes each structure out as often as its coefficient: 3S1 + S3 + 2S2 = S1 + S1 + S1 + S3 + S2 + S2 (p.391). */
+export function expandStructuralGroup(group: StructuralGroup): StructureId[] {
+  return group.flatMap(([coefficient, structure]) => Array.from({ length: coefficient }, () => structure));
+}
+
+/**
+ * For each connection in a C0 progression, whether the position varies
+ * (the same structure continues) or stays (the structure changes):
+ * S1 + S1 + S1 + S3 + S2 + S2 -> var., var., const., const., var. (p.391).
+ */
+export function zeroCyclePositions(structures: readonly StructureId[]): ("var" | "const")[] {
+  return structures.slice(1).map((structure, k) => (structure === structures[k] ? "var" : "const"));
+}
+
+/**
+ * Voices a symmetric zero cycle: every chord on `rootMidiNote` (bass an
+ * octave below), starting in `startPosition`. A repeated structure moves
+ * to its next position by `direction`; a new structure keeps every voice
+ * on its function, so only the tones that differ between the structures
+ * move, by a semitone (p.391). The defaults follow Figure 46's first
+ * example: c-g-e from the top, then counterclockwise to g-e-c. Long
+ * repetitions keep their range by Ch.2's octave variation.
+ */
+export function symmetricZeroCycle(
+  structures: readonly StructureId[],
+  rootMidiNote: number,
+  direction: TransformDirection = "counterclockwise",
+  startPosition: S5Position = S5_POSITIONS.close[0],
+): Voicing[] {
+  const chord = (structure: StructureId) => {
+    const [root, third, fifth] = symmetricTriad(structure, rootMidiNote);
+    return { root, third, fifth };
+  };
+  let current = positionVoicingFrom(chord(structures[0]), rootMidiNote - 12, startPosition);
+  const voicings = [current];
+  const home = current;
+  zeroCyclePositions(structures).forEach((change, k) => {
+    const next = chord(structures[k + 1]);
+    current =
+      change === "var"
+        ? transformChord(current, next, direction)
+        : {
+            bass: current.bass,
+            root: nearestPitch(current.root, next.root),
+            third: nearestPitch(current.third, next.third),
+            fifth: nearestPitch(current.fifth, next.fifth),
+          };
+    current = octaveVariation(current, home);
+    voicings.push(current);
+  });
+  return voicings;
+}
+
+/** A group of tonal cycles with coefficients: 2C7 + C3 + C5 is [[2, 7], [1, 3], [1, 5]] (p.393). */
+export type CycleGroup = readonly (readonly [coefficient: number, cycle: SignedCycleType])[];
+
+/** Writes each cycle out as often as its coefficient: 2C7 + C3 + C5 = C7 + C7 + C3 + C5. */
+export function expandCycleGroup(group: CycleGroup): SignedCycleType[] {
+  return group.flatMap(([coefficient, cycle]) => Array.from({ length: coefficient }, () => cycle));
+}
+
+/**
+ * Ch.4, Type II: roots from one scale, moved by a cycle group until they
+ * return to the first root in phase, each carrying the next structure of
+ * the structural group (both repeat periodically). Returns the root
+ * degrees, the structures, and the chords built from semitones on each
+ * root (p.393-395, Figure 47).
+ */
+export function diatonicSymmetricProgression(
+  scale: PitchScale,
+  rootMidiNote: number,
+  cycleGroup: CycleGroup,
+  structuralGroup: StructuralGroup,
+): { rootDegrees: number[]; structures: StructureId[]; chords: number[][] } {
+  const rootDegrees = alternatingCycles(expandCycleGroup(cycleGroup), 0, scale.degrees.length);
+  const pattern = expandStructuralGroup(structuralGroup);
+  const structures = rootDegrees.map((_, k) => pattern[k % pattern.length]);
+  const chords = rootDegrees.map((degree, k) => symmetricTriad(structures[k], midiNoteForDegree(scale, rootMidiNote, degree)));
+  return { rootDegrees, structures, chords };
+}

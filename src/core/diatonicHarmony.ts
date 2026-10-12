@@ -144,14 +144,19 @@ export function diatonicCycle(cycleType: SignedCycleType, startDegree = 0): numb
  * the start: 7 chords per cycle in the group, so each root appears once
  * per cycle "in a different combination with the preceding and the
  * following chord." Figure 3: C3 + C5 from c is c-a-d-b-e-c-f-d-g-e-a-f-b-g,
- * then c again. Throws when the steps cancel out (e.g. C3 + C-3), since
- * such a group never leaves its first chord.
+ * then c again. `units` is the scale's size (7 by default). Throws when
+ * a whole group of steps returns to the first root (e.g. C3 + C-3).
  */
-export function alternatingCycles(cycles: readonly SignedCycleType[], startDegree = 0): number[] {
+export function alternatingCycles(cycles: readonly SignedCycleType[], startDegree = 0, units = 7): number[] {
   const steps = cycles.map(cycleDegreeStep);
-  if (steps.reduce((s, step) => s + step, 0) % 7 === 0) throw new Error("these cycles cancel out and never leave the first chord");
-  const roots = [((startDegree % 7) + 7) % 7];
-  for (let k = 1; k < 7 * cycles.length; k++) roots.push((((roots[k - 1] + steps[(k - 1) % steps.length]) % 7) + 7) % 7);
+  const total = steps.reduce((s, step) => s + step, 0);
+  if (total % units === 0) throw new Error("these cycles return to the first root at once");
+  // The group repeats until the root comes back to the start at the group's own beginning.
+  let periods = 1;
+  while ((total * periods) % units !== 0) periods++;
+  const wrap = (d: number) => ((d % units) + units) % units;
+  const roots = [wrap(startDegree)];
+  for (let k = 1; k < periods * cycles.length; k++) roots.push(wrap(roots[k - 1] + steps[(k - 1) % steps.length]));
   return roots;
 }
 
@@ -268,8 +273,17 @@ export function transformVoicing(
   nextRootDegree: number,
   direction: TransformDirection,
 ): Voicing {
-  const [nextRoot, nextThird, nextFifth] = stackedTriad(scale, rootMidiNote, nextRootDegree);
-  const pitchClassFor: Record<ChordFunction, number> = { root: nextRoot, third: nextThird, fifth: nextFifth };
+  const [root, third, fifth] = stackedTriad(scale, rootMidiNote, nextRootDegree);
+  return transformChord(voicing, { root, third, fifth }, direction);
+}
+
+/**
+ * `transformVoicing` for any target chord, given by the pitch (or pitch
+ * class) of each of its functions -- so the symmetric system, whose
+ * structures come from semitones rather than a scale, uses the same
+ * transformations (Ch.3 B).
+ */
+export function transformChord(voicing: Voicing, pitchClassFor: Record<ChordFunction, number>, direction: TransformDirection): Voicing {
   const nextMap = NEXT_FUNCTION[direction];
   const fns: ChordFunction[] = ["root", "third", "fifth"];
 
@@ -307,8 +321,11 @@ export function transformVoicing(
  */
 export function positionVoicing(scale: PitchScale, rootMidiNote: number, rootDegree: number, position: S5Position): Voicing {
   const [root, third, fifth] = stackedTriad(scale, rootMidiNote, rootDegree);
-  const pitchClass: Record<ChordFunction, number> = { root, third, fifth };
-  const bass = root - 12;
+  return positionVoicingFrom({ root, third, fifth }, root - 12, position);
+}
+
+/** `positionVoicing` for any chord, given by the pitch class of each function, over a given bass. */
+export function positionVoicingFrom(pitchClass: Record<ChordFunction, number>, bass: number, position: S5Position): Voicing {
   const voicing: Voicing = { bass, root: 0, third: 0, fifth: 0 };
   let below = bass;
   for (const fn of [...position].reverse()) {
@@ -334,7 +351,7 @@ export function voicingPosition(voicing: Voicing): "open" | "close" {
  * by an octave once their middle wanders more than an octave from home --
  * the transformation itself, and so the position, is untouched.
  */
-function octaveVariation(voicing: Voicing, home: Voicing): Voicing {
+export function octaveVariation(voicing: Voicing, home: Voicing): Voicing {
   const middle = (v: Voicing) => (v.root + v.third + v.fifth) / 3;
   const upperShift = 12 * Math.round((middle(home) - middle(voicing)) / 12);
   let bass = voicing.bass;
