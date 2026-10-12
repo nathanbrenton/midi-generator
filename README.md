@@ -1861,10 +1861,22 @@ upper voice of harmony produces the scale... c-db-e-f#-g-a#" from a
 exactly the *sorted union of pitch classes* across every tonic's own
 triad — confirmed against both of the book's own worked examples (major
 gives c-db-e-f#-g-a#/bb; minor gives c-db-eb-f#-g-a), and verified again
-live in the browser, byte for byte. Sections B-E (Three/Four/Six/Twelve
-Tonics) need no new code — the same `symmetricHarmonyScale` generalizes
-cleanly across every tonic count; the book adds only qualitative
-recurrence-cycle properties there, no new checkable formula. **The exact
+live in the browser, byte for byte. The audit added the progressions
+themselves: `symmetricRoots` gives the roots and their cycles as p.396
+tabulates them (two tonics C-F♯-C by C5 and C-5; three C-A♭-E by C3;
+four C-A-F♯-E♭ by C3; six C-D-E-F♯-A♭-B♭ by C7; each negative form
+reversed), and `symmetricProgression` voices them with one
+transformation, the structural group running alongside the tonics ("S
+changes with each tonic"; 9 structures over 2 tonics interfere into 18
+chords, p.398). The recurrence-cycle statements of Sections A-C turn out
+to be one formula, `recurrenceCycles` = lcm(period, tonics) / tonics,
+where clockwise and counterclockwise return the voices to their
+functions every 3 chords and const. 3 every 2: two tonics give a
+"triple recurrence-cycle" for both rotations and a closed system for
+const. 3, three tonics closed and two cycles, four tonics three cycles
+and closed — each checked against the actual voicings as well. And with
+S1 const., the upper voice of the two-tonic progression does trace
+c-d♭-e-f♯-g-a♯, as does every other voice (p.397). **The exact
 root-motion cycle labels connecting consecutive tonics are now filled
 in** (`SYMMETRIC_CYCLE_FOR_TONIC_COUNT`, shown in the panel's readout) —
 Book V Ch. 10 Section B (p.464) states them directly in clean typeset

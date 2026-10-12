@@ -10,6 +10,9 @@ import {
   zeroCyclePositions,
   symmetricZeroCycle,
   diatonicSymmetricProgression,
+  symmetricRoots,
+  recurrenceCycles,
+  symmetricProgression,
 } from "../src/core/symmetricHarmony.ts";
 import { generalPermutations, generalPermutationsOf } from "../src/core/permutations.ts";
 import { compositionCount, symmetricTonics } from "../src/core/symmetricScales.ts";
@@ -217,4 +220,52 @@ test("Type II: a structural group repeats over the roots independently of the cy
   const scale = intervalCellScale([2, 2, 1, 2, 2, 2, 1]);
   const { structures } = diatonicSymmetricProgression(scale, 48, [[1, 5]], [[1, 1], [1, 2], [2, 4]]);
   assert.deepEqual(structures, [1, 2, 4, 4, 1, 2, 4]);
+});
+
+// Ch.5: the symmetric system, Type III (p.396-400).
+test("Type III roots and their cycles, as tabulated on p.396: C3 runs down, C7 up a step", () => {
+  const names = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+  const line = (n, form) => symmetricRoots(n, form).tonics.map((t) => names[t]).join("-");
+  assert.equal(line(2), "C-F#");
+  assert.deepEqual(symmetricRoots(2).cycles, ["C5", "C-5"]);
+  assert.equal(line(3), "C-Ab-E");
+  assert.equal(line(3, "negative"), "C-E-Ab");
+  assert.equal(line(4), "C-A-F#-Eb");
+  assert.equal(line(6), "C-D-E-F#-Ab-Bb");
+  assert.equal(line(6, "negative"), "C-Bb-Ab-F#-E-D");
+  assert.deepEqual(symmetricRoots(4).cycles, ["C3", "C3", "C3", "C3"]);
+  assert.deepEqual(symmetricRoots(12, "negative").cycles.slice(0, 2), ["C-7", "C-7"]);
+});
+
+test("recurrence-cycles: two tonics triple for clockwise/counterclockwise and closed for const. 3; three closed and 2; four 3 and closed (p.397-399)", () => {
+  const table = (n) => ["clockwise", "counterclockwise", "const3"].map((t) => recurrenceCycles(n, t));
+  assert.deepEqual(table(2), [3, 3, 1]);
+  assert.deepEqual(table(3), [1, 1, 2]);
+  assert.deepEqual(table(4), [3, 3, 1]);
+});
+
+test("recurrence-cycles are what the voicings actually do: the original position returns on the first tonic after that many rounds", () => {
+  const order = (v) => ["root", "third", "fifth"].sort((x, y) => v[y] - v[x]).join();
+  for (const n of [2, 3, 4, 6, 12]) {
+    for (const t of ["clockwise", "counterclockwise", "const3"]) {
+      const { voicings } = symmetricProgression(60, n, [[1, 1]], t, { chords: 7 * n });
+      let rounds = 1;
+      while (order(voicings[rounds * n]) !== order(voicings[0])) rounds++;
+      assert.equal(rounds, recurrenceCycles(n, t), `${n} tonics, ${t}`);
+    }
+  }
+});
+
+test("two tonics, S1 const.: the upper voice runs c-db-e-f#-g-a#, (1+3) + 2 + (1+3) + 2, and so does every other voice (p.397)", () => {
+  const { voicings } = symmetricProgression(60, 2, [[1, 1]], "clockwise", { chords: 6 });
+  const scale = [0, 1, 4, 6, 7, 10];
+  const voice = (pick) => [...new Set(voicings.map(pick).map((n) => ((n % 12) + 12) % 12))].sort((a, b) => a - b);
+  assert.deepEqual(voice((v) => Math.max(v.root, v.third, v.fifth)), scale);
+  assert.deepEqual(voice((v) => Math.min(v.root, v.third, v.fifth)), scale);
+});
+
+test("a structural group interferes with the tonics: 9 structures over 2 tonics run 18 chords (p.398)", () => {
+  const { tonics, structures } = symmetricProgression(60, 2, [[2, 1], [1, 2], [1, 1], [1, 2], [1, 1], [1, 2], [2, 2]], "clockwise");
+  assert.equal(structures.length, 18);
+  assert.deepEqual(tonics.slice(0, 3), [60, 66, 60]);
 });

@@ -223,3 +223,80 @@ export function diatonicSymmetricProgression(
   const chords = rootDegrees.map((degree, k) => symmetricTriad(structures[k], midiNoteForDegree(scale, rootMidiNote, degree)));
   return { rootDegrees, structures, chords };
 }
+
+export type TonicCount = 1 | 2 | 3 | 4 | 6 | 12;
+
+/** Semitones from each tonic to the next in the positive form (p.396): C3 runs down, C7 up a step, as everywhere in Book V. */
+const POSITIVE_TONIC_STEP: Record<TonicCount, number> = { 1: 0, 2: 6, 3: -4, 4: -3, 6: 2, 12: 1 };
+
+/**
+ * Ch.5: the roots of a Type III system and the tonal cycle each step
+ * corresponds to (p.396, rendered): one tonic C-C is C0; two tonics
+ * C-F#-C is C5 then C-5; three C-Ab-E-C is C3 (negative: C-E-Ab-C, C-3);
+ * four C-A-F#-Eb-C is C3; six C-D-E-F#-Ab-Bb-C is C7; twelve C-Db-D... is
+ * C7 (negative: C-B-Bb..., C-7). Returns pitch-class offsets from the
+ * first tonic.
+ */
+export function symmetricRoots(tonicCount: TonicCount, form: "positive" | "negative" = "positive"): { tonics: number[]; cycles: string[] } {
+  const step = (form === "positive" ? 1 : -1) * POSITIVE_TONIC_STEP[tonicCount];
+  const tonics = Array.from({ length: tonicCount }, (_, k) => (((k * step) % 12) + 12) % 12);
+  const sign = form === "positive" ? "" : "-";
+  const cycles = Array.from({ length: tonicCount }, (_, k) => {
+    if (tonicCount === 1) return "C0";
+    if (tonicCount === 2) return k % 2 === 0 ? `C${sign}5` : `C${sign === "" ? "-" : ""}5`;
+    return `C${sign}${SYMMETRIC_CYCLE_FOR_TONIC_COUNT[tonicCount].slice(1)}`;
+  });
+  return { tonics, cycles };
+}
+
+const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+const lcm = (a: number, b: number) => (a / gcd(a, b)) * b;
+
+/** How many chords a transformation takes to bring the voices back to their functions: 3 for clockwise or counterclockwise, 2 for const. 3. */
+export const TRANSFORMATION_PERIOD: Readonly<Record<TransformDirection, number>> = { clockwise: 3, counterclockwise: 3, const3: 2 };
+
+/**
+ * Recurrence-cycles: how many times a Type III progression passes through
+ * all its tonics before the original position falls on the first tonic
+ * again -- 1 is a "closed system", more a "continuous" one. Two tonics:
+ * a triple recurrence-cycle for clockwise and counterclockwise, closed
+ * for const. 3 (p.397); three tonics: closed, and two cycles for const. 3;
+ * four tonics: three cycles, and closed for const. 3 (p.399).
+ */
+export function recurrenceCycles(tonicCount: TonicCount, transformation: TransformDirection): number {
+  return lcm(TRANSFORMATION_PERIOD[transformation], tonicCount) / tonicCount;
+}
+
+/**
+ * A Type III progression: chords on the symmetric roots in turn, voiced by
+ * one transformation, with "S changes with each tonic" (p.397) -- the
+ * structural group runs alongside the tonics, so a group whose length
+ * doesn't divide into the tonics interferes with them: 9 structures over
+ * 2 tonics run 18 chords before both coincide again (p.398). `chords`
+ * defaults to that interference length.
+ */
+export function symmetricProgression(
+  rootMidiNote: number,
+  tonicCount: TonicCount,
+  structuralGroup: StructuralGroup,
+  transformation: TransformDirection,
+  options: { form?: "positive" | "negative"; startPosition?: S5Position; chords?: number } = {},
+): { tonics: number[]; structures: StructureId[]; voicings: Voicing[] } {
+  const { tonics: offsets } = symmetricRoots(tonicCount, options.form);
+  const pattern = expandStructuralGroup(structuralGroup);
+  const length = options.chords ?? lcm(pattern.length, tonicCount);
+  const tonics = Array.from({ length }, (_, k) => rootMidiNote + offsets[k % tonicCount]);
+  const structures = Array.from({ length }, (_, k) => pattern[k % pattern.length]);
+  const chord = (k: number) => {
+    const [root, third, fifth] = symmetricTriad(structures[k], tonics[k]);
+    return { root, third, fifth };
+  };
+  let current = positionVoicingFrom(chord(0), rootMidiNote - 12, options.startPosition ?? S5_POSITIONS.close[1]);
+  const home = current;
+  const voicings = [current];
+  for (let k = 1; k < length; k++) {
+    current = octaveVariation(transformChord(current, chord(k), transformation), home);
+    voicings.push(current);
+  }
+  return { tonics, structures, voicings };
+}
