@@ -16,10 +16,15 @@ test("S(5) (first chord) is the starting voicing unchanged", () => {
   assert.deepEqual(s5.upper.map(pc).sort((a, b) => a - b), [0, 4, 7]); // C,E,G
 });
 
-test("S(4/6) (passing chord) has the fifth in the bass, borrowed from the C-5-related chord (p.427, 429)", () => {
+test("S(4/6) (passing chord) is the C-5-related chord -- a fifth up -- with its fifth in the bass: V6/4 over d (p.427, 429)", () => {
   const [, fourSix] = buildFourSixGroup(START, C_MAJOR, 60, 0, "third");
-  assert.equal(pc(fourSix.bass), 0); // C -- the fifth of the C-5 chord (F major), matching S(5)'s own root by coincidence
-  assert.deepEqual(fourSix.upper.map(pc).sort((a, b) => a - b), [0, 5, 9]); // F,A,C (F major -- a fifth below C)
+  assert.equal(pc(fourSix.bass), 2); // D, the fifth of G major
+  assert.deepEqual(fourSix.upper.map(pc).sort((a, b) => a - b), [2, 7, 11]); // G,B,D
+});
+
+test("the bass of G4/6 walks c-d-e, stepwise: what makes the six-four a passing chord", () => {
+  const group = buildFourSixGroup(START, C_MAJOR, 60, 0, "third");
+  assert.deepEqual(group.map((chord) => chord.bass), [48, 50, 52]);
 });
 
 test("S(6)③ (doubled third) is identical in shape to Ch.8-A's plain S(6): bass=third, upper={root,third,fifth} (p.427)", () => {

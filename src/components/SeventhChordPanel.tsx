@@ -154,9 +154,9 @@ export default function SeventhChordPanel() {
         triad voice-leading, extended by one more step. C7 ("the seventh, the fifth, and the third")
         is the exact mirror, 1→7→5→3→1. C5 ("the seventh and the fifth") is not a 4-cycle at all —
         it's a double-swap, 1↔5 and 3↔7, so it alternates between just two chord shapes rather than
-        cycling through all four inversions. All three confirmed by hand against the book's own
-        Figures 117-119 before writing any code: a Cmaj7 under C3 produces exactly Em7, under C5
-        exactly G7, and under C7 exactly Bm7♭5.
+        cycling through all four inversions. With the cycles constructed downward (p.362), the
+        movement counts are exact: Cmaj7 under C3 goes to Am7 (only B moves, to A), under C5 to
+        Fmaj7 (G and B step down), and under C7 to Dm7 (B, G and E step down).
       </p>
       <div className="schillinger__row">
         <label>

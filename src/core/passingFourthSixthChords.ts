@@ -8,22 +8,18 @@
  * derived structure.
  *
  * The relations chain given in the book is "S(5) + C-5 + S(4/6) + C5 +
- * S(6)" (p.429) -- read literally, a round trip: move to the C-5-related
- * chord, borrow its second-inversion voicing as the passing S(4/6), then
- * move back via C5 to the *original* chord's first inversion, S(6). This
- * was hand-verified numerically before writing any of this: starting from
- * a C-major S(5) {bass 48, root 60, third 64, fifth 67}, applying the
- * book's own stated "clockwise" transformation (p.429: "as the bass moves
- * from 1 to 5... the three upper voices must move clockwise... to get the
- * transformation of 1 into 3") at a root degree stepped by C-5 (-4
- * diatonic degrees, the same interval `diatonicCycle(5)` steps by)
- * produces an F-major intermediate chord -- and applying the *reverse*
- * (counterclockwise) transformation back to the original root degree
- * lands EXACTLY back on the original C-major pitch classes {0,4,7}, not a
- * new chord. So S(6) here is genuinely the same underlying harmony as the
- * starting S(5), just reached by a brief passing detour through a
- * neighboring key's own second inversion.
- *
+ * S(6)" (p.429) -- a round trip: move by C-5 (a fifth UP, since positive
+ * cycles are constructed downward, p.362) to the dominant, borrow its
+ * second inversion as the passing S(4/6), then move back by C5 to the
+ * *original* chord's first inversion, S(6). From a C-major S(5) {bass 48,
+ * root 60, third 64, fifth 67}, the book's own "clockwise" transformation
+ * (p.429: "as the bass moves from 1 to 5... the three upper voices must
+ * move clockwise... to get the transformation of 1 into 3") into G gives
+ * B, D, G above -- with D, the fifth, in the bass: the passing six-four
+ * V6/4. The counterclockwise transformation back to C lands EXACTLY on the
+ * original pitch classes {0,4,7}, with E in the bass. The bass walks
+ * c-d-e, stepwise, which is what makes the six-four a *passing* chord.
+
  * S(4/6) always has "a fifth in the bass while the three upper parts have
  * the six usual arrangements" (p.427) -- i.e. root/third/fifth in some
  * order, no special doubling beyond the bass/upper-fifth coincidence, so
@@ -49,10 +45,7 @@
  */
 
 import type { PitchScale } from "./scales.ts";
-import { transformVoicing, nearestPitch, type Voicing } from "./diatonicHarmony.ts";
-
-/** A fifth spans 4 diatonic degree-steps -- the same interval `diatonicCycle(5)` and Ch.9's `SEVENTH_CYCLE_STEPS[5]` already use. */
-const FIFTH_STEP = 4;
+import { cycleDegreeStep, transformVoicing, nearestPitch, type Voicing } from "./diatonicHarmony.ts";
 
 export type FourSixDoubling = "root" | "third";
 
@@ -86,12 +79,12 @@ export function buildFourSixGroup(
   rootDegree: number,
   doubling: FourSixDoubling,
 ): [FourSixGroupChord, FourSixGroupChord, FourSixGroupChord] {
-  const intermediateDegree = rootDegree - FIFTH_STEP;
+  const intermediateDegree = rootDegree + cycleDegreeStep(-5);
   const intermediate = transformVoicing(startVoicing, scale, rootMidiNote, intermediateDegree, "clockwise");
-  const fourSixVoicing: Voicing = { ...intermediate, bass: nearestPitch(intermediate.bass, intermediate.fifth) };
+  const fourSixVoicing: Voicing = { ...intermediate, bass: nearestPitch(startVoicing.bass, intermediate.fifth) };
 
   const backVoicing = transformVoicing(fourSixVoicing, scale, rootMidiNote, rootDegree, "counterclockwise");
-  const sixthBass = nearestPitch(backVoicing.bass, backVoicing.third);
+  const sixthBass = nearestPitch(fourSixVoicing.bass, backVoicing.third);
   const sixthUpper =
     doubling === "third"
       ? [backVoicing.root, backVoicing.third, backVoicing.fifth]

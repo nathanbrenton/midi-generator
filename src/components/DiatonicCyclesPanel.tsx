@@ -24,9 +24,9 @@ import "./SchillingerGenerator.css";
 const NOTE_NAMES = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"];
 const MAJOR_SCALE = intervalCellScale([2, 2, 1, 2, 2, 2, 1]);
 const CYCLE_LABELS: Record<CycleType, string> = {
-  3: "Cycle of the third (C3) — roots step by a 3rd",
-  5: "Cycle of the fifth (C5) — the circle of fifths",
-  7: "Cycle of the seventh (C7) — descending stepwise",
+  3: "Cycle of the third (C3) — roots down a 3rd: c-a-f-d-b-g-e",
+  5: "Cycle of the fifth (C5) — roots down a 5th: c-f-b-e-a-d-g",
+  7: "Cycle of the seventh (C7) — roots down a 7th (up a step): c-d-e-f-g-a-b",
 };
 
 function noteName(midiNote: number): string {
@@ -193,11 +193,13 @@ export default function DiatonicCyclesPanel() {
       <p className="schillinger__hint">
         Book V opens Special Theory of Harmony — chord structures and progressions. A root-position
         triad, S(5), stacks a scale's root, third, and fifth (p.211). A "diatonic cycle" steps the
-        chord root by a constant scale-degree interval through all 7 degrees before repeating: the
-        cycle of the fifth is exactly the circle of fifths (C-G-D-A-E-B-F); the cycle of the third
-        gives C-E-G-B-D-F-A; the cycle of the seventh is purely descending stepwise motion, "a purely
-        contrapuntal derivation" (p.363-369) — all three confirmed against real music theory before
-        any code was written. A binomial progression concatenates two full cycles into 14 chords.
+        chord root by a constant scale-degree interval through all 7 degrees before repeating. In the
+        positive form the intervals are "constructed downward" (p.362): the cycle of the third gives
+        C-A-F-D-B-G-E, the cycle of the fifth C-F-B-E-A-D-G (so it starts with the plagal I→IV and
+        ends with the authentic V→I, as p.363 says), and the cycle of the seventh C-D-E-F-G-A-B,
+        whose ending cadence B→C is the leading-tone resolution of its "purely contrapuntal
+        derivation" (p.369) — all read off the book's Figure 2. A binomial progression alternates two
+        cycles chord by chord, 14 chords in all (Figure 3: C3 + C5 is C-A-D-B-E-C-F-D-G-E-A-F-B-G).
         Voice-leading (Sections C-D) reassigns each of the 3 upper voices to a new function in the
         next chord — clockwise sends root→third→fifth→root; counterclockwise sends root→fifth→third→
         root — placed at the nearest octave, plus a constant bass doubling the root (p.376-381). The
@@ -209,8 +211,8 @@ export default function DiatonicCyclesPanel() {
         completely unmoved, shifting only the bass to the nearest pitch sharing the third's pitch class
         — "3 in the bass under S(6) is a third above its preceding position" (p.415), confirmed by hand.
         Section G's "passing fourth-sixth chord" (G4/6) is a different, *reversible* 3-chord group on
-        the tonic: S(5) + S(4/6) + S(6), where the middle chord is genuinely borrowed from the
-        C-5-related key's own second inversion as a passing sonority, then the progression returns —
+        the tonic: S(5) + S(4/6) + S(6), where the middle chord is the C-5-related chord (a fifth up,
+        the dominant) in second inversion, so the bass walks c-d-e, then the progression returns —
         confirmed by hand that applying the book's own "clockwise, then the reverse to come back"
         transformation (p.429) lands on the *exact* original chord for S(6), not a new one. The
         doubling choice (S(6)③ vs S(6)①) only changes the final chord's upper voices.

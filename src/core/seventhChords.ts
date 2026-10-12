@@ -28,13 +28,15 @@
  *   alternating 2-chord pattern (root position <-> second inversion)
  *   rather than clockwise/counterclockwise's 4-chord cycle.
  *
- * Hand-verified before coding (matching Figure 117's own worked example):
- * a Cmaj7 {C4=60, E4=64, G4=67, B4=71} under C3 (root degree +2, matching
- * the existing `CYCLE_STEPS[3]=2`) produces next-chord pitch classes
- * {E,G,B,D} via the clockwise map with `nearestPitch` -- exactly Em7,
- * matching the book's own Figure 117 chord sequence (7 -> 6/5 -> 4/3 -> 2
- * -> 7, cycling through all four inversions before repeating, consistent
- * with a 4-cycle mapping).
+ * The maps only make sense with positive cycles constructed downward
+ * (p.362, `cycleDegreeStep`), and then they make exact sense: a Cmaj7
+ * {C, E, G, B} under C3 goes to Am7 -- C, E, G stay as Am7's third, fifth
+ * and seventh, and only B steps down to A ("the seventh alone"). Under C5
+ * it goes to Fmaj7 -- C and E stay, G steps down to F and B to A ("the
+ * seventh and the fifth"). Under C7 it goes to Dm7 -- C stays, B, G and E
+ * step down to A, F and D ("the seventh, the fifth, and the third"). The
+ * C3 sequence runs 7 -> 6/5 -> 4/3 -> 2 -> 7 through all four inversions,
+ * matching Figure 117.
  *
  * The "one/two/three movements" language describes how many of the four
  * relabeled voices need an actual downward step (the rest arrive via
@@ -43,16 +45,13 @@
  */
 
 import { midiNoteForDegree, type PitchScale } from "./scales.ts";
-import { nearestPitch } from "./diatonicHarmony.ts";
+import { cycleDegreeStep, nearestPitch } from "./diatonicHarmony.ts";
 
 export type SeventhCycleType = 3 | 5 | 7;
 
-/** Scale-degree step for each cycle -- reuses the same intervals as Ch.2's triad cycles (p.362-363, extended to sevenths). */
-const SEVENTH_CYCLE_STEPS: Record<SeventhCycleType, number> = { 3: 2, 5: 4, 7: 6 };
-
-/** One full diatonic cycle of seventh-chord roots, mirroring `diatonicCycle` for triads. */
+/** One full diatonic cycle of seventh-chord roots, stepping downward exactly like Ch.2's triad cycles (p.362-363). */
 export function seventhCycle(cycleType: SeventhCycleType, startDegree = 0): number[] {
-  const step = SEVENTH_CYCLE_STEPS[cycleType];
+  const step = cycleDegreeStep(cycleType);
   return Array.from({ length: 7 }, (_, k) => (((startDegree + k * step) % 7) + 7) % 7);
 }
 

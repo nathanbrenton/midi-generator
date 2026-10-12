@@ -1255,14 +1255,21 @@ on. A root-position triad, S(5), stacks a scale's root, third, and fifth
 simultaneous multi-voice playback, using the existing `NoteEvent.voice`
 field (already proven by `applyStrata`'s parallel harmony). A "diatonic
 cycle" steps the chord root by a constant scale-degree interval through
-all 7 degrees of a 7-unit scale before repeating — confirmed against real
-music theory before any code was written: the cycle of the fifth (step 4)
-is exactly the circle of fifths, C-G-D-A-E-B-F; the cycle of the third
-(step 2) gives C-E-G-B-D-F-A; the cycle of the seventh (step 6, i.e. -1)
-is purely descending stepwise motion, matching the book's own description
-of its "purely contrapuntal derivation" from leading-tone resolution
-(p.363-369). A binomial progression concatenates two full cycles into 14
-chords, matching the book's own stated count exactly. Chapter 1 also
+all 7 degrees of a 7-unit scale before repeating. "The respective
+intervals representing cycles must be constructed downward for the
+positive form" (p.362), and the book's Figure 2 (p.363) notates exactly
+that: the cycle of the third is C-A-F-D-B-G-E, the cycle of the fifth
+C-F-B-E-A-D-G, and the cycle of the seventh C-D-E-F-G-A-B. That direction
+is what makes the book's other statements true — C5 starts with a plagal
+cadence (C→F) and ends with an authentic one (G→C), as p.363 says, and
+C7's ending cadence B→C is the leading-tone resolution of its "purely
+contrapuntal derivation" (p.369). The negative cycles C-3, C-5, C-7 run
+the same intervals upward (`cycleDegreeStep`). A binomial progression
+alternates two cycles chord by chord (Figure 3: C3 + C5 is
+C-A-D-B-E-C-F-D-G-E-A-F-B-G), so each chord appears twice in 14 — the
+book's stated count; a trinomial alternates three. (Until the Book V
+audit, the code ran the positive cycles upward and concatenated binomial
+cycles; both were corrected against Figures 2-3.) Chapter 1 also
 gives a nice cross-book confirmation: "the total number of seven-unit
 scales equals 462" is exactly `compositionCount(12, 7)` from Book II
 Ch. 7 (p.206). Section B (historical cycle-style commentary — Bach,
@@ -1278,9 +1285,9 @@ the fifth... to the root..." (p.379); counterclockwise is the mirror
 available octave of its new function (`nearestPitch`, a standard
 minimal-movement voice-leading rule) — confirmed by hand before coding: a
 C major triad (bass 48, root 60, third 64, fifth 67) voice-led clockwise
-into the next chord of a cycle-of-thirds progression (E minor) gives
-exactly `{bass 52, root 64, third 55, fifth 59}`, verified again live in
-the browser. Building this surfaced a real bug (an unmemoized derived
+into the next chord of a cycle-of-thirds progression (A minor) gives
+`{bass 45, root 69, third 60, fifth 64}` — C and E hold as A minor's
+third and fifth and only G moves, up to A. Building this surfaced a real bug (an unmemoized derived
 array feeding the playback effect, the same class of issue as the
 project's very first playback bug in Book I Ch. 9) — caught via the
 project's standard AudioContext-instrumentation check, fixed by wrapping
@@ -1364,14 +1371,13 @@ The relations chain itself — "S(5) → C-5 → S(4/6) → C5 → S(6)" (p.429)
 turned out to describe a literal round trip: apply the book's own stated
 "clockwise" transformation (p.429: "as the bass moves from 1 to 5... the
 three upper voices must move clockwise... to get the transformation of 1
-into 3") at a root degree stepped by a fifth down, express that as S(4/6)
-(fifth in the bass), then apply the *reverse* transformation back to the
-original root degree. Hand-verified numerically before writing any of the
-module: starting from a C-major S(5), that chain produces an F-major
-S(4/6) (correct — a fifth below C), and the return step lands on the
-*exact* original C-major pitch classes for S(6), not a new chord —
-confirming G4/6 is fundamentally one chord embellished by a passing detour
-through a neighboring key's own second inversion, not a modulation.
+into 3") at a root degree stepped by C-5 — a fifth *up*, since positive
+cycles are constructed downward — express that as S(4/6) (fifth in the
+bass), then apply the *reverse* transformation back to the original root
+degree. From a C-major S(5), that chain produces G major over D — the
+passing V6/4 — and the return step lands on the *exact* original C-major
+pitch classes for S(6), with E in the bass: the bass walks C-D-E, which
+is what makes the six-four a passing chord.
 Verified live for both doubling choices and both directions, plus one
 worked example starting from a non-C root to catch any accidental
 dependence on C specifically (which caught a real bug in the test itself —
@@ -1393,10 +1399,12 @@ one more step. C7 ("the seventh, the fifth, and the third") is the exact
 mirror, 1→7→5→3→1. C5 ("the seventh and the fifth") is *not* a 4-cycle —
 the figure shows a "+"-shaped cross pairing 1↔5 and 3↔7, a double-swap
 (applying it twice returns to the start), matching the figure's own
-alternating 2-chord pattern rather than a 4-chord cycle. All three
-confirmed by hand before coding: a Cmaj7 {C,E,G,B} under C3 produces
-exactly Em7, under C5 exactly G7, and under C7 exactly Bm7♭5 — matching
-Figures 117-119's own worked chord sequences. `transformSeventhVoicing`
+alternating 2-chord pattern rather than a 4-chord cycle. With the cycles
+constructed downward, the book's movement counts come out exactly: a
+Cmaj7 {C,E,G,B} under C3 goes to Am7 with only B moving (to A), under C5
+to Fmaj7 with G and B stepping down, and under C7 to Dm7 with B, G and E
+stepping down — tested through whole cycles, every voice that moves
+moves down a step. `transformSeventhVoicing`
 is the direct 4-function generalization of `transformVoicing`, reusing
 `nearestPitch` for the same minimal-movement voice-leading used
 everywhere else in this project.
@@ -1795,7 +1803,8 @@ Each precise mechanical claim is built and tested:
   none) — and `diatonicCycleConnection` steps the root by C3/C5/C7 or a
   negative cycle inside one chosen key, reusing Ch. 2's step sizes and
   `stackedTriad`. The key genuinely decides the result: C major under C5
-  lands on G major in the keys of C and G, but G *minor* in F.
+  (a fifth down) lands on F major in the keys of C and F, but F *minor*
+  in A-flat.
   `keysContaining` is also the natural primitive for Ch. 14's
   common-chord modulations, if that chapter is revisited.
 

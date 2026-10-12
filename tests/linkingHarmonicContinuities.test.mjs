@@ -99,15 +99,15 @@ test("keysContaining matches standard theory for every triad quality in major ke
   assert.deepEqual(keysContaining([0, 4, 8]), []); // augmented: in no major key
 });
 
-test("diatonicCycleConnection: C major, C5, lands on G -- major in C and G, minor in F (the key decides the quality)", () => {
-  assert.deepEqual(pcs(diatonicCycleConnection(0, 0, 5).triad), [7, 11, 2]); // C is I in C -> V, G major
-  assert.deepEqual(pcs(diatonicCycleConnection(0, 7, 5).triad), [7, 11, 2]); // C is IV in G -> I, G major
-  assert.deepEqual(pcs(diatonicCycleConnection(0, 5, 5).triad), [7, 10, 2]); // C is V in F -> ii, G minor
+test("diatonicCycleConnection: C major, C5 (a fifth down), lands on F -- major in C and F, minor in A-flat (the key decides the quality)", () => {
+  assert.deepEqual(pcs(diatonicCycleConnection(0, 0, 5).triad), [5, 9, 0]); // C is I in C -> IV, F major
+  assert.deepEqual(pcs(diatonicCycleConnection(0, 5, 5).triad), [5, 9, 0]); // C is V in F -> I, F major
+  assert.deepEqual(pcs(diatonicCycleConnection(0, 8, 5).triad), [5, 8, 0]); // C is iii in A-flat -> vi, F minor
 });
 
-test("diatonicCycleConnection: negative cycles step backward -- C-5 from C in C major lands on F", () => {
-  assert.deepEqual(pcs(diatonicCycleConnection(0, 0, -5).triad), [5, 9, 0]);
-  assert.deepEqual(pcs(diatonicCycleConnection(0, 0, 3).triad), [4, 7, 11]); // C3: C -> E minor
+test("diatonicCycleConnection: negative cycles step upward -- C-5 from C in C major lands on G, C3 on A minor", () => {
+  assert.deepEqual(pcs(diatonicCycleConnection(0, 0, -5).triad), [7, 11, 2]);
+  assert.deepEqual(pcs(diatonicCycleConnection(0, 0, 3).triad), [9, 0, 4]); // C3: C -> A minor
 });
 
 test("diatonicCycleConnection refuses a root that isn't a degree of the chosen key", () => {

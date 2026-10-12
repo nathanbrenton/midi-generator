@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   diatonicCycle,
+  cycleDegreeStep,
+  alternatingCycles,
   binomialCycle,
   trinomialCycle,
   stackedTriad,
@@ -24,38 +26,44 @@ test("the book's own 'total number of seven-unit scales equals 462' matches comp
 
 const MAJOR = intervalCellScale([2, 2, 1, 2, 2, 2, 1]); // C major
 
-test("diatonicCycle(3) (cycle of the third) matches the classic 'cycle of thirds' root sequence C-E-G-B-D-F-A", () => {
-  const cycle = diatonicCycle(3, 0);
-  assert.deepEqual(cycle, [0, 2, 4, 6, 1, 3, 5]);
-  const rootNames = ["c", "d", "e", "f", "g", "a", "b"];
-  assert.deepEqual(
-    cycle.map((d) => rootNames[d]),
-    ["c", "e", "g", "b", "d", "f", "a"],
-  );
+const ROOT_NAMES = ["c", "d", "e", "f", "g", "a", "b"];
+const names = (degrees) => degrees.map((d) => ROOT_NAMES[d]).join("-");
+
+// Figure 2 (p.363), read off the rendered page: "the respective intervals
+// representing cycles must be constructed downward for the positive form" (p.362).
+test("positive C3 steps the root down a third: c-a-f-d-b-g-e (Figure 2, p.363)", () => {
+  assert.equal(names(diatonicCycle(3)), "c-a-f-d-b-g-e");
 });
 
-test("diatonicCycle(5) (cycle of the fifth) matches the circle of fifths exactly: C-G-D-A-E-B-F", () => {
-  const cycle = diatonicCycle(5, 0);
-  const rootNames = ["c", "d", "e", "f", "g", "a", "b"];
-  assert.deepEqual(
-    cycle.map((d) => rootNames[d]),
-    ["c", "g", "d", "a", "e", "b", "f"],
-  );
+test("positive C5 steps the root down a fifth: c-f-b-e-a-d-g (Figure 2, p.363)", () => {
+  assert.equal(names(diatonicCycle(5)), "c-f-b-e-a-d-g");
 });
 
-test("diatonicCycle(7) (cycle of the seventh) is purely descending stepwise motion: C-B-A-G-F-E-D, matching its 'contrapuntal derivation' (p.369)", () => {
-  const cycle = diatonicCycle(7, 0);
-  const rootNames = ["c", "d", "e", "f", "g", "a", "b"];
-  assert.deepEqual(
-    cycle.map((d) => rootNames[d]),
-    ["c", "b", "a", "g", "f", "e", "d"],
-  );
+test("positive C7 steps the root down a seventh, i.e. up a step: c-d-e-f-g-a-b (Figure 2, p.363)", () => {
+  assert.equal(names(diatonicCycle(7)), "c-d-e-f-g-a-b");
+});
+
+test("negative cycles run the same intervals upward: C-5 is c-g-d-a-e-b-f, C-3 is c-e-g-b-d-f-a, C-7 is c-b-a-g-f-e-d (p.386)", () => {
+  assert.equal(names(diatonicCycle(-5)), "c-g-d-a-e-b-f");
+  assert.equal(names(diatonicCycle(-3)), "c-e-g-b-d-f-a");
+  assert.equal(names(diatonicCycle(-7)), "c-b-a-g-f-e-d");
+  assert.deepEqual([3, 5, 7, -3, -5, -7].map(cycleDegreeStep), [-2, -4, -6, 2, 4, 6]);
+});
+
+test("plagal cadences start a C5 cycle and authentic cadences end it (p.363)", () => {
+  const roots = diatonicCycle(5);
+  assert.equal(names(roots.slice(0, 2)), "c-f"); // I -> IV: plagal
+  assert.equal(names([roots[6], roots[0]]), "g-c"); // V -> I: authentic
+});
+
+test("C7's ending cadence is the two leading tones b->c and d->c: a chord on b resolving to c (p.369)", () => {
+  const roots = diatonicCycle(7);
+  assert.equal(names([roots[6], roots[0]]), "b-c");
 });
 
 test("every diatonic cycle visits all 7 scale degrees exactly once, matching the book's own 'each appearing once and none repeating' (p.363)", () => {
-  for (const cycleType of [3, 5, 7]) {
+  for (const cycleType of [3, 5, 7, -3, -5, -7]) {
     const cycle = diatonicCycle(cycleType, 0);
-    assert.equal(new Set(cycle).size, 7);
     assert.deepEqual([...cycle].sort((a, b) => a - b), [0, 1, 2, 3, 4, 5, 6]);
   }
 });
@@ -66,16 +74,26 @@ test("diatonicCycle respects a non-zero starting degree, still visiting all 7 de
   assert.equal(new Set(cycle).size, 7);
 });
 
-test("binomialCycle concatenates two full cycles into 14 chords, matching the book's own '(2x7=)14 chords' exactly (p.363)", () => {
-  const cycle = binomialCycle(3, 5);
-  assert.equal(cycle.length, 14);
-  assert.deepEqual(cycle.slice(0, 7), diatonicCycle(3, 0));
-  assert.deepEqual(cycle.slice(7, 14), diatonicCycle(5, 0));
+test("binomial C3 + C5 alternates the two cycles: c-a-d-b-e-c-f-d-g-e-a-f-b-g, then c (Figure 3, p.363)", () => {
+  assert.equal(names(binomialCycle(3, 5)), "c-a-d-b-e-c-f-d-g-e-a-f-b-g");
 });
 
-test("trinomialCycle concatenates three full cycles into 21 chords", () => {
+test("a binomial cycle has (2 x 7 =) 14 chords, each appearing twice (p.363)", () => {
+  for (const [a, b] of [[3, 5], [3, 7], [5, 3], [5, 7], [7, 3], [7, 5]]) {
+    const cycle = binomialCycle(a, b);
+    assert.equal(cycle.length, 14);
+    for (let d = 0; d < 7; d++) assert.equal(cycle.filter((x) => x === d).length, 2);
+  }
+});
+
+test("a trinomial cycle has 21 chords, each appearing three times", () => {
   const cycle = trinomialCycle(3, 5, 7);
   assert.equal(cycle.length, 21);
+  for (let d = 0; d < 7; d++) assert.equal(cycle.filter((x) => x === d).length, 3);
+});
+
+test("alternatingCycles refuses cycles that cancel out (C3 + C-3 never leaves its first chord)", () => {
+  assert.throws(() => alternatingCycles([3, -3]));
 });
 
 test("stackedTriad on a C major scale at degree 0 gives the C major triad: C,E,G", () => {

@@ -77,7 +77,7 @@
  */
 
 import { intervalCellScale, type PitchScale } from "./scales.ts";
-import { stackedTriad } from "./diatonicHarmony.ts";
+import { cycleDegreeStep, stackedTriad, type SignedCycleType } from "./diatonicHarmony.ts";
 import { gapSemitones } from "./symmetricScales.ts";
 
 export type HarmonyType = "diatonic" | "symmetric" | "chromatic";
@@ -176,14 +176,12 @@ export function keysContaining(pitchClasses: readonly number[], scale: PitchScal
   return keys;
 }
 
-export type CycleConnection = 3 | 5 | 7 | -3 | -5 | -7;
-
-const CONNECTION_STEPS: Record<CycleConnection, number> = { 3: 2, 5: 4, 7: 6, [-3]: -2, [-5]: -4, [-7]: -6 };
+export type CycleConnection = SignedCycleType;
 
 /**
  * A diatonic cycle connection (forms 4 and 7): treats `chordRootPitchClass`
  * as a degree of the key on `keyTonicPitchClass`, steps its root by the
- * given cycle (Ch.2's own step sizes; negative cycles step backward), and
+ * given cycle (Ch.2's `cycleDegreeStep`: positive cycles downward, negative upward), and
  * returns the target chord stacked in that key. Throws if the root isn't
  * in the key at all.
  */
@@ -199,7 +197,7 @@ export function diatonicCycleConnection(
   if (degree < 0) throw new Error("the chord's root is not a degree of that key");
 
   const length = scale.degrees.length;
-  const rootDegree = (((degree + CONNECTION_STEPS[cycle]) % length) + length) % length;
+  const rootDegree = (((degree + cycleDegreeStep(cycle)) % length) + length) % length;
   const keyRoot = rootMidiNote + pitchClassInterval(keyTonicPitchClass - rootMidiNote);
   return { rootDegree, triad: stackedTriad(scale, keyRoot, rootDegree) };
 }

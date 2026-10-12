@@ -13,20 +13,26 @@
  * stacked by skipping every other scale degree ("root-chord: S(5),"
  * p.211). A "diatonic cycle" is a progression where the chord root steps
  * by a constant scale-degree interval through all 7 degrees of a 7-unit
- * scale before repeating: the cycle of the third (C3) steps by 2 degree
- * positions each time, the cycle of the fifth (C5) steps by 4, the cycle
- * of the seventh (C7) steps by 6 (equivalently -1, "purely contrapuntal
- * derivation" from stepwise-descending leading-tone resolution, p.369).
- * Since 7 is prime, every one of these steps is coprime with 7, so each
- * cycle always visits all 7 degrees exactly once before returning to the
- * start -- "a sequence of seven chords each appearing once and none
- * repeating itself" (p.363), matching the book's own statement exactly.
+ * scale before repeating. "The respective intervals representing cycles
+ * must be constructed downward for the positive form regardless of their
+ * actual position on the musical staff" (p.362): the cycle of the third
+ * (C3) steps the root DOWN a third (2 degree positions), the cycle of the
+ * fifth (C5) down a fifth (4), the cycle of the seventh (C7) down a
+ * seventh (6) -- i.e. up a step. The negative cycles C-3/C-5/C-7 step the
+ * same intervals upward. Since 7 is prime, every one of these steps is
+ * coprime with 7, so each cycle always visits all 7 degrees exactly once
+ * before returning to the start -- "a sequence of seven chords each
+ * appearing once and none repeating itself" (p.363).
  *
- * These aren't arbitrary: applied to the natural major scale from C,
- * `diatonicCycle(3)` gives the root sequence C-E-G-B-D-F-A (the classic
- * "cycle of thirds"), and `diatonicCycle(5)` gives C-G-D-A-E-B-F -- the
- * circle of fifths exactly, independently confirming the step values
- * against standard music theory before any code was written.
+ * Read off Figure 2 (p.363, rendered): from C in the natural major scale,
+ * positive C3 is c-a-f-d-b-g-e-c, C5 is c-f-b-e-a-d-g-c, and C7 is
+ * c-d-e-f-g-a-b-c. The same direction is what makes the book's other
+ * statements true: "plagal cadences are the starting cadences of the
+ * cycle, and... authentic [cadences] the ending cadences" (p.363) holds
+ * only when C5 starts C->F and ends G->C; HS_E0, the harmony scale in
+ * thirds, is itself built downward (Figure 1); Ch.9's "C3: the seventh
+ * alone" moves only under Cmaj7->Am7; and Ch.11's own Table of
+ * Preparations calls the suspended 1-into-7 preparation (C under D) C7.
  *
  * "Binomial progressions" concatenate two full cycles back to back --
  * "each chord appears twice... in a different combination with the
@@ -52,10 +58,10 @@
  * octave -- confirmed by hand before coding: starting from a C major
  * triad in root position (bass 48, root 60, third 64, fifth 67) and
  * applying clockwise voice-leading into the next chord of a C3 cycle
- * (E minor) gives {bass 52, root 64, third 55, fifth 59} -- exactly an E
- * minor triad's pitch classes (E,G,B), each voice moving by no more than
- * a few semitones, precisely the "smooth" voice-leading the transformation
- * is meant to produce.
+ * (A minor) gives {bass 45, root 69, third 60, fifth 64} -- C and E stay
+ * put as A minor's third and fifth and only G moves, up a step to A:
+ * precisely the "smooth" voice-leading the transformation is meant to
+ * produce.
  *
  * Section E (How Cycles and Transformations Are Related, p.382-385) is a
  * 4-category taxonomy of constant/variable cycle and transformation
@@ -114,24 +120,49 @@
 import { midiNoteForDegree, type PitchScale } from "./scales.ts";
 
 export type CycleType = 3 | 5 | 7;
+/** A cycle with its form: C3, C5, C7 positive; C-3, C-5, C-7 negative. */
+export type SignedCycleType = CycleType | -3 | -5 | -7;
 
-/** Scale-degree step size for each named cycle -- an interval of a 3rd/5th/7th spans that many degrees inclusively, i.e. (N-1) index steps (p.362-363). */
-const CYCLE_STEPS: Record<CycleType, number> = { 3: 2, 5: 4, 7: 6 };
+/**
+ * The scale-degree step of a cycle. An interval of a 3rd/5th/7th spans
+ * (N-1) degree steps; positive cycles are "constructed downward" (p.362),
+ * so C5 is -4 (C->F) and C-5 is +4 (C->G).
+ */
+export function cycleDegreeStep(cycle: SignedCycleType): number {
+  return cycle > 0 ? -(cycle - 1) : -cycle - 1;
+}
 
 /** One full diatonic cycle: 7 chord roots (scale-degree indices), each appearing exactly once, stepping by the cycle's own interval (p.362-363). */
-export function diatonicCycle(cycleType: CycleType, startDegree = 0): number[] {
-  const step = CYCLE_STEPS[cycleType];
+export function diatonicCycle(cycleType: SignedCycleType, startDegree = 0): number[] {
+  const step = cycleDegreeStep(cycleType);
   return Array.from({ length: 7 }, (_, k) => (((startDegree + k * step) % 7) + 7) % 7);
 }
 
-/** A binomial progression: two full cycles concatenated, 14 chords total -- "each chord appears twice... in a different combination" (p.363). */
-export function binomialCycle(first: CycleType, second: CycleType, startDegree = 0): number[] {
-  return [...diatonicCycle(first, startDegree), ...diatonicCycle(second, startDegree)];
+/**
+ * Alternates a sequence of cycles chord by chord -- "assigning a sequence
+ * of two or three cycles at a time" (p.363) -- until the root returns to
+ * the start: 7 chords per cycle in the group, so each root appears once
+ * per cycle "in a different combination with the preceding and the
+ * following chord." Figure 3: C3 + C5 from c is c-a-d-b-e-c-f-d-g-e-a-f-b-g,
+ * then c again. Throws when the steps cancel out (e.g. C3 + C-3), since
+ * such a group never leaves its first chord.
+ */
+export function alternatingCycles(cycles: readonly SignedCycleType[], startDegree = 0): number[] {
+  const steps = cycles.map(cycleDegreeStep);
+  if (steps.reduce((s, step) => s + step, 0) % 7 === 0) throw new Error("these cycles cancel out and never leave the first chord");
+  const roots = [((startDegree % 7) + 7) % 7];
+  for (let k = 1; k < 7 * cycles.length; k++) roots.push((((roots[k - 1] + steps[(k - 1) % steps.length]) % 7) + 7) % 7);
+  return roots;
 }
 
-/** A trinomial progression: three full cycles concatenated, 21 chords total, generalizing the same binomial principle. */
-export function trinomialCycle(first: CycleType, second: CycleType, third: CycleType, startDegree = 0): number[] {
-  return [...diatonicCycle(first, startDegree), ...diatonicCycle(second, startDegree), ...diatonicCycle(third, startDegree)];
+/** A binomial progression: two cycles alternating, (2 x 7 =) 14 chords (p.363, Figure 3). */
+export function binomialCycle(first: SignedCycleType, second: SignedCycleType, startDegree = 0): number[] {
+  return alternatingCycles([first, second], startDegree);
+}
+
+/** A trinomial progression: three cycles alternating, 21 chords (p.363). */
+export function trinomialCycle(first: SignedCycleType, second: SignedCycleType, third: SignedCycleType, startDegree = 0): number[] {
+  return alternatingCycles([first, second, third], startDegree);
 }
 
 /** Stacks a root-position triad (S(5)) on `scale` at `rootDegree`: root, third, fifth -- "root-chord: S(5)" (p.211). */
