@@ -551,8 +551,29 @@ U-U/U-P/P-U/P-P, Eₖ with N_E = N_p − 1, S = ⁿ√2, and the Third/Fourth
 Group tonic systems. Book III is `notation/geometricalProjection.ts` —
 the positions ⓐ ⓑ ⓒ ⓓ, the axis of inversion, and the coefficients p, 2p …
 / t, 2t …, with `formatUnit` naming each pitch coefficient's unit in root
-notation (2p → ⁶√2, 3p → ∜2, 4p → ∛2, 6p → √2). The `tests/notation*.test.mjs`
-files check every symbol against a number the book itself prints.
+notation (2p → ⁶√2, 3p → ∜2, 4p → ∛2, 6p → √2).
+
+Book IV is `notation/melody.ts`, and it carries the notation *system* the
+book itself proposes in Ch. 2 ("Preliminary Discussion of Notation") —
+every component measured from a minimum unit:
+
+```ts
+import * as M from "./src/core/notation/melody.ts"; // Book IV
+
+M.formatTimeGroup([3, 1, 1, 1]);          // "6/6 = 3t₁/6 + t₂/6 + t₃/6 + t₄/6"
+M.formatTerms([t3, t1, t2, t4]);          // "t₃ + 3t₁ + t₂ + t₄" -- a variation keeps each term's place
+M.formatPitchMotion([60, 65, 62, 67, 60]); // "5p − 3p + 5p − 7p"
+M.partialRanges(60, [5, 5, 5]);           // P₁ = P₂ = P₃ = 5p
+M.INTENSITY_SCALES[5];                    // i 2i 3i 4i 6i -- pp p mf f ff (6i as printed)
+M.parseAxes("a2T2P + bTP");               // the book's own axial expressions, parsed
+```
+
+— time (t, τ, T = t/t = 1, positional terms t₁…tₙ), pitch (signed p, ranges
+P₁…Pₙ), intensity (i…, rests 0i), quality (q…, "oo" to "ee"), the
+differentials dt/dp/di/dq, and a parser/formatter for the axial expressions
+of Ch. 3 ("a3T + a2T + aT", "a3P + b2P + aP", "a2T2P + bTP") that feeds
+`buildAxialMelody`. The `tests/notation*.test.mjs` files check every symbol
+against a number the book itself prints.
 
 Building this layer was part of a top-of-book audit of the underlying math,
 which also found and fixed two real bugs: generators were read as attack
@@ -1113,6 +1134,16 @@ a 3-term pattern with one repeated pair has exactly 3 permutations,
 matching the book's own "3 permutations each"). Verified live: the
 default sequence `a2,b1,a3,b1` from axis c4 produces exactly
 `c#4-d4-c4-c#4-d4-d#4-c4`, matching hand-derivation note for note.
+
+Open question from the notation audit: Sections G-H write a pitch
+coefficient on b and c terms too — "a3P + b2P + aP + b3P + a2P + bP"
+(Figure 37), "a2T2P + bTP" and "aTP + b2T2P" (Figure 38) — which reads
+like a partial return (b moving its own nP) rather than the full return
+to the axis that Figure 19's time-only examples show. Figure 37's grid
+didn't resolve cleanly enough at high resolution to settle it, so
+`buildAxialMelody` still returns b/c fully to the axis; `notation/melody.ts`'s
+`parseAxes` keeps the b/c coefficient in its parsed form so nothing is lost
+if this is resolved later.
 
 ## Book IV, Chapter 4 (no core module)
 
