@@ -63,12 +63,19 @@ test("resultant of 5 and 3", () => {
   assert.deepEqual(result.segments.map((s) => s.duration), [3, 2, 1, 3, 1, 2, 3]);
 });
 
-test("coincidence points list every generator that fires together", () => {
-  const result = generateResultant([2, 2]);
-  assert.equal(result.cycleLength, 2);
-  assert.deepEqual(result.attackPoints, [0, 1]);
-  for (const segment of result.segments) {
-    assert.deepEqual(segment.sources, [0, 1]);
+test("each attack is credited to the generator whose own periodicity strikes there: r3/2, a = 3+3, b = 2+2+2", () => {
+  const result = generateResultant([3, 2]);
+  assert.deepEqual(result.attackPoints, [0, 2, 3, 4]);
+  assert.deepEqual(
+    result.segments.map((s) => s.sources),
+    [[0, 1], [1], [0], [1]], // both at 0 (the accent); b at 2 and 4; a at 3
+  );
+});
+
+test("every binary resultant is symmetric about its axis -- the book's 'inversion through this axis of symmetry' (p.10)", () => {
+  for (const { a, b } of BINARY_SYNCHRONIZATION_CASES) {
+    const durations = generateResultant([a, b]).segments.map((s) => s.duration);
+    assert.deepEqual(durations, [...durations].reverse(), `r${a}÷${b} is not a palindrome`);
   }
 });
 
@@ -88,10 +95,10 @@ test("rejects non-positive-integer generators", () => {
   assert.throws(() => generateResultant([3, 1.5]));
 });
 
-test("generatorPulse produces evenly spaced segments summing to the cycle", () => {
+test("generatorPulse is the generator's own periodicity, a + a + a + ... ('a consists of two's' for a = 2, p.5)", () => {
   const pulse = generatorPulse(3, 12);
-  assert.equal(pulse.length, 3);
-  assert.deepEqual(pulse.map((s) => s.duration), [4, 4, 4]);
+  assert.equal(pulse.length, 4); // its complementary factor, 12/3
+  assert.deepEqual(pulse.map((s) => s.duration), [3, 3, 3, 3]);
 });
 
 test("generatorPulse rejects a cycle length that isn't a multiple of the generator", () => {

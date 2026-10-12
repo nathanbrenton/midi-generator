@@ -15,16 +15,14 @@
  * The book states plainly: "Generators produce r, and the complementary
  * factors produce r'" — r is the theme, r' the countertheme, sharing the
  * same cycle length (the common product) so they play back together.
- * That's what `buildTheme`/`buildCountertheme` follow here. Flagged
- * honestly: the worked example's own hand-drawn figure (Figure 47), at
- * the scan quality available, appears to attach its two printed
- * duration formulas the *other* way around from that sentence — r's
- * formula reads as the complementary-factors' resultant and r''s as the
- * generators' own, not the reverse. Both duration sequences themselves
- * are independently re-derivable from first principles regardless (see
- * tests/threeGenerators.test.mjs) and check out either way; only which
- * label the book intends for which is uncertain here. Worth resolving
- * against a cleaner scan or the physical book if this matters later.
+ * Figure 47 (p.25) agrees with that sentence exactly: its grid rows
+ * 15(2), 10(3), 6(5) are the generators, whose resultant it prints as
+ * r = 2+1+1+1+1+2+..., and rows 2(15), 3(10), 5(6) are the complementary
+ * factors, whose resultant it prints as r' = 6+4+2+3+3+2+4+6. An earlier
+ * version of this module produced those two the other way around -- not a
+ * scan ambiguity, as was once suspected here, but `generateResultant`
+ * reading a generator value as an attack count instead of a period, which
+ * only shows up once there are three or more generators.
  */
 
 import { generateResultant, type Resultant } from "./resultant.ts";

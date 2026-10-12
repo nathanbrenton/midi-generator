@@ -35,10 +35,20 @@ export interface Resultant {
 }
 
 /**
- * Builds the resultant of two or more generators. Each generator value v
- * fires v equally-spaced attacks across the cycle (spacing = cycleLength/v).
- * cycleLength is the LCM of all generator values, the shortest cycle in
- * which every generator completes a whole number of repetitions.
+ * Builds the resultant of two or more generators. A generator a is the
+ * monomial periodicity a + a + a + ... (Ch.1-2: "a consists of two's" for
+ * a = 2), so each generator attacks every `value` units -- its own
+ * complementary factor (cycleLength / value) times per cycle, the book's
+ * "2(3)" notation for 3 / 2. cycleLength is the LCM of all generator
+ * values, the shortest cycle in which every generator completes a whole
+ * number of repetitions (the book's common product a x b for every coprime
+ * case it uses).
+ *
+ * For two generators the opposite reading ("v attacks per cycle") produces
+ * the identical union, since generator a's attack count is b and vice
+ * versa -- which is how that reading went unnoticed. For three or more it
+ * does not: it silently swaps the book's r and r' (Ch.6, Figure 47), and it
+ * attributes each attack to the wrong generator in `sources`.
  */
 export function generateResultant(generatorValues: number[]): Resultant {
   if (generatorValues.length < 2) {
@@ -52,10 +62,9 @@ export function generateResultant(generatorValues: number[]): Resultant {
 
   const attacksBySource = new Map<number, Set<number>>();
   generatorValues.forEach((value, index) => {
-    const spacing = cycleLength / value;
     const points = new Set<number>();
-    for (let k = 0; k < value; k++) {
-      points.add(k * spacing);
+    for (let point = 0; point < cycleLength; point += value) {
+      points.add(point);
     }
     attacksBySource.set(index, points);
   });
@@ -83,16 +92,17 @@ export function generateResultant(generatorValues: number[]): Resultant {
 }
 
 /**
- * A single generator's own evenly-spaced pulse, isolated from the others —
- * used to render true polyrhythm (e.g. 3-against-2) as independent voices
- * rather than the merged resultant.
+ * A single generator's own periodicity, isolated from the others -- used to
+ * render true polyrhythm (e.g. 3-against-2) as independent voices rather
+ * than the merged resultant. Generator a is a + a + a + ..., repeated its
+ * complementary factor (cycleLength / a) times: for 3 / 2, generator 3 is
+ * 3 + 3 and generator 2 is 2 + 2 + 2.
  */
 export function generatorPulse(value: number, cycleLength: number): ResultantSegment[] {
   if (cycleLength % value !== 0) {
     throw new Error(`cycleLength ${cycleLength} is not a multiple of generator ${value}`);
   }
-  const spacing = cycleLength / value;
-  return Array.from({ length: value }, () => ({ duration: spacing, sources: [] }));
+  return Array.from({ length: cycleLength / value }, () => ({ duration: value, sources: [] }));
 }
 
 /**

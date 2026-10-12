@@ -20,9 +20,9 @@ test("segmentsForSource: c.d. is the finest grid -- one unit per attack, cycleLe
 
 test("segmentsForSource: generator A/B are each generator's own even pulse", () => {
   const a = segmentsForSource("generatorA", resultant32, 3, 2);
-  assert.deepEqual(a.map((s) => s.duration), [2, 2, 2]); // 3 attacks, 2 units apart
+  assert.deepEqual(a.map((s) => s.duration), [3, 3]); // generator a = 3: 3 + 3, the book's "2(3)"
   const b = segmentsForSource("generatorB", resultant32, 3, 2);
-  assert.deepEqual(b.map((s) => s.duration), [3, 3]); // 2 attacks, 3 units apart
+  assert.deepEqual(b.map((s) => s.duration), [2, 2, 2]); // generator b = 2: 2 + 2 + 2, the book's "3(2)"
 });
 
 test("segmentsForSource: resultant is the resultant's own segments", () => {
@@ -55,7 +55,7 @@ test("buildPercussionVoices assigns each mapped source its own voice, pinned to 
   assert.ok(notes.every((n) => n.channel === GM_DRUM_CHANNEL));
   const kickNotes = notes.filter((n) => n.midiNote === 36);
   const snareNotes = notes.filter((n) => n.midiNote === 38);
-  assert.equal(kickNotes.length, 3); // generator A: 3 attacks
+  assert.equal(kickNotes.length, 2); // generator a = 3 over c.p. 6: 3 + 3, two attacks
   assert.equal(snareNotes.length, 4); // resultant: 4 segments
   assert.equal(new Set(kickNotes.map((n) => n.voice)).size, 1);
   assert.equal(new Set(snareNotes.map((n) => n.voice)).size, 1);

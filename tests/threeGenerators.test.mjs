@@ -51,21 +51,19 @@ test("commonProduct and complementaryFactors match the book's own worked example
   assert.deepEqual(complementaryFactors([2, 3, 5]), [15, 10, 6]);
 });
 
-test("buildTheme(2,3,5) is the generators' own resultant: cycle length 30, durations 6,4,2,3,3,2,4,6", () => {
+test("buildTheme(2,3,5) is r, the generators' own resultant -- Figure 47's printed r exactly (p.25)", () => {
   const theme = buildTheme([2, 3, 5]);
   assert.equal(theme.cycleLength, 30);
-  assert.deepEqual(theme.segments.map((s) => s.duration), [6, 4, 2, 3, 3, 2, 4, 6]);
-  assert.equal(theme.segments.reduce((sum, s) => sum + s.duration, 0), 30);
-});
-
-test("buildCountertheme(2,3,5) is the complementary factors' resultant: same cycle length 30, 22 durations", () => {
-  const countertheme = buildCountertheme([2, 3, 5]);
-  assert.equal(countertheme.cycleLength, 30);
   assert.deepEqual(
-    countertheme.segments.map((s) => s.duration),
+    theme.segments.map((s) => s.duration),
     [2, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 1, 1, 1, 1, 2],
   );
-  assert.equal(countertheme.segments.reduce((sum, s) => sum + s.duration, 0), 30);
+});
+
+test("buildCountertheme(2,3,5) is r', the complementary factors' resultant -- Figure 47's printed r' = 6+4+2+3+3+2+4+6 (p.25)", () => {
+  const countertheme = buildCountertheme([2, 3, 5]);
+  assert.equal(countertheme.cycleLength, 30);
+  assert.deepEqual(countertheme.segments.map((s) => s.duration), [6, 4, 2, 3, 3, 2, 4, 6]);
 });
 
 test("theme and countertheme always share the same cycle length -- the common product -- for every case", () => {

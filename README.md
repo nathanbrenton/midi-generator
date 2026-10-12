@@ -327,14 +327,16 @@ and the complementary factors produce r'," so the **theme** (r) is the
 resultant of the three generators themselves and the **countertheme** (r')
 is the resultant of their complementary factors, both sharing the common
 product as their cycle length so they loop together. Both sequences are
-confirmed against the book's own numbers (theme `6 4 2 3 3 2 4 6`,
-countertheme's 22-term sequence) in `tests/threeGenerators.test.mjs`. One
-honest flag: the worked example's own figure, at the scan quality
-available, appears to attach its two duration formulas to r/r' the
-opposite way from that prose sentence — both duration sequences are
-independently re-derivable from first principles and check out either way,
-so only the *label* is uncertain; the prose is what this app follows. See
-the docstring in `src/core/threeGenerators.ts` for the full account.
+confirmed against Figure 47's own printed formulas in
+`tests/threeGenerators.test.mjs`: r = `2+1+1+1+1+2+1+1+2+2+…` (22 terms)
+and r′ = `6+4+2+3+3+2+4+6`. An earlier version had these two swapped —
+and suspected the figure of a scan ambiguity — when the real cause was
+`generateResultant` reading a generator's value as an attack *count* rather
+than its *period* (a + a + a …). With two generators both readings give the
+identical union, so every binary case was correct; with three they trade
+r and r′. The same misreading also drew every "Generator A/B" lane (and
+drum voice) with the other generator's pulse — "Generator A (3)" played
+2+2+2 instead of the book's 3+3. Fixed at the source in `resultant.ts`.
 
 Chapter 7 (**Resultants Applied to Instrumental Forms**) synchronizes a
 rhythmic resultant's own attack count against a fixed "instrumental group"
