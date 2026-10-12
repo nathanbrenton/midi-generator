@@ -132,6 +132,18 @@ export function cycleDegreeStep(cycle: SignedCycleType): number {
   return cycle > 0 ? -(cycle - 1) : -cycle - 1;
 }
 
+/**
+ * The cycle that takes one root to another in a 7-unit scale, the
+ * inverse of `cycleDegreeStep`: 0 for the zero cycle C0, otherwise C3/C5/C7
+ * or a negative cycle. "Skipping two chords in C3, we obtain C7" (p.437):
+ * three C3 steps, -6 degrees, are one C7 step.
+ */
+export function cycleBetween(fromDegree: number, toDegree: number): 0 | SignedCycleType {
+  const step = (((toDegree - fromDegree) % 7) + 7) % 7;
+  const byStep: Record<number, 0 | SignedCycleType> = { 0: 0, 5: 3, 3: 5, 1: 7, 2: -3, 4: -5, 6: -7 };
+  return byStep[step];
+}
+
 /** One full diatonic cycle: 7 chord roots (scale-degree indices), each appearing exactly once, stepping by the cycle's own interval (p.362-363). */
 export function diatonicCycle(cycleType: SignedCycleType, startDegree = 0): number[] {
   const step = cycleDegreeStep(cycleType);

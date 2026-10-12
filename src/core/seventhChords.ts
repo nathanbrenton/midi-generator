@@ -45,7 +45,7 @@
  */
 
 import { midiNoteForDegree, type PitchScale } from "./scales.ts";
-import { cycleDegreeStep, nearestPitch } from "./diatonicHarmony.ts";
+import { cycleBetween, cycleDegreeStep, nearestPitch, type SignedCycleType } from "./diatonicHarmony.ts";
 
 export type SeventhCycleType = 3 | 5 | 7;
 
@@ -137,4 +137,58 @@ export function seventhVoiceLeadProgression(
     progression.push(current);
   }
   return progression;
+}
+
+/** "A seventh-chord, including all of its inversions, has 24 positions altogether" (p.436): 4! orders of 1, 3, 5, 7. */
+export const SEVENTH_CHORD_POSITIONS = 24;
+
+/**
+ * Section B, the resolution S(7) -> S(5) (p.439-440): "the function which
+ * would otherwise have become a seventh in the continuity of
+ * seventh-chords now becomes a root-tone." So it is the cycle's own map
+ * with 7 replaced by 1 -- for C3, 7->1 5->1 3->5 1->3 (Figure 127) -- and
+ * the triad that results has the normal doubled root. "Do not move S(7)
+ * -> S(5) in C0."
+ */
+export function seventhResolutionMap(cycle: SeventhCycleType): Record<SeventhFunction, "root" | "third" | "fifth"> {
+  const next = nextMapForCycle(cycle);
+  const resolved = {} as Record<SeventhFunction, "root" | "third" | "fifth">;
+  (Object.keys(next) as SeventhFunction[]).forEach((fn) => (resolved[fn] = next[fn] === "seventh" ? "root" : next[fn]));
+  return resolved;
+}
+
+/** Resolves a seventh-chord voicing into the triad on `nextRootDegree`: each voice takes its function by `seventhResolutionMap`, at the nearest pitch. */
+export function resolveSeventhVoicing(
+  voicing: SeventhVoicing,
+  scale: PitchScale,
+  rootMidiNote: number,
+  nextRootDegree: number,
+  cycle: SeventhCycleType,
+): { from: SeventhFunction; to: "root" | "third" | "fifth"; pitch: number }[] {
+  const [root, third, fifth] = stackedSeventhChord(scale, rootMidiNote, nextRootDegree);
+  const target = { root, third, fifth };
+  const map = seventhResolutionMap(cycle);
+  return (["root", "third", "fifth", "seventh"] as SeventhFunction[]).map((fn) => ({
+    from: fn,
+    to: map[fn],
+    pitch: nearestPitch(voicing[fn], target[map[fn]]),
+  }));
+}
+
+export type PreparationMethod = "suspending" | "descending" | "ascending";
+
+/**
+ * Section B.1, preparing S(7) from S(5) (p.440-441): one function of the
+ * triad is held over the bar line (suspending), or moved a step down or
+ * up, and becomes the seventh of the next chord, whose root is therefore
+ * six degrees below it. The cycle that results is the book's Figure 129:
+ * suspending 1, 3, 5 gives C7, C5, C3 -- "the only [method] producing the
+ * positive cycles"; descending gives C0, C-3, C-5; ascending C-3, C-5,
+ * C-7. "The preparation of S(7) may be either positive or negative; the
+ * resolution is always positive."
+ */
+export function seventhPreparationCycle(method: PreparationMethod, from: 1 | 3 | 5): 0 | SignedCycleType {
+  const move = method === "suspending" ? 0 : method === "descending" ? -1 : 1;
+  const toneDegree = from - 1 + move;
+  return cycleBetween(0, toneDegree - 6);
 }

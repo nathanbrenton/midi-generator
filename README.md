@@ -1412,6 +1412,22 @@ is the direct 4-function generalization of `transformVoicing`, reusing
 `nearestPitch` for the same minimal-movement voice-leading used
 everywhere else in this project.
 
+The audit added Section B. The **resolution** S(7) → S(5) is the cycle's
+own seventh-chord map with the seventh replaced by the root — "the
+function which would otherwise have become a seventh... now becomes a
+root-tone" (p.440) — so C3 resolves 7→1, 5→1, 3→5, 1→3 (Figure 127),
+ending on the normally doubled root (`seventhResolutionMap`,
+`resolveSeventhVoicing`). The **preparation** of S(7) (held, stepped
+down, or stepped up into the seventh) fixes the next root six degrees
+below the prepared tone, which reproduces Figure 129's whole table —
+suspending 1, 3, 5 gives C7, C5, C3, "the only [method] producing the
+positive cycles"; descending C0, C-3, C-5; ascending C-3, C-5, C-7
+(`seventhPreparationCycle`) — and, applied to the tone that becomes the
+seventh, Ch. 10's S(9) Table of Preparations as well. Both tables come
+out right only with positive cycles running downward. `cycleBetween`
+names the cycle between any two roots ("skipping two chords in C3, we
+obtain C7").
+
 **Section B (Resolution of S(7), p.439-442) and Section C (Negative
 Cycles, p.443-444) are not yet built.** The rules are clear in prose —
 resolution: "the function which would otherwise have become a seventh...

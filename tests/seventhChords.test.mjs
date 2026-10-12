@@ -6,6 +6,10 @@ import {
   seventhChordProgression,
   transformSeventhVoicing,
   seventhVoiceLeadProgression,
+  SEVENTH_CHORD_POSITIONS,
+  seventhResolutionMap,
+  resolveSeventhVoicing,
+  seventhPreparationCycle,
 } from "../src/core/seventhChords.ts";
 import { intervalCellScale } from "../src/core/scales.ts";
 
@@ -78,5 +82,39 @@ test("seventhVoiceLeadProgression under C3 cycles through all 7 chords with smoo
     for (let v = 0; v < 4; v++) {
       assert.ok(Math.abs(currVoices[v] - prevSorted[v]) <= 12, "no voice should leap more than an octave between chords");
     }
+  }
+});
+
+test("a seventh-chord has 24 positions: 4! orders of its functions (p.436)", () => {
+  assert.equal(SEVENTH_CHORD_POSITIONS, 24);
+});
+
+test("resolution S(7) -> S(5) in C3: 7->1, 5->1, 3->5, 1->3 -- the would-be seventh becomes the root (p.440, Figure 127)", () => {
+  assert.deepEqual(seventhResolutionMap(3), { seventh: "root", fifth: "root", third: "fifth", root: "third" });
+  const resolved = resolveSeventhVoicing({ root: 60, third: 64, fifth: 67, seventh: 71 }, C_MAJOR, C4, seventhCycle(3)[1], 3);
+  assert.deepEqual(resolved.map((v) => v.pitch), [60, 64, 69, 69]); // c, e held; g up and b down to a: A minor, root doubled
+});
+
+test("resolutions under C5 and C7 also end on a doubled root, the seventh still stepping down", () => {
+  for (const cycle of [5, 7]) {
+    const resolved = resolveSeventhVoicing({ root: 60, third: 64, fifth: 67, seventh: 71 }, C_MAJOR, C4, seventhCycle(cycle)[1], cycle);
+    assert.equal(resolved.filter((v) => v.to === "root").length, 2);
+    const seventh = resolved.find((v) => v.from === "seventh");
+    assert.ok(seventh.pitch < 71 && seventh.pitch >= 69, `C${cycle}`);
+  }
+});
+
+test("preparing S(7): the book's Figure 129 table of cycles (p.441)", () => {
+  const row = (method) => [1, 3, 5].map((fn) => seventhPreparationCycle(method, fn));
+  assert.deepEqual(row("suspending"), [7, 5, 3]);
+  assert.deepEqual(row("descending"), [0, -3, -5]);
+  assert.deepEqual(row("ascending"), [-3, -5, -7]);
+});
+
+test("the same rule gives Ch.10's S(9) Table of Preparations (p.461): the tone that becomes the seventh fixes the root", async () => {
+  const { NINTH_PREPARATION_TABLE } = await import("../src/core/ninthChords.ts");
+  for (const entry of NINTH_PREPARATION_TABLE) {
+    const cycle = seventhPreparationCycle(entry.method, entry.fromSeventh);
+    assert.equal(cycle === 0 ? "C0" : `C${cycle}`, entry.cycle, `${entry.method} ${entry.fromSeventh}`);
   }
 });

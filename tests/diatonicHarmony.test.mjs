@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   diatonicCycle,
   cycleDegreeStep,
+  cycleBetween,
   alternatingCycles,
   binomialCycle,
   trinomialCycle,
@@ -345,4 +346,11 @@ test("C-3 holds two common tones under counterclockwise, as C3 does under clockw
   const next = transformVoicing(close, MAJOR, 60, diatonicCycle(-3)[1], "counterclockwise"); // C -> E minor
   const held = [close.root, close.third, close.fifth].filter((n) => [next.root, next.third, next.fifth].includes(n));
   assert.deepEqual(held.sort(), [64, 67]); // e and g stay
+});
+
+test("cycleBetween names the cycle between two roots, the inverse of cycleDegreeStep; skipping two chords in C3 gives C7 (p.437)", () => {
+  for (const cycle of [3, 5, 7, -3, -5, -7]) assert.equal(cycleBetween(0, cycleDegreeStep(cycle)), cycle);
+  assert.equal(cycleBetween(4, 4), 0);
+  assert.equal(cycleBetween(0, 3 * cycleDegreeStep(3)), 7);
+  assert.equal(cycleBetween(0, 2 * cycleDegreeStep(5)), -7);
 });
