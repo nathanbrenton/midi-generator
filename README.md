@@ -1287,7 +1287,18 @@ minimal-movement voice-leading rule) — confirmed by hand before coding: a
 C major triad (bass 48, root 60, third 64, fifth 67) voice-led clockwise
 into the next chord of a cycle-of-thirds progression (A minor) gives
 `{bass 45, root 69, third 60, fifth 64}` — C and E hold as A minor's
-third and fifth and only G moves, up to A. Building this surfaced a real bug (an unmemoized derived
+third and fifth and only G moves, up to A. The audit added the rest of
+Sections C-D: the S(5) **positions** — the clockwise phases 1-3-5,
+3-5-1, 5-1-3 (top voice first) are "open", the counterclockwise phases
+1-5-3, 5-3-1, 3-1-5 "closed" (`S5_POSITIONS`, `positionVoicing`,
+`voicingPosition`); the third transformation, **const. 3** ("constant b":
+3 stays 3, 1 and 5 trade places), which turns close into open and back
+(p.381, Figures 33-34); and periodic transformation sequences such as
+the binomial C + G (p.382: `voiceLeadProgression` accepts a list).
+Voices now keep their vertical order through a transformation — "the
+entire progression remains automatically in such a position" (p.381) —
+which matters only where nearest-tone motion would cross voices, as in
+C7's parallel fourths. Building this surfaced a real bug (an unmemoized derived
 array feeding the playback effect, the same class of issue as the
 project's very first playback bug in Book I Ch. 9) — caught via the
 project's standard AudioContext-instrumentation check, fixed by wrapping

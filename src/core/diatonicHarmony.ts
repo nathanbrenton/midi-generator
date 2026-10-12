@@ -181,12 +181,44 @@ export function chordProgression(scale: PitchScale, rootMidiNote: number, rootDe
 }
 
 export type ChordFunction = "root" | "third" | "fifth";
-export type TransformDirection = "clockwise" | "counterclockwise";
+/** The three transformations of S(5): clockwise, counterclockwise, and "constant b" (const. 3), p.376-381. */
+export type TransformDirection = "clockwise" | "counterclockwise" | "const3";
 
 /** "The root of the first chord becomes the third of the next... the third becomes the fifth... the fifth becomes the root" (p.379). */
 const CLOCKWISE_NEXT: Record<ChordFunction, ChordFunction> = { root: "third", third: "fifth", fifth: "root" };
 /** The mirror: root->fifth, fifth->third, third->root (p.379). */
 const COUNTERCLOCKWISE_NEXT: Record<ChordFunction, ChordFunction> = { root: "fifth", fifth: "third", third: "root" };
+/** "Constant b transformation": b->b, c->a, a->c -- 3 stays 3, 5 and 1 trade places (p.381). */
+const CONST3_NEXT: Record<ChordFunction, ChordFunction> = { root: "fifth", third: "third", fifth: "root" };
+
+const NEXT_FUNCTION: Record<TransformDirection, Record<ChordFunction, ChordFunction>> = {
+  clockwise: CLOCKWISE_NEXT,
+  counterclockwise: COUNTERCLOCKWISE_NEXT,
+  const3: CONST3_NEXT,
+};
+
+/** An S(5) position: the three upper functions read from the top voice down. */
+export type S5Position = readonly [ChordFunction, ChordFunction, ChordFunction];
+
+/**
+ * "The different positions of S(5) = 1, 3, 5 can be obtained by
+ * constructing the chordal functions downward from each phase of the
+ * transformations" (p.377): the clockwise phases abc, bca, cab give
+ * 1-3-5, 3-5-1, 5-1-3 from the top down, "commonly known as open"; the
+ * counterclockwise phases acb, cba, bac give 1-5-3, 5-3-1, 3-1-5, "closed."
+ */
+export const S5_POSITIONS: Readonly<Record<"open" | "close", readonly S5Position[]>> = {
+  open: [
+    ["root", "third", "fifth"],
+    ["third", "fifth", "root"],
+    ["fifth", "root", "third"],
+  ],
+  close: [
+    ["root", "fifth", "third"],
+    ["fifth", "third", "root"],
+    ["third", "root", "fifth"],
+  ],
+};
 
 /** The pitch nearest to `referencePitch` sharing `targetPitchClass` (0-11) -- standard nearest-tone voice-leading, minimal melodic movement. */
 export function nearestPitch(referencePitch: number, targetPitchClass: number): number {
@@ -205,7 +237,18 @@ export interface Voicing {
   fifth: number;
 }
 
-/** Transforms `voicing` into the next chord (rooted at `nextRootDegree`) via clockwise or counterclockwise voice-leading (p.379-381). */
+/**
+ * Transforms `voicing` into the next chord (rooted at `nextRootDegree`)
+ * (p.379-381): each upper voice takes the function the transformation
+ * maps its own to, and the voices keep their vertical order -- "when the
+ * first chord is in the open position, the entire progression remains
+ * automatically in such a position" (p.381), while const. 3, a swap
+ * rather than a rotation, turns close into open and back. The chord is
+ * placed in that position at the octave nearest the previous one; this
+ * is plain nearest-tone voice-leading (`nearestPitch`) except where that
+ * would cross voices, as in C7's parallel fourths. The bass doubles the
+ * new root at the nearest pitch.
+ */
 export function transformVoicing(
   voicing: Voicing,
   scale: PitchScale,
@@ -215,28 +258,102 @@ export function transformVoicing(
 ): Voicing {
   const [nextRoot, nextThird, nextFifth] = stackedTriad(scale, rootMidiNote, nextRootDegree);
   const pitchClassFor: Record<ChordFunction, number> = { root: nextRoot, third: nextThird, fifth: nextFifth };
-  const nextMap = direction === "clockwise" ? CLOCKWISE_NEXT : COUNTERCLOCKWISE_NEXT;
+  const nextMap = NEXT_FUNCTION[direction];
+  const fns: ChordFunction[] = ["root", "third", "fifth"];
+
+  // Where each new function's voice was: the target to stay near.
+  const from = {} as Record<ChordFunction, number>;
+  fns.forEach((fn) => (from[nextMap[fn]] = voicing[fn]));
+
+  // The new position, bottom voice first, stacked as `positionVoicing` does.
+  const bottomUp = [...fns].sort((x, y) => voicing[x] - voicing[y]).map((fn) => nextMap[fn]);
+  const shape = {} as Record<ChordFunction, number>;
+  let below = -Infinity;
+  for (const fn of bottomUp) {
+    let note = pitchClassFor[fn];
+    if (below === -Infinity) note = nearestPitch(from[fn], note);
+    else {
+      while (note <= below) note += 12;
+      while (note - 12 > below) note -= 12;
+    }
+    shape[fn] = below = note;
+  }
+
+  const movement = (octaves: number) => fns.reduce((sum, fn) => sum + Math.abs(shape[fn] + 12 * octaves - from[fn]), 0);
+  const octaves = [-1, 0, 1].reduce((best, k) => (movement(k) < movement(best) ? k : best), 0);
 
   const next: Voicing = { bass: nearestPitch(voicing.bass, pitchClassFor.root), root: 0, third: 0, fifth: 0 };
-  (Object.keys(pitchClassFor) as ChordFunction[]).forEach((fn) => {
-    const newFn = nextMap[fn];
-    next[newFn] = nearestPitch(voicing[fn], pitchClassFor[newFn]);
-  });
+  fns.forEach((fn) => (next[fn] = shape[fn] + 12 * octaves));
   return next;
 }
 
-/** Builds a full voice-led progression: a starting root-position triad (plus bass), then each subsequent chord via `transformVoicing` (p.379-381). */
+/**
+ * An S(5) voiced in `position` (top voice first) over a bass doubling the
+ * root an octave below: each upper function is placed at its first
+ * occurrence above the voice beneath it. Close 5-3-1 on c gives
+ * c4-e4-g4; open 1-3-5 gives g3-e4-c5 (Figure 25).
+ */
+export function positionVoicing(scale: PitchScale, rootMidiNote: number, rootDegree: number, position: S5Position): Voicing {
+  const [root, third, fifth] = stackedTriad(scale, rootMidiNote, rootDegree);
+  const pitchClass: Record<ChordFunction, number> = { root, third, fifth };
+  const bass = root - 12;
+  const voicing: Voicing = { bass, root: 0, third: 0, fifth: 0 };
+  let below = bass;
+  for (const fn of [...position].reverse()) {
+    let note = pitchClass[fn];
+    while (note <= below) note += 12;
+    while (note - 12 > below) note -= 12;
+    voicing[fn] = below = note;
+  }
+  return voicing;
+}
+
+/** Whether a voicing's upper voices stand in an open (clockwise) or close (counterclockwise) position (p.377). */
+export function voicingPosition(voicing: Voicing): "open" | "close" {
+  const fns: ChordFunction[] = ["root", "third", "fifth"];
+  const topDown = [...fns].sort((x, y) => voicing[y] - voicing[x]);
+  return S5_POSITIONS.open.some((p) => p.every((fn, k) => fn === topDown[k])) ? "open" : "close";
+}
+
+/**
+ * "The commas indicate an octave variation introduced when the extension
+ * of range becomes impractical" (p.380): the bass, a constant root, stays
+ * within a fourth of where it began, and the upper voices move together
+ * by an octave once their middle wanders more than an octave from home --
+ * the transformation itself, and so the position, is untouched.
+ */
+function octaveVariation(voicing: Voicing, home: Voicing): Voicing {
+  const middle = (v: Voicing) => (v.root + v.third + v.fifth) / 3;
+  const upperShift = 12 * Math.round((middle(home) - middle(voicing)) / 12);
+  let bass = voicing.bass;
+  while (bass - home.bass > 6) bass -= 12;
+  while (home.bass - bass > 6) bass += 12;
+  const upper = Math.abs(middle(voicing) - middle(home)) > 12 ? upperShift : 0;
+  return { bass, root: voicing.root + upper, third: voicing.third + upper, fifth: voicing.fifth + upper };
+}
+
+/**
+ * Builds a full voice-led progression: a starting triad (plus bass) in
+ * `startPosition` -- close 5-3-1 by default -- then each subsequent chord
+ * via `transformVoicing` (p.379-381). A list of transformations is applied
+ * periodically, one per connection: ["clockwise", "counterclockwise"] is
+ * the binomial form C + C (p.382). Clockwise and counterclockwise keep the
+ * starting position, open or close; const. 3 switches it (p.381).
+ */
 export function voiceLeadProgression(
   scale: PitchScale,
   rootMidiNote: number,
   rootDegrees: readonly number[],
-  direction: TransformDirection,
+  direction: TransformDirection | readonly TransformDirection[],
+  startPosition: S5Position = S5_POSITIONS.close[1],
 ): Voicing[] {
-  const [root, third, fifth] = stackedTriad(scale, rootMidiNote, rootDegrees[0]);
-  let current: Voicing = { bass: root - 12, root, third, fifth };
+  const directions = typeof direction === "string" ? [direction] : direction;
+  let current = positionVoicing(scale, rootMidiNote, rootDegrees[0], startPosition);
   const progression: Voicing[] = [current];
+  const home = current;
   for (let i = 1; i < rootDegrees.length; i++) {
-    current = transformVoicing(current, scale, rootMidiNote, rootDegrees[i], direction);
+    current = transformVoicing(current, scale, rootMidiNote, rootDegrees[i], directions[(i - 1) % directions.length] as TransformDirection);
+    current = octaveVariation(current, home);
     progression.push(current);
   }
   return progression;

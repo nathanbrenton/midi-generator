@@ -202,7 +202,9 @@ export default function DiatonicCyclesPanel() {
         cycles chord by chord, 14 chords in all (Figure 3: C3 + C5 is C-A-D-B-E-C-F-D-G-E-A-F-B-G).
         Voice-leading (Sections C-D) reassigns each of the 3 upper voices to a new function in the
         next chord — clockwise sends root→third→fifth→root; counterclockwise sends root→fifth→third→
-        root — placed at the nearest octave, plus a constant bass doubling the root (p.376-381). The
+        root; const. 3 keeps the third and trades root and fifth — plus a constant bass doubling the
+        root (p.376-381). Clockwise and counterclockwise keep the chord in its position (open or
+        close) for the whole progression; const. 3 switches between them (p.381). The
         negative form (Section F) builds triads downward instead of upward: from c as the root, the
         third and fifth land a third and a fifth below it — a and f — not above (p.386); voice-leading
         isn't yet extended to the negative form, so it's only available in stacked (non-voice-led) mode.
@@ -277,10 +279,11 @@ export default function DiatonicCyclesPanel() {
         </label>
         {voiceLead && (
           <label>
-            Direction
+            Transformation
             <select value={direction} onChange={(e) => setDirection(e.target.value as TransformDirection)}>
               <option value="clockwise">Clockwise (root→third→fifth→root)</option>
               <option value="counterclockwise">Counterclockwise (root→fifth→third→root)</option>
+              <option value="const3">Const. 3 (3 stays 3, root↔fifth: close ↔ open)</option>
             </select>
           </label>
         )}
@@ -307,7 +310,7 @@ export default function DiatonicCyclesPanel() {
         )}
         {showFourSix && (
           <label>
-            Direction
+            Transformation
             <select
               value={fourSixDirection}
               onChange={(e) => setFourSixDirection(e.target.value as "ascending" | "descending")}

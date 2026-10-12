@@ -12,6 +12,9 @@ import {
   nearestPitch,
   transformVoicing,
   voiceLeadProgression,
+  positionVoicing,
+  voicingPosition,
+  S5_POSITIONS,
   passingSixthChord,
   buildPassingSixthGroups,
 } from "../src/core/diatonicHarmony.ts";
@@ -135,10 +138,54 @@ test("nearestPitch never moves more than 6 semitones", () => {
   }
 });
 
-test("transformVoicing (clockwise, C3 cycle) matches the hand-derived C-major-to-E-minor example exactly (p.379)", () => {
-  const voicing = { bass: 48, root: 60, third: 64, fifth: 67 }; // C major triad, root position
-  const next = transformVoicing(voicing, MAJOR, 60, 2, "clockwise"); // next root = degree 2 (E)
-  assert.deepEqual(next, { bass: 52, root: 64, third: 55, fifth: 59 });
+test("transformVoicing (clockwise, C3): the book's own example, C = c-e-g into A = a-c-e -- c and e hold, g steps up to a (p.379)", () => {
+  const voicing = { bass: 48, root: 60, third: 64, fifth: 67 }; // C major, close position
+  const next = transformVoicing(voicing, MAJOR, 60, diatonicCycle(3)[1], "clockwise");
+  assert.deepEqual(next, { bass: 45, root: 69, third: 60, fifth: 64 });
+});
+
+test("S(5) positions: clockwise phases are open, counterclockwise phases close (p.377, Figure 25)", () => {
+  const order = (v) => [v.root, v.third, v.fifth].sort((x, y) => y - x);
+  assert.deepEqual(order(positionVoicing(MAJOR, 60, 0, S5_POSITIONS.open[0])), [72, 64, 55]); // c5-e4-g3
+  assert.deepEqual(order(positionVoicing(MAJOR, 60, 0, S5_POSITIONS.close[1])), [67, 64, 60]); // g4-e4-c4
+  for (const form of ["open", "close"]) {
+    for (const position of S5_POSITIONS[form]) assert.equal(voicingPosition(positionVoicing(MAJOR, 60, 0, position)), form);
+  }
+});
+
+test("clockwise and counterclockwise keep a progression in its starting position, open or close, in every cycle (p.381)", () => {
+  for (const cycle of [3, 5, 7]) {
+    for (const direction of ["clockwise", "counterclockwise"]) {
+      for (const form of ["open", "close"]) {
+        const progression = voiceLeadProgression(MAJOR, 60, [...diatonicCycle(cycle), 0], direction, S5_POSITIONS[form][0]);
+        assert.ok(progression.every((v) => voicingPosition(v) === form), `C${cycle} ${direction} ${form}`);
+      }
+    }
+  }
+});
+
+test("const. 3 keeps 3 as 3 and trades 1 and 5, switching close to open and back (p.381, Figures 33-34)", () => {
+  const close = { bass: 48, root: 60, third: 64, fifth: 67 };
+  const next = transformVoicing(close, MAJOR, 60, diatonicCycle(5)[1], "const3"); // C -> F
+  assert.equal(voicingPosition(next), "open");
+  assert.equal(((next.third % 12) + 12) % 12, 9); // the voice that sang e (3) now sings a (3 of F)
+  for (const cycle of [3, 5, 7]) {
+    const forms = voiceLeadProgression(MAJOR, 60, [...diatonicCycle(cycle), 0], "const3").map(voicingPosition);
+    assert.deepEqual(forms, ["close", "open", "close", "open", "close", "open", "close", "open"]);
+  }
+});
+
+test("a list of transformations applies periodically, one per connection: the binomial form C + G (p.382)", () => {
+  const roots = [...diatonicCycle(5), 0];
+  const binomial = voiceLeadProgression(MAJOR, 60, roots, ["clockwise", "counterclockwise"]);
+  for (let i = 1; i < roots.length; i++) {
+    const expected = transformVoicing(binomial[i - 1], MAJOR, 60, roots[i], i % 2 === 1 ? "clockwise" : "counterclockwise");
+    // Equal up to an octave variation, which moves the three upper voices together.
+    const shift = binomial[i].root - expected.root;
+    assert.equal(shift % 12, 0);
+    assert.equal(binomial[i].third - expected.third, shift);
+    assert.equal(binomial[i].fifth - expected.fifth, shift);
+  }
 });
 
 test("transformVoicing's clockwise mapping: root->third, third->fifth, fifth->root (p.379)", () => {
@@ -167,18 +214,36 @@ test("voiceLeadProgression's bass always carries the current chord's root pitch 
   });
 });
 
-test("voiceLeadProgression produces one voicing per root-degree, each voice moving smoothly (no leap over 6 semitones between consecutive chords)", () => {
-  const cycle = diatonicCycle(5, 0);
-  const progression = voiceLeadProgression(MAJOR, 60, cycle, "clockwise");
-  assert.equal(progression.length, 7);
-  for (let i = 1; i < progression.length; i++) {
-    const prev = progression[i - 1];
-    const curr = progression[i];
-    for (const fn of ["root", "third", "fifth"]) {
-      const prevVal = prev[fn];
-      // find which voice in curr this one became -- just check overall max movement across all pairings is bounded
-      const closest = Math.min(...["root", "third", "fifth"].map((f) => Math.abs(curr[f] - prevVal)));
-      assert.ok(closest <= 6);
+test("smooth forms: C3 clockwise holds two tones, C5 counterclockwise one, the rest move by a step; C7 counterclockwise moves all three down (p.379-380)", () => {
+  const cases = [
+    [3, "clockwise", 2, (d) => d >= -2 && d <= 2],
+    [5, "counterclockwise", 1, (d) => d >= -2 && d <= 2],
+    [7, "counterclockwise", 0, (d) => d < 0 && d >= -4],
+  ];
+  for (const [cycle, direction, held, ok] of cases) {
+    const roots = [...diatonicCycle(cycle), 0];
+    const progression = voiceLeadProgression(MAJOR, 60, roots, direction);
+    for (let i = 1; i < roots.length; i++) {
+      const from = progression[i - 1];
+      const to = transformVoicing(from, MAJOR, 60, roots[i], direction); // before any octave variation
+      const moves = [from.root, from.third, from.fifth].sort((x, y) => x - y).map(
+        (n, v) => [to.root, to.third, to.fifth].sort((x, y) => x - y)[v] - n,
+      );
+      assert.equal(moves.filter((d) => d === 0).length, held, `C${cycle} ${direction}, chord ${i}: ${moves}`);
+      assert.ok(moves.every(ok), `C${cycle} ${direction}, chord ${i}: ${moves}`);
+    }
+  }
+});
+
+test("octave variation keeps a long progression in range: the bass within a fourth of home, the upper voices within about an octave (p.380)", () => {
+  for (const cycle of [3, 5, 7]) {
+    for (const direction of ["clockwise", "counterclockwise", "const3"]) {
+      const roots = [...diatonicCycle(cycle), ...diatonicCycle(cycle), 0];
+      const progression = voiceLeadProgression(MAJOR, 60, roots, direction);
+      for (const v of progression) {
+        assert.ok(Math.abs(v.bass - 48) <= 6, `C${cycle} ${direction}: bass ${v.bass}`);
+        for (const fn of ["root", "third", "fifth"]) assert.ok(v[fn] >= 40 && v[fn] <= 88, `C${cycle} ${direction}: ${fn} ${v[fn]}`);
+      }
     }
   }
 });
