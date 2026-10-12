@@ -72,3 +72,22 @@ test("ACCOMPANIMENT_FIGURES matches the book's three named figures exactly (polk
   assert.deepEqual(ACCOMPANIMENT_FIGURES[1].roles, ["bass", "chord", "bass", "chord"]);
   assert.deepEqual(ACCOMPANIMENT_FIGURES[2].roles, ["bass", "chord", "bass", "chord", "bass", "chord"]);
 });
+
+test("Figure 56 (p.32): a 4-place figure over 2+1+1 splits into part-resultants 2(2+3+3) on the chords and 2(3+3+2) in the bass", () => {
+  const timeGroup = [2, 1, 1];
+  const fourPlaceFigure = ["bass", "chord", "bass", "chord"];
+  const { totalAttacks, resultantRepeats } = synchronizeInstrumentalGroup(timeGroup.length, fourPlaceFigure.length);
+  assert.equal(totalAttacks, 12); // "through the common denominator 12"
+
+  const durations = Array.from({ length: resultantRepeats }, () => timeGroup).flat();
+  const times = durations.map((_, i) => durations.slice(0, i).reduce((s, d) => s + d, 0));
+  const totalUnits = durations.reduce((s, d) => s + d, 0);
+  const places = assignPlaces(timeGroup.length, fourPlaceFigure.length);
+
+  const partTimes = (role) => times.filter((_, i) => fourPlaceFigure[places[i]] === role);
+  const chord = segmentsFromAttackTimes(partTimes("chord"), totalUnits).map((s) => s.duration);
+  const bass = segmentsFromAttackTimes(partTimes("bass"), totalUnits).map((s) => s.duration);
+
+  assert.deepEqual(chord, [2, 3, 3, 2, 3, 3]); // 2(2+3+3)
+  assert.deepEqual(bass, [3, 3, 2, 3, 3, 2]); // 2(3+3+2) -- "sounds like a rhumba"
+});

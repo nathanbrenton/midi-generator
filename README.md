@@ -506,6 +506,41 @@ confirmed against the book's own 6-interval worked example digit-for-digit
 in `tests/pitchScaleEvolution.test.mjs`. Section E (historical commentary)
 has no formula and isn't implemented.
 
+## Schillinger's notation in code
+
+`src/core/notation/` exposes each book in Schillinger's own symbols, as a
+vocabulary layer over the modules that implement and test the mechanics
+(every function delegates, so the two can't drift):
+
+```ts
+import * as R from "./src/core/notation/rhythm.ts"; // Book I
+
+R.r(3, 2);              // [2,1,1,2]        r₃÷₂
+R.rLabel(3, 2);         // "r₃÷₂"
+R.rFractioned(3, 2);    // [2,1,1,1,1,1,2]  r̲₃÷₂
+R.Nb(4, 3);             // 2                N_b = a − b + 1
+R.generatorGroups(3, 2) // ["2(3)", "3(2)"]  the book's k(n) shorthand
+R.groupings(3, 2);      // ab/ab = T, ab/a = bT, ab/b = aT
+R.B(3, 2);              // B = r̲ + r + a(a−b)
+R.rPrime(2, 3, 5);      // [6,4,2,3,3,2,4,6] r′, the countertheme
+R.S([2, 1]);            // [6,3]            S = a(a+b) + b(a+b)
+```
+
+Book I covers c.p./c.d., complementary factors, r/r̲/r′, T = r₍a÷1₎, the
+grouping formulas, N_b and Q, B/E/C (Balance, Expansion, Contraction),
+places, element names a₁…f₂, distributive powers and S, iₙ, the series
+determinant, and rubato τ — the full symbol-to-function table is in
+`notation/rhythm.ts`'s header. `notation/format.ts` prints the written forms
+(subscripts, the underline of r̲, primes, sums, and k(n) repetitions).
+`tests/notationRhythm.test.mjs` checks every symbol against a number the
+book itself prints.
+
+Building this layer was part of a top-of-book audit of the underlying math,
+which also found and fixed two real bugs: generators were read as attack
+counts instead of periods (swapping r/r′ for three generators, and every
+"Generator A/B" lane), and higher-order permutations of three elements
+didn't follow the book's own a₂…f₂ formula.
+
 ## What's portable
 
 - `src/core/resultant.ts` — the interference-of-periodicities engine:
