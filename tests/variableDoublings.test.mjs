@@ -7,6 +7,7 @@ import {
   doublingPositions,
   positionCount,
   buildDoublingVoicing,
+  doublingTransformations,
 } from "../src/core/variableDoublings.ts";
 
 test("VARIABLE_DOUBLING_FORMS (Ch.6, S(5)) matches the book's own comparative table exactly (p.401)", () => {
@@ -94,4 +95,34 @@ test("upperVoiceFunctions always omits exactly one instance of the bass function
 test("buildDoublingVoicing puts the third in the bass for an S(6) voicing -- a real first-inversion triad", () => {
   const voicing = buildDoublingVoicing(INVERSION_DOUBLING_FORMS[3], [1, 3, 5], 60, { third: 4, fifth: 7 });
   assert.equal(voicing.bass, 64); // C major's third, E4
+});
+
+// Ch.6 Figures 58-62 (p.402-403) and Ch.7 Figures 68-69 (p.407), rendered: each table
+// lists the first chord's upper functions from the top, mapped to the next chord's.
+const tables = (from, to) =>
+  doublingTransformations(from, to)
+    .map((map) => map.map(([f, t]) => `${f}↔${t}`).join(" "))
+    .sort();
+const book = (...rows) => rows.sort();
+const S5 = VARIABLE_DOUBLING_FORMS;
+const S6 = INVERSION_DOUBLING_FORMS;
+
+test("S(5)① <-> S(5)③ and S(5)① <-> S(5)⑤: three transformations each, as Figures 58 and 60 print them", () => {
+  assert.deepEqual(tables(S5[1], S5[3]), book("5↔5 3↔3 1↔3", "5↔3 3↔5 1↔3", "5↔3 3↔3 1↔5"));
+  assert.deepEqual(tables(S5[1], S5[5]), book("5↔5 3↔5 1↔3", "5↔3 3↔5 1↔5", "5↔5 3↔3 1↔5"));
+});
+
+test("without S(5)①, one transformation each: ③↔③, ⑤↔⑤, ③↔⑤ (Figures 59, 61, 62)", () => {
+  assert.deepEqual(tables(S5[3], S5[3]), ["5↔3 3↔5 3↔3"]);
+  assert.deepEqual(tables(S5[5], S5[5]), ["5↔5 5↔3 3↔5"]);
+  assert.deepEqual(tables(S5[3], S5[5]), ["5↔5 3↔5 3↔3"]);
+});
+
+test("S(5) <-> S(6)① and S(5) <-> S(6)⑤, the bass moving from 1 to 3 (Ch.7 Figures 68-69)", () => {
+  assert.deepEqual(tables(S5[1], S6[1]), book("5↔5 3↔1 1↔1", "5↔1 3↔5 1↔1", "5↔1 3↔1 1↔5"));
+  assert.deepEqual(tables(S5[1], S6[5]), book("5↔1 3↔5 1↔5", "5↔5 3↔1 1↔5", "5↔5 3↔5 1↔1"));
+});
+
+test("S(5)① to itself: the rule allows Ch.2's clockwise, counterclockwise and const. 3 -- and one more, 1↔3 with 5 held", () => {
+  assert.deepEqual(tables(S5[1], S5[1]), book("5↔1 3↔5 1↔3", "5↔3 3↔1 1↔5", "5↔1 3↔3 1↔5", "5↔5 3↔1 1↔3"));
 });

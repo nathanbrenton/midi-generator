@@ -1927,10 +1927,18 @@ split itself) that didn't resolve unambiguously even at high render
 resolution — not reproduced here. `buildDoublingVoicing` stacks each
 position's functions upward from the bass in plain close position
 instead, a reasonable but independent implementation choice, not a
-transcription of either chapter's specific voicings. Each chapter's own
-Figures 68-69 (the C3/C5/C7 transformation tables between doubling/
-inversion forms) are likewise not built, for the same reason — worth
-revisiting against cleaner scans. Ch. 7's Figures 77-78 (diatonic
+transcription of either chapter's specific voicings.
+The transformation tables between doubling and inversion forms (Ch. 6
+Figures 58-62, Ch. 7 Figures 68-69) are now built, as function maps:
+rendered at higher resolution, all seven tables follow one rule —
+voices that share a function (an upper voice doubling the bass
+included) must take different functions in the next chord, i.e. no
+octaves moving into octaves (`doublingTransformations`). That rule
+reproduces every printed map, and with it the book's remark that
+"there always are three transformations when S(5)① participates and
+only one when it does not." Applied to S(5)① itself it allows Ch. 2's
+clockwise, counterclockwise and const. 3 plus a fourth (1↔3, 5 held)
+the book never uses. Ch. 7's Figures 77-78 (diatonic
 doubling-preference tables keyed by scale degree) and its Section B
 (continuity forms alternating S(5)/S(6), built from Book I's own growth
 series) are compositional/stylistic guidance rather than deterministic

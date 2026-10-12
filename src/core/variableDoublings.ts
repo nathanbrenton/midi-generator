@@ -44,8 +44,10 @@
  * implementation choice of this project's own, not a transcription of
  * either chapter's specific figure. Ch.6's Figures 68-69 and Ch.7's own
  * Figures 68-69 (both sets of C3/C5/C7 transformation tables between
- * doubling/inversion forms) are likewise not built, for the same reason --
- * worth revisiting if cleaner scans become available. Ch.7's Figures 77-78
+ * doubling/inversion forms) are built after all, as function maps rather
+ * than voicings: rendered at higher resolution during the Book V audit,
+ * the tables (Figures 58-62, p.402-403, and Figures 68-69, p.407) turn out
+ * to follow one rule -- see `doublingTransformations`. Ch.7's Figures 77-78
  * (diatonic doubling preference tables) and its Section B (continuity
  * forms built from growth series) are compositional/stylistic guidance,
  * not deterministic formulas, and are documented in README only.
@@ -131,4 +133,40 @@ export function buildDoublingVoicing(
   });
 
   return { bass, upper };
+}
+
+/** One voice's move in a transformation between doubling forms: the function it leaves and the one it takes. */
+export type FunctionMove = readonly [from: ChordFunction, to: ChordFunction];
+
+/**
+ * Every way the upper voices of `from` can take the functions of `to`
+ * without two voices in octaves moving into octaves again: voices sharing
+ * a function -- including an upper voice doubling the bass -- must take
+ * different functions in the next chord. Each map is listed as the book
+ * lists it, the first chord's functions from the top (5, 3, 1).
+ *
+ * That one rule reproduces every table of Ch.6 and Ch.7 (p.402-403, 407):
+ * S(5)① <-> S(5)③ is 5↔5 3↔3 1↔3 | 5↔3 3↔5 1↔3 | 5↔3 3↔3 1↔5; S(5)③ <->
+ * S(5)③ only 5↔3 3↔5 3↔3; and so on -- "there always are three
+ * transformations when S(5)① participates and only one when it does not."
+ * The same maps serve C3, C5 and C7, as the figures show each under all
+ * three, and read backwards they give the reverse direction.
+ */
+export function doublingTransformations(from: DoublingForm, to: DoublingForm): FunctionMove[][] {
+  const sources = [...from.upperVoiceFunctions].sort((a, b) => b - a);
+  const seen = new Set<string>();
+  const maps: FunctionMove[][] = [];
+  for (const targets of generalPermutations(to.upperVoiceFunctions) as ChordFunction[][]) {
+    const moves: FunctionMove[] = sources.map((fn, k) => [fn, targets[k]]);
+    const all: FunctionMove[] = [...moves, [from.bassFunction, to.bassFunction]];
+    const parallel = all.some(([f, t], i) => all.some(([g, u], j) => i < j && f === g && t === u));
+    // Order identical sources by target so equivalent maps compare equal.
+    const canonical = [...moves].sort((x, y) => y[0] - x[0] || y[1] - x[1]);
+    const key = canonical.map((m) => m.join("")).join(" ");
+    if (!parallel && !seen.has(key)) {
+      seen.add(key);
+      maps.push(canonical);
+    }
+  }
+  return maps;
 }
