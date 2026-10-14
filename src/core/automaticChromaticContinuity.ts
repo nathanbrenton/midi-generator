@@ -34,13 +34,20 @@
  * (`S5_STRUCTURES`). "The 2 directions... double the quantity": total
  * = 4 x 6 x 2 = 48, matching the book's own stated total exactly.
  *
- * Honest scope note: the chapter goes on to describe moving 2 of the 3
- * voices simultaneously ("the number of combinations out of three
- * elements, taken two at a time... = 3") and gives a worked table
- * (Figure 288) of the 6 possible orderings of those 3 pairs -- the
- * combinatorial COUNT (3) is confirmed and trivial (`generalPermutationsOf`
- * on 2-element subsets), but the exact chord-by-chord realization wasn't
- * built here; a natural next step.
+ * The rest of the chapter (p.546-551) generalizes the moves:
+ * `continuityFromMoves` takes any group of simultaneous moves -- single
+ * voices, pairs (Figure 288's "combinations out of three elements, taken
+ * two at a time... = 3"), a pair compensated by the remaining voice
+ * (Figure 289), three and one in four parts -- and repeats it until the
+ * chord returns an octave away. The one condition the book insists on is
+ * equal participation: "the direction can be changed only after all
+ * three voices have performed their moves" (p.548); "the direction may
+ * be changed only after the participation of all four voices in equal
+ * quantities" (p.549) -- a group in which every voice moves the same
+ * number of times transposes the structure ("identical S", Figure 292).
+ * Four-part harmony starts from any of the seven S(7) structures: "4 x 12
+ * = 48 chords for the descending and as many for the ascending
+ * progressions... 7 x 24 x 2 = 336 forms" (`fourPartFormCount`).
  */
 
 import { S5_STRUCTURES, type StructureId } from "./symmetricHarmony.ts";
@@ -98,4 +105,37 @@ export function automaticChromaticContinuity(
 /** The book's own total form-count (p.545): 4 structures x 6 voice-orders x 2 directions = 48. */
 export function automaticContinuityFormCount(): number {
   return Object.keys(S5_STRUCTURES).length * voiceOrders().length * 2;
+}
+
+/**
+ * Repeats a group of simultaneous moves (each a list of voice indices
+ * that step a semitone together, in `direction`) until the chord has
+ * moved a full octave, returning every chord including the closing one.
+ * Every voice must move equally often in the group -- otherwise the
+ * structure would not return and, by the book's rule, the direction could
+ * not change at the group's end.
+ */
+export function continuityFromMoves(start: readonly number[], group: readonly (readonly number[])[], direction: ChromaticDirection): number[][] {
+  const counts = start.map((_, voice) => group.filter((move) => move.includes(voice)).length);
+  if (counts.some((c) => c !== counts[0]) || counts[0] === 0) {
+    throw new Error("every voice must move equally often in a group");
+  }
+  const delta = direction === "down" ? -1 : 1;
+  const repetitions = 12 / counts[0];
+  if (!Number.isInteger(repetitions)) throw new Error("a group must move each voice a divisor of 12 times");
+  const chords = [[...start]];
+  let current = [...start];
+  for (let r = 0; r < repetitions; r++) {
+    for (const move of group) {
+      current = current.map((pitch, voice) => (move.includes(voice) ? pitch + delta : pitch));
+      chords.push(current);
+    }
+  }
+  return chords;
+}
+
+/** Four-part harmony (p.548): 7 S(7) structures x 24 orders of SATB x 2 directions = 336. */
+export function fourPartFormCount(): number {
+  const orders = generalPermutationsOf(["S", "A", "T", "B"]).length;
+  return 7 * orders * 2;
 }

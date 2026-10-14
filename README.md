@@ -1804,12 +1804,18 @@ Ch. 9) directly; "4S produce 4 forms of intonation" is Ch. 3's own 4
 triad structures; "the 2 directions... double the quantity" gives the
 book's own stated total exactly: 4×6×2 = 48 forms.
 
-Honest scope note: the chapter continues into moving 2 of the 3 voices
-simultaneously ("the number of combinations out of three elements, taken
-two at a time... = 3," confirmed trivially — it's just `3C2`) with a
-worked table of the 6 possible pair-orderings (Figure 288) — the
-combinatorial *count* is confirmed, but the exact chord-by-chord
-realization wasn't built here, a natural next step.
+The audit built the rest of the chapter as one generic function,
+`continuityFromMoves`: any group of simultaneous moves — pairs (Figure
+288, ₃C₂ = 3), a pair compensated by the remaining voice (Figure 289),
+pairs and three-plus-one in four parts (₄C₂ = 6, ₄C₃ = 4) — repeated
+until the chord has travelled an octave. Its one precondition is the
+book's own rule that "the direction can be changed only after all three
+voices have performed their moves" (in four parts, "in equal
+quantities"): a group in which every voice moves equally often brings
+back an "identical S," and an unequal group is refused. Four-part
+harmony starts from any of the seven S(7) structures — "4 × 12 = 48
+chords" a direction and "7 × 24 × 2 = 336 forms" (`fourPartFormCount`) —
+and Figure 292's group (S A; A T; B; S T; B) moves every voice twice.
 
 ## Hybrid harmonic continuities (Book V, Ch. 17)
 
