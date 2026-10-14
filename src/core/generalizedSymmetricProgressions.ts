@@ -88,3 +88,16 @@ export function modulationInterval(fromPitchClass: PitchClass, toPitchClass: Pit
   const interval = descendingInterval(fromPitchClass, toPitchClass);
   return wideOctave ? interval + 12 : interval;
 }
+
+/**
+ * A rhythmic group of descending steps repeated until the roots come back
+ * to the start: "the periodicity of their recurrence until the completion
+ * of their cycle" (p.490). The binomial 3 + 2 runs 12 times, C-A-G-E-D-B
+ * ... back to C (Figure 205); the telephone number 5-7-5-7-3 "closes
+ * after 4 cycles" (Figure 207).
+ */
+export function completeSymmetricProgression(startRootMidiNote: number, group: readonly number[]): number[] {
+  const sum = group.reduce((s, step) => s + step, 0);
+  const repetitions = symmetricProgressionCycleLength(sum);
+  return chordRootProgression(startRootMidiNote, Array.from({ length: repetitions }, () => group).flat());
+}

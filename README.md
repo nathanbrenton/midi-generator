@@ -1652,6 +1652,18 @@ reproduces the book's own C-G-Eb progression exactly, live in the panel.
 invariant 12" is the panel's "Wide octave" toggle, matching the book's
 own C→Bb example (2 → 14).
 
+The audit tested every root sequence the chapter prints, through
+`completeSymmetricProgression` (a group repeated until it closes):
+Figure 205's binomial 3 + 2 (twelve rounds, C-A-G-E-D-B … C), r(4÷3)
+closing in one cycle, Figure 206's permuted (3+1+2) groups, "between
+Wagner and Ravel" 2(3) + 5 + 10, Figure 207's telephone number 5-7-5-7-3
+"closing after 4 cycles", the C→B♭ modulations through 14 (7 + 7;
+5 + 2 + 2 + 5; r(4÷3) and r(5÷3) "readjusted" to 14) and Figures
+209-210. Figure 204's remark that the descending system's small numbers
+are "the positive steps on three and four tonics; the negative, on six
+and twelve" holds only with positive cycles running downward — one more
+confirmation of that convention.
+
 ## The chromatic system of harmony (Book V, Ch. 13)
 
 `ChromaticSystemPanel.tsx` (`src/core/chromaticSystem.ts`). Unlike the
