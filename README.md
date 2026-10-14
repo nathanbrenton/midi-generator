@@ -2130,6 +2130,51 @@ code reports all three. Sections B and E-I (chromatic insertions,
 chromatic groups as in Book V Ch. 13, symmetric connections of diatonic
 sections) reuse earlier machinery and are documented, not rebuilt.
 
+## Theory of counterpoint (Book VII)
+
+`CounterpointPanel.tsx` (`src/core/counterpoint.ts`, `src/core/canonAndFugue.ts`).
+
+**Ch. 1, harmonic intervals.** Each chromatic interval sounds like a
+diatonic one, and the six the book calls "actually consonances by
+sonority" — the augmented 2nd, 3rd, 5th and the diminished 7th, 6th,
+4th — are exactly those that land on a diatonic consonance
+(`bySonority`). The resolution principles ("each moving voice moves by
+a semitone or whole tone"; 2nds expand, 7ths and 9ths contract, 4ths and
+5ths are neutral; an oblique resolution "may be replaced by one in which
+the formerly sustained voice leaps by... a perfect 4th") generate the
+whole manifold (`resolutions`), and give the book's "twelve possible
+resolutions" of a major 2nd: eight step motions outward plus the four
+oblique ones with the held voice leaping a fourth outward — 12! =
+479,001,600 orders against the usual four's 24.
+
+**Ch. 2-5, two-part counterpoint.** The four types of harmonic
+correlation (`correlationType`); the consonance/dissonance patterns for
+2, 3 and 4 attacks of CP to one of CF, which are exactly those with at
+most two dissonances — 4, 7, 11 (`harmonicPatterns`); the 8 variants of
+an exposition (parts exchanged × four positions) and the six relations
+between positions, which follow from "upside down or not" and "backward
+or not" (`positionRelation`); and the axial correlation of melodic forms
+— 200 binomial and 600 trinomial combinations against a monomial, 12 +
+15 and 54 + 18 = 72 forms of balance, each expanding into axes (U = a or
+d, B = b or c: `balanceForms`, `axesForBalance`).
+
+**Ch. 7-8, canon and fugue.** A canon is one melody in several voices
+"in its different phases and at a velocity that remains constant"
+(`canon`), types I and III keeping the intonation and II and IV changing
+it with the scale; its temporal structure two elements in reciprocal
+permutation. A fugal exposition has 16 forms under quadrant rotation
+(Figure 94), and successive expositions move the theme's axis so the
+first part keeps its own — type II c, a, f, d; type III on ∜2 c, a, f♯,
+e♭ (`expositionAxes`). Interlude durations follow six schemes; two-part
+harmony reduces chords to S(3) = 1, 3, S(5) = 1, 5, S(7) = 1, 7.
+
+**Ch. 9-12.** Two melodies over harmony: seven forms of exposition (the
+non-empty combinations of M_I, M_II, H), 35 modal relations (7C3) and 21
+two-part melodizations (7C2); three synchronized powers of one
+polynomial for M_I, M_II and H ((2 + 1 + 1): 27, 9 and 3 attacks, each
+part's groups summing to the next — `threePowerSynchronization`); and
+ostinatos, whose counterparts meet them again after lcm bars.
+
 ## Book V, Chapter 3 Section B, Chapter 4, and Chapter 5 Section A
 
 Chapter 3 Section B, the **symmetric zero cycle** (C0): chords on one
