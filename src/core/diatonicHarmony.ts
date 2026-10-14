@@ -6,7 +6,9 @@
  * 462 is exactly `compositionCount(12, 7)` from Book II Ch.7
  * (`symmetricScales.ts`): the number of ways to divide the 12-semitone
  * octave into 7 ordered positive parts, C(11,6) = 462. A genuinely nice
- * cross-book confirmation, not a new formula.
+ * cross-book confirmation, not a new formula. The 36 are defined in Book
+ * VI (Ch.2 D) as the scales whose first expansion stacks thirds of 3 or 4
+ * semitones only: `SIGMA_13` in `masterStructures.ts`.
  *
  * Chapter 2, Section A (Diatonic Progressions, Positive Form, p.362-363):
  * a chord structure S(5) is a root-position triad -- root, third, fifth,

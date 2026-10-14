@@ -30,8 +30,10 @@
  *
  * Not built: Ch.14's non-major key-scale examples ("Cdo: c-db-eb-f-g-a-b"
  * and the like) need scales other than the natural major spelled by
- * letter, and the chapter's "36 fundamental scale structures" (36 x 7 =
- * 252 with their modes) is not defined closely enough to reproduce.
+ * letter. The chapter's "36 fundamental scale structures" (36 x 7 = 252
+ * with their modes) are the E0 of Book VI's 36 master-structures Σ(13)
+ * -- six thirds of 3 or 4 semitones on seven different pitch classes --
+ * see `masterStructures.ts`, which reproduces the count.
  */
 
 const FIFTHS = ["F", "C", "G", "D", "A", "E", "B"] as const;

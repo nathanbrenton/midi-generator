@@ -1805,9 +1805,10 @@ sharps around the "axis of symmetry" at none) is `KEY_SIGNATURE_SCALE`,
 and the academic plan the chapter criticizes — scalewise through the
 signatures, majors and minors alternating — reproduces Figure 248's D♭ f
 E♭ g F a G b A E (`scalewiseModulation`). Not built: the examples in
-non-major scales, and the "36 fundamental scale structures" (36 × 7 =
-252), which the chapter does not define closely enough to reproduce —
-no natural reading of "all names, none repeated" gives exactly 36.
+non-major scales. The "36 fundamental scale structures" (36 × 7 = 252),
+which "all names, none repeated" alone doesn't produce, are defined in
+Book VI: the scales whose first expansion stacks only thirds of 3 or 4
+semitones (`SIGMA_13`, below).
 
 ## The passing seventh generalized (Book V, Ch. 15, Section A)
 
@@ -2063,6 +2064,50 @@ an attack group, each voice playing it from its own entrance: S, A, T,
 B under 4a + 3a + 2a + 2a is "S4a + S3a + S2a + S2a; A3a + A2a + A2a;
 T2a + T2a; B2a" over an 11-chord theme (`entrancePlan`,
 `soundingVoices`).
+
+## The melodization of harmony (Book VI, Ch. 1-2)
+
+`MelodizationPanel.tsx` (`src/core/melodization.ts`,
+`src/core/melodicAttackGroups.ts`, `src/core/masterStructures.ts`).
+Book VI opens by reversing harmony: any melodic tone over Special
+Harmony's chords is one of seven functions, the "scale of tension" 1, 3,
+5, 7, 9, 11, 13, and "clockwise functioning of the consecutive
+pitch-units of a melody obtains the positive form of tonal cycles" — a
+held c read as 1, 3, 5 … 13 lies over C A F D B G E C (C3), read 1, 5, 9
+… over C F B E A D G (C5), read 1, 7, 13 … over C D E F G A B (C7):
+exactly Book V's cycles, downward (`rootsUnderHeldTone`). Table I
+(Figure 5) gives the functions each tension accepts in the melody, S(5)
+taking 7 and 13 but not the unsupported 9 and 11, and Table II adds 9
+over S(5) and 11 over S(7) when the function below precedes them
+(`melodizingFunctions`); "5⁸ = 390,625 possible melodizations" of eight
+chords. `melodize` picks, chord by chord, a usable function inside a
+range of tension R and along an axis (a, b, 0, a + b, b + a).
+
+Ch. 2 composes attack-groups: binomials whose contrast falls as their
+terms approach equality, resultants and involution groups as attacks per
+chord (r4÷3, r̲3÷2, r9÷8; (2 + 1)²), permuted binomials that put the least
+animation at the ends, the series 3, 4, 6, 8 for durations (Figures
+19-22), attacks and durations left to interfere — A = r5÷4 against T =
+r̲4÷3 gives chords of 7t, t, 4t, 4t, 4t, 4t, t, 7t, 32t in all (Figure 23)
+— and a polynomial synchronized with its square or cube ((2 + 1 + 1)³
+against 4(2 + 1 + 1)²: 9 chords, 27 attacks, Figure 25). Section G's
+statistical melodization counts each pitch class once per chord and
+builds a scale on the highest mark (`quantitativeScale`).
+
+Section D's **master-structures Σ(13)** settle a question Book V left
+open. "The complete manifold of Σ(13) families corresponds to the 36
+seven-unit pitch-scales which contain the seven names of non-identical
+pitches... eliminating all those adjacent thirds which do not satisfy
+i = 3 or i = 4": six thirds of 3 or 4 semitones on seven different pitch
+classes — exactly 36 (`SIGMA_13`), which is also what Book V's "36 such
+scales" (Ch. 1) and "36 fundamental scale structures" (Ch. 14) were.
+Figure 27's numbering, read off the page and checked against every
+accidental of all 36: lower S(7) in Book V's table order (major, minor,
+large, small, diminished, augmented I and II), the natural 9 before the
+altered, and the upper triad on 9 as major, minor, augmented,
+diminished. So II is the natural major and XIII c-e-g-b♭-d-f♯-a, "a large
+S(7) and a major S(5)." Blends of two and three Σ give 36² = 1,296 and
+36³ = 46,656 styles.
 
 ## Book V, Chapter 3 Section B, Chapter 4, and Chapter 5 Section A
 
