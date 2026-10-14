@@ -2199,6 +2199,60 @@ close," couplings outward (above a melody, below a bass) — are built too
 (`secondOrderElements`, `strataAllowed`, `outwardCouplings`). The panel
 plays any form on a four-chord theme, optionally doubled an octave up.
 
+## General theory of harmony: strata (Book IX)
+
+`GeneralHarmonyPanel.tsx` (`src/core/generalHarmony.ts`). Harmony for
+"groups of instruments": a score Σ of strata S, each stratum of 1-4 parts.
+The twelve-unit octave gives 11 two-part, 55 three-part and 165 four-part
+structures (C(11, parts − 1)). A seven-unit scale gives the expansions
+E0-E5, which pair off under octave inversion (E0-E5, E1-E4, E2-E3). The
+book's counts all check (`sigmaCounts`):
+
+- 11 × 12 = 132 hybrid structures (42 diatonic).
+- 11³ = 1,331 and 6³ = 216 for two strata of two parts.
+- 165² × 11 = 299,475 for two strata of four parts, with 24² = 576
+  transformations and 36 pairs of the 9 fundamental forms.
+
+The limits multiply strata by sigmae (`sigmaLimit`):
+
+- "10 parts in 5 strata (11 with the added root-tone)".
+- 144S2p = 288 parts, "a score of 289 parts".
+- 576 (577) parts of four-part strata.
+
+Directional units give each part five intonations: neutral, or led in by
+i or 2i from either side. That makes 25, 125 and 625 intonations over 9,
+27 and 81 forms. The book's per-form tables (1 + 16 + 12 + 12 + 24 + 12 +
+24 + 24 = 125, and its S4p sum of 625) group by how many parts move
+(`directionalUnitsByMotion`). Across every S4p structure in E0-E2 this
+gives 165 × 3 × 625 = 309,375 "forms of the c-chord".
+
+Other parts of the book that are built:
+
+- **Harmony of fourths:** E2, functions 1-4-7-10, with cycles C4, C7 and
+  C10 stepping 3, 6 and 9 degrees down (`fourthsCycle`, `fourthsTetrad`).
+- **Reciprocating strata:** an S(7) and its tonal inversion through one
+  cycle coincide only on V, as the book says (`reciprocatingStrata`).
+- **Canons from strata:** 12 schemes (`canonSchemes`).
+- **Density:** phasic rotation is algebraic addition modulo θ
+  (`rotatePhase`). The book's two problems come out to φ3 and φ7, and a
+  resultant with alternating signs sums to zero, returning to φ0
+  (`alternatingSigns`).
+
+**Discrepancy, Ch. 7 (p.1158):** the book counts families (the
+permutations of a structure's interval-groups) as "29 such families" of
+triads and 40 of tetrads. Its own rule, interval-groups "not exceeding
+eleven semitones as a sum", gives 30 and 41 (`structureFamilies`). Their
+members add up to exactly the 55 and 165 structures, so the printed
+counts look one short each.
+
+The panel has three players:
+
+- The harmony of fourths through C4/C7/C10, or reciprocating strata over
+  C5.
+- A directional unit into any three-part structure, with its family
+  listed.
+- A phasic-rotation calculator.
+
 ## Book V, Chapter 3 Section B, Chapter 4, and Chapter 5 Section A
 
 Chapter 3 Section B, the **symmetric zero cycle** (C0): chords on one
