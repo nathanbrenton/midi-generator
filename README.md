@@ -1913,8 +1913,10 @@ idea.
 
 ## Linking harmonic continuities (Book V, Ch. 18)
 
-`src/core/linkingHarmonicContinuities.ts` — core module only, no panel
-yet (built in a session without UI review). "Assuming that any form of
+`LinkingHarmonicContinuitiesPanel.tsx` (`src/core/linkingHarmonicContinuities.ts`;
+the panel came later — it shows the nine forms, diatonic sections linked
+"in the ∜2 relation" as in the Pilgrims' Chorus, and a diatonic
+connection from the key a chord belongs to). "Assuming that any form of
 harmonic progression is used either as continuity or as connection, we
 obtain the following nine forms" (p.554): every pairing of a
 progression type with a connection type from {diatonic, symmetric,
@@ -1968,6 +1970,47 @@ tone's *name* (C → C#), and this project models pitch classes, not note
 spellings — a semitone can't be told apart from a diatonic one (B → C)
 without inventing a spelling system the chapter doesn't supply. Form 9's
 "contrasting forms of chromatics" is qualitative guidance.
+
+## Pedal points (Book V, Ch. 19)
+
+`PedalPointsPanel.tsx` (`src/core/pedalPoints.ts`). "Pedal Point or Organ
+Point (P.P.) is a primary axis about which chord progressions are formed"
+— the upper voices move along Book IV's axes against it, and the
+chapter's introduction names which techniques give which axis. Every one
+of those claims checks out against this project's own voice-leading
+(`axisOfMotion`): "for a gradual ascent, C3 ↻ and C5 ↺ may be used. For
+ascent in leaps, C3 ↺"; "all the negative forms of continuous S(7)...
+produce the same axis"; "a vigorous alternating motion... C7 ↻ in three
+parts" (every voice leaps a fourth or fifth, alternating once kept in
+range); "an extended descent, i.e., b-axis... continuous S(7)... ↺ C7...
+↻ C5." All of them depend on positive cycles running downward.
+
+Section A: P.P.T., "an extension of the ecclesiastic plagal cadence," I +
+IV 6/4 + I over the tonic; P.P.D., "an extension of the compound authentic
+cadence" T + S + T_D + D + T, prepared by IV, starting on I 6/4 over the
+dominant, ending with the authentic cadence (`classicalPedalPoint`), and
+Figure 311's seven traditional placements. Section B's forms of the upper
+parts over the pedal (Figure 313) are transcribed.
+
+Section C, the modulating pedal point, has the chapter's real result.
+Figure 315's natural key tendencies — P.P.T. toward the flats by C5,
+P.P.D. toward the sharps by C-5, each key with its minor mediants — are
+`keyTendencies`, and the deciding rule, "only those keys may be selected
+... in which I S(5) taken together with P.P. produces a crystallized
+structure acceptable in the established four-part harmony," is
+`pedalAcceptsKey`: the tonic triad over the pedal must be an S(5), S(6)
+or S(4/6), a seventh chord of Ch. 9's table with the pedal as root or
+seventh, or an S(11), 1-7-9-11. Read that way it reproduces the book's
+list exactly — over c, F♯ minor, G major, G minor, G♯ minor and A major
+excluded, F♯ major the one "allowance," "all other keys fully
+acceptable" — and both worked examples (D minor over g, "1, 5, 7, 9...
+not the accepted form"; F minor over g, "an accepted form of S(11)").
+`modulatingPedalPoint` walks the tendency through the accepted keys,
+each reached "by means of the chord on the VII or V of the following
+key" (VII by default: through the flats, the V of each key is the tonic
+just left). Section D: Type III progressions over the pedal, and the
+extended form in which "each tonic [becomes] a pedal point in
+succession" (`symmetricPedalPoint`).
 
 ## Book V, Chapter 3 Section B, Chapter 4, and Chapter 5 Section A
 

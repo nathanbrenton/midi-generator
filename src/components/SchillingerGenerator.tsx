@@ -57,6 +57,8 @@ import ChromaticModulationPanel from "./ChromaticModulationPanel";
 import PassingSeventhPanel from "./PassingSeventhPanel";
 import AutomaticChromaticContinuityPanel from "./AutomaticChromaticContinuityPanel";
 import HybridHarmonicContinuityPanel from "./HybridHarmonicContinuityPanel";
+import LinkingHarmonicContinuitiesPanel from "./LinkingHarmonicContinuitiesPanel";
+import PedalPointsPanel from "./PedalPointsPanel";
 import "./SchillingerGenerator.css";
 
 const LANE_COLORS = {
@@ -919,6 +921,10 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
       <AutomaticChromaticContinuityPanel />
 
       <HybridHarmonicContinuityPanel />
+
+      <LinkingHarmonicContinuitiesPanel />
+
+      <PedalPointsPanel />
 
       <section className="schillinger__section schillinger__section--wide">
         <h3>Playback (melody / percussion)</h3>
