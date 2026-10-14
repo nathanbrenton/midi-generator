@@ -1720,6 +1720,30 @@ function in contrary motion, ending a major third apart outward from a
 unison or a minor sixth inward from an octave (`coincidingChromaticGroup`).
 Section E's enharmonic formula is garbled in the scan and left unbuilt.
 
+## Modulations in the chromatic system (Book V, Ch. 14)
+
+Core only, `src/core/chromaticModulation.ts` (added during the Book V
+audit; earlier skipped as OCR-garbled, but the arithmetic is plain once
+read off the page). The chapter works with musical names, not pitches: a
+common chord is the chord on one letter in both keys, respelled with the
+following key's accidentals — "all names which are not the same in pitch
+in both the preceding and the following signatures must be altered," and
+when none are, "modulation becomes diatonic... a special case of
+chromatic modulation" (p.520). So any two keys have "seven modulations,"
+one per letter, each common chord corresponding to a fixed degree of the
+following key (`commonNameChord`, `allCommonNameChords`): C to E♭ through
+C is I → vi, c-e-g respelled c-e♭-g. Keys are natural majors named by
+signature, so the book's "extended modulation" from C to G♯ (eight
+sharps, f𝄪) through A comes out with every name altered, a-c-e → a♯-c♯-e♯.
+Section A's scale of key signatures (Figure 247, seven flats to seven
+sharps around the "axis of symmetry" at none) is `KEY_SIGNATURE_SCALE`,
+and the academic plan the chapter criticizes — scalewise through the
+signatures, majors and minors alternating — reproduces Figure 248's D♭ f
+E♭ g F a G b A E (`scalewiseModulation`). Not built: the examples in
+non-major scales, and the "36 fundamental scale structures" (36 × 7 =
+252), which the chapter does not define closely enough to reproduce —
+no natural reading of "all names, none repeated" gives exactly 36.
+
 ## The passing seventh generalized (Book V, Ch. 15, Section A)
 
 `PassingSeventhPanel.tsx` (`src/core/passingSeventh.ts`). Only Section A
