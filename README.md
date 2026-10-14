@@ -1509,39 +1509,28 @@ to a resulting cycle: C7/C5/C3, C0/C-3/C-5, C-3/C-5/C-7) and is
 transcribed directly into `NINTH_PREPARATION_TABLE`, shown as reference
 data in the panel.
 
-**The resolution continuity itself (Figure 155/157) is not built.** A
-genuinely important finding first: "No consecutive S(9)'s are possible
-through this particular type of system, for S(9) alternates with S(7)
-and S(5)" (p.460) — resolving an S(9) does *not* cycle straight into
-another S(9) the way each of Ch. 9's seventh-chord cycles produces
-another seventh-chord; it collapses to a reduced triad or seventh-chord
-first, and a fresh S(9) has to be re-prepared afterward. That's a real
-structural difference from Ch. 9, not just "one more voice." Figure 157's
-own noteheads (the exact pitches each resolution lands on) were rendered
-at high resolution (PDF p.257) and cropped in tightly on individual
-chords — legible as engraving, but the precise pitches still didn't
-resolve unambiguously enough to hand-verify before coding, the same kind
-of wall Ch. 9 Section B hit. Rather than guess at the alternating
-S(9)↔S(7)/S(5) mechanic, this stops at construction + positions + the
-reference table. Natural next step if clearer scans turn up, or Book V
-Chapters 11+ (11th chord, generalized symmetric progressions, the
-chromatic system) in the meantime.
+**Resolutions (Figure 157), built during the Book V audit.** "No
+consecutive S(9)'s are possible through this particular type of system,
+for S(9) alternates with S(7) and S(5)" (p.460): the 7 and the 9 resolve
+stepwise down, the ninth alone giving C0, both together giving "positive
+cycles only." Rendered at scale 6 and read with positive cycles running
+downward, the figure is legible after all. From C S(9), c | e-b-d: C0
+takes d to c over c (an S(7)); C3 takes b-d to a-c with e held and the
+bass held on c, A minor over its third (the figure's circled ③); C5 the
+same upper voices over f, an F S(7); C7 takes b-d to a-c while e rises
+to f over d — "two pairs of voices moving in thirds in contrary motion."
+`NINTH_RESOLUTIONS` records each move, and a test derives every one from
+the scale (the ninth always steps down, the seventh too except in C0).
 
-**Section B (S(9) in the Symmetric System, p.464-467) was assessed but
-only partly built.** One clean, unambiguous piece came out of it: the
-"symmetric roots correspond to the respective cycles" correspondence
-(which C3/C5/C7 root-motion connects consecutive tonics of a 2/3/4/6/12-
-tonic system) is plain typeset text, no figure-reading needed — that's
-now `SYMMETRIC_CYCLE_FOR_TONIC_COUNT` in `symmetricHarmony.ts`, filling a
-gap Ch. 5's own section left open (see above). The rest of Section B —
-two "families" of symmetric seventh-chords (a minor-7th family 7♭S1-S4
-with adjectives large/diminished/minor/small, and a major-7th family
-7♮S1-S3 with major/augmented I/augmented II) — is real and named
-precisely in prose, but Figure 162/163's actual noteheads (which exact
-semitone structure each labeled chord has) did not resolve confidently
-enough after rendering PDF p.259 at high resolution to hand-verify a
-formula before coding, so it's not built. Same discipline as everything
-else deferred in this book so far — documented, not guessed.
+**Section B (S(9) in the Symmetric System, p.464-467).** "Symmetric roots
+correspond to the respective cycles" is `SYMMETRIC_CYCLE_FOR_TONIC_COUNT`
+in `symmetricHarmony.ts`. The two families, read off Figures 162-163, are
+named by their third and ninth over a fixed seventh (`NINTH_FAMILIES`):
+minor-7th 7♭S1 c-e-b♭-d (large), 7♭S2 c-e-b♭-d♭ (diminished), 7♭S3
+c-e♭-b♭-d (minor), 7♭S4 c-e♭-b♭-d♭ (small); major-7th 7♮S1 c-e-b-d
+(major), 7♮S2 c-e-b-d♯ (augmented I), 7♮S3 c-e♭-b-d (augmented II). Of
+all 21 pairs, `consecutiveSevenths` flags exactly the four the book rules
+out in C0 (7♭S4↔7♮S1, 7♮S2↔7♮S3, 7♭S3↔7♮S2, 7♭S1↔7♭S4).
 
 ## The eleventh chord (Book V, Ch. 11, Section A)
 

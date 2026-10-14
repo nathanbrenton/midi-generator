@@ -129,3 +129,9 @@ test("f-a-c-e is 3-5-7-9 of D S(9) and 7-9-11-13 of G S(13): C5 in the bass, C0 
   assert.deepEqual(d9.upper.map((n) => n % 12), [5, 9, 0, 4]);
   assert.equal(cycleBetween(1, 4), 5);
 });
+
+test("the Table of Combinations of the five forms of tension S(5)...S(13): 10 x 2 = 20, 10 x 6 = 60, 5 x 24 = 120, 1 x 120 (p.458)", async () => {
+  const { combinationCases } = await import("../src/core/higherOrderPermutations.ts");
+  const table = [2, 3, 4, 5].map((k) => combinationCases(5, k));
+  assert.deepEqual(table.map((t) => [t.combinations, t.permutationsEach, t.total]), [[10, 2, 20], [10, 6, 60], [5, 24, 120], [1, 120, 120]]);
+});

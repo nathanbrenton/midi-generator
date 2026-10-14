@@ -19,26 +19,23 @@
  * Ch.6's *which* function is doubled -- so there's exactly one "form",
  * always 6 positions, no 3-position repeated-pair case).
  *
- * Honest scope note on the rest of the chapter (resolution/preparation,
- * p.461-462, Figures 155/157): the book gives a completely unambiguous
- * *table* of preparation methods (`NINTH_PREPARATION_TABLE` below, p.461,
- * transcribed directly from clean typeset text -- no figure-reading
- * needed) but the actual chord-to-chord voice-leading realization of a
- * *resolution* is genuinely more involved than Ch.9's same-shape cycling:
- * "No consecutive S(9)'s are possible through this particular type of
- * system, for S(9) alternates with S(7) and S(5)" (p.460) -- i.e.
- * resolving an S(9) does NOT produce another fresh S(9) the way each
- * Ch.9 seventh-chord cycle step produces another seventh-chord. It
- * collapses to a *reduced* triad or seventh-chord first, and a fresh S(9)
- * has to be re-prepared afterward. Figure 157's own noteheads (the exact
- * pitches each resolution lands on) did not resolve unambiguously even
- * after rendering PDF p.257 at high resolution and cropping in on
- * individual chords -- the same kind of scan-quality wall as Ch.9
- * Section B (p.439-442, documented in `seventhChords.ts`'s module
- * comment... see README) and Ch.6/7's registral-spacing figures. Rather
- * than guess at the alternating S(9)<->S(7)/S(5) mechanic, this module
- * stops at construction + positions, and documents the preparation table
- * as reference data only. A natural next step if clearer scans turn up.
+ * Resolutions (p.460-461, Figure 157 -- legible once rendered at scale 6
+ * and read with positive cycles running downward): "the 7 and the 9 are
+ * subject to resolution through stepwise downward motion. If one function
+ * resolves at a time, it is always the higher one (the ninth)... [this]
+ * produces C0. Other cycles derive from the simultaneous resolutions of
+ * two functions," and "the resolutions (except in C0) produce positive
+ * cycles only." From C S(9), c | e-b-d: C0 resolves d to c over the same
+ * bass (an S(7)); C3 and C5 resolve b-d to a-c over e, A minor with c --
+ * its third -- left in the bass (the figure's circled ③, an S(6)) and F
+ * S(7) over f; C7 resolves b-d to a-c while e rises to f over d, "two
+ * pairs of voices moving in thirds in contrary motion." So "S(9)
+ * alternates with S(7) and S(5)" -- `NINTH_RESOLUTIONS`.
+ *
+ * Section B (p.464-465, Figures 162-163): two families of S(9), "not to
+ * be mixed except when in C0," named by their third and ninth --
+ * `NINTH_FAMILIES` -- and the four C0 pairs the book rules out for
+ * consecutive sevenths, which `consecutiveSevenths` finds.
  */
 
 import { midiNoteForDegree, type PitchScale } from "./scales.ts";
@@ -112,3 +109,64 @@ export const NINTH_PREPARATION_TABLE: readonly NinthPreparationEntry[] = [
   { method: "ascending", fromSeventh: 3, fromNinth: 5, cycle: "C-5" },
   { method: "ascending", fromSeventh: 5, fromNinth: 7, cycle: "C-7" },
 ];
+
+/** Where each upper function of S(9) goes in a resolution, and the next chord's form (p.460-461, Figure 157). */
+export interface NinthResolution {
+  cycle: "C0" | "C3" | "C5" | "C7";
+  /** Each upper function's function in the next chord. */
+  moves: Readonly<Record<NinthUpperFunction, 1 | 3 | 5 | 7>>;
+  /** The function the bass takes in the next chord: 1, or 3 under C3 (the bass holds, an S(6)). */
+  bass: 1 | 3;
+  result: "S(7)" | "S(6)";
+}
+
+/**
+ * Figure 157, from C S(9): C0 -- d to c, the rest held: c | e-b-c, an S(7).
+ * C3 -- b-d to a-c, e held, bass c held: A minor over its third. C5 -- b-d
+ * to a-c, e held, bass to f: F S(7) without its root above. C7 -- b-d to
+ * a-c, e up to f, bass up to d: D S(7) without its root above.
+ */
+export const NINTH_RESOLUTIONS: readonly NinthResolution[] = [
+  { cycle: "C0", moves: { third: 3, seventh: 7, ninth: 1 }, bass: 1, result: "S(7)" },
+  { cycle: "C3", moves: { third: 5, seventh: 1, ninth: 3 }, bass: 3, result: "S(6)" },
+  { cycle: "C5", moves: { third: 7, seventh: 3, ninth: 5 }, bass: 1, result: "S(7)" },
+  { cycle: "C7", moves: { third: 3, seventh: 5, ninth: 7 }, bass: 1, result: "S(7)" },
+];
+
+export type NinthFamily = "minor seventh" | "major seventh";
+
+/**
+ * Section B, the two families of S(9) (Figures 162-163, rendered): the
+ * seventh fixes the family, and each member is named by its third and
+ * ninth, in semitones above the root. "These are the only possible forms."
+ */
+export const NINTH_FAMILIES: readonly { family: NinthFamily; index: 1 | 2 | 3 | 4; name: string; third: number; seventh: number; ninth: number }[] = [
+  { family: "minor seventh", index: 1, name: "large", third: 4, seventh: 10, ninth: 14 },
+  { family: "minor seventh", index: 2, name: "diminished", third: 4, seventh: 10, ninth: 13 },
+  { family: "minor seventh", index: 3, name: "minor", third: 3, seventh: 10, ninth: 14 },
+  { family: "minor seventh", index: 4, name: "small", third: 3, seventh: 10, ninth: 13 },
+  { family: "major seventh", index: 1, name: "major", third: 4, seventh: 11, ninth: 14 },
+  { family: "major seventh", index: 2, name: "augmented I", third: 4, seventh: 11, ninth: 15 },
+  { family: "major seventh", index: 3, name: "augmented II", third: 3, seventh: 11, ninth: 14 },
+];
+
+type NinthForm = (typeof NINTH_FAMILIES)[number];
+
+/**
+ * Whether moving between two S(9) forms on one root (C0) makes two upper
+ * voices a seventh apart move together into another seventh -- the
+ * "consecutive sevenths" the book rules out: 7bS4 <-> 7nS1, 7nS2 <-> 7nS3,
+ * 7bS3 <-> 7nS2, 7bS1 <-> 7bS4 (p.465).
+ */
+export function consecutiveSevenths(from: NinthForm, to: NinthForm): boolean {
+  const voices = ["third", "seventh", "ninth"] as const;
+  return voices.some((x, i) =>
+    voices.some((y, j) => {
+      if (j <= i) return false;
+      const before = from[y] - from[x];
+      const after = to[y] - to[x];
+      const moved = from[x] !== to[x];
+      return moved && before === after && (before % 12 === 10 || before % 12 === 11);
+    }),
+  );
+}
