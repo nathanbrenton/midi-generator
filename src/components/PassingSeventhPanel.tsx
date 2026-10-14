@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { availableSeventhQualities, symmetricPassingSeventhProgression, type PassingSeventhQuality } from "../core/passingSeventh";
+import {
+  availableSeventhQualities,
+  symmetricPassingSeventhProgression,
+  passingSeventhContinuity,
+  chromaticUnitsPerChord,
+  type PassingSeventhQuality,
+} from "../core/passingSeventh";
+import { intervalCellScale } from "../core/scales";
+import NotePlayback from "./NotePlayback";
 import { S5_STRUCTURES, type StructureId } from "../core/symmetricHarmony";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
@@ -16,6 +24,23 @@ export default function PassingSeventhPanel() {
   const [tonicCount, setTonicCount] = useState<3 | 4>(3);
   const [structure, setStructure] = useState<StructureId>(1);
   const [quality, setQuality] = useState<PassingSeventhQuality>("major");
+
+  // Figures 254-255: the passing-seventh continuity.
+  const [continuityDirection, setContinuityDirection] = useState<"descending" | "ascending">("descending");
+  const continuity = useMemo(
+    () => passingSeventhContinuity(intervalCellScale([2, 2, 1, 2, 2, 2, 1]), root, continuityDirection),
+    [root, continuityDirection],
+  );
+  // Triads in half notes over a bass in quarter notes, as the figure has them.
+  const continuityNotes: NoteEvent[] = useMemo(
+    () => [
+      ...continuity.chords.flatMap((v, j) =>
+        [v.root, v.third, v.fifth].map((midiNote, k) => ({ midiNote, startUnits: 2 * j, durationUnits: 1.9, velocity: 80, voice: k + 1 })),
+      ),
+      ...continuity.bass.map((midiNote, k) => ({ midiNote, startUnits: k, durationUnits: 0.9, velocity: 95, voice: 0 })),
+    ],
+    [continuity],
+  );
 
   const [bpm, setBpm] = useState(100);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -114,7 +139,32 @@ export default function PassingSeventhPanel() {
 
   return (
     <section className="schillinger__section schillinger__section--wide">
-      <h3>The Passing Seventh Generalized (Book V, Ch. 15, Section A)</h3>
+      <h3>The Passing Seventh Generalized (Book V, Ch. 15)</h3>
+      <h4>The continuity of the passing seventh (Figures 254-255, p.531)</h4>
+      <p className="schillinger__hint">
+        "The preparation of the seventh in C0 requires a descending step from the root-tone. In C3
+        the seventh while resolving, becomes a new root-tone. This fact permits us to develop a
+        continuity of the passing seventh when C3 is constant." Each root steps down to its own
+        seventh, which steps down to the next root: C Am F Dm B° G Em C over a bass walking down two
+        octaves. "By reading the above figure backwards, we obtain an ascending scale in the bass. The
+        cycle in such a case becomes negative (C-3) and the transformation is counterclockwise."
+      </p>
+      <div className="schillinger__row">
+        <label>
+          Reading
+          <select value={continuityDirection} onChange={(e) => setContinuityDirection(e.target.value as "descending" | "ascending")}>
+            <option value="descending">Figure 254 — C3, bass descending</option>
+            <option value="ascending">Figure 255 — read backwards, C-3, bass ascending</option>
+          </select>
+        </label>
+      </div>
+      <div className="schillinger__readout">
+        Chords: {continuity.rootDegrees.map((d) => "CDEFGAB"[d]).join(" ")} · Bass:{" "}
+        {continuity.bass.map((n) => NOTE_NAMES[((n % 12) + 12) % 12]).join(" ")}
+      </div>
+      <NotePlayback notes={continuityNotes} lengthUnits={continuity.bass.length + 1} fileName="schillinger-passing-seventh-continuity.mid" />
+
+      <h4>Section A: the passing seventh in Type III progressions (p.534-536)</h4>
       <p className="schillinger__hint">
         A symmetric triad (Ch. 3) at every tonic of a 3- or 4-tonic system (Book II Ch. 7), each with a
         passing seventh above it. "In a system of three tonics the interval between the roots equals 4
@@ -177,6 +227,13 @@ export default function PassingSeventhPanel() {
           Download MIDI
         </button>
       </div>
+
+      <h4>Section B: symmetric harmonization of the chromatic scale (Figure 276)</h4>
+      <p className="schillinger__hint">
+        "In the system of twelve tonics, each pitch-unit of the chromatic scale must be harmonized by
+        one chord" — and in general one chord covers 12 ÷ tonics units:{" "}
+        {([1, 2, 3, 4, 6, 12] as const).map((n) => `${n} tonic${n === 1 ? "" : "s"} → ${chromaticUnitsPerChord(n)}`).join(", ")}.
+      </p>
     </section>
   );
 }

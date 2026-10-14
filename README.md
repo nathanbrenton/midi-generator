@@ -1748,9 +1748,46 @@ function in contrary motion, ending a major third apart outward from a
 unison or a minor sixth inward from an octave (`coincidingChromaticGroup`).
 Section E's enharmonic formula is garbled in the scan and left unbuilt.
 
+## Book V panels after the audit
+
+Every core feature the Book V audit added is now playable in its
+chapter's panel, each new section with its own tempo, Play and Download
+MIDI (the shared `NotePlayback` component):
+
+- **Diatonic cycles** — negative cycles C-3/C-5/C-7, the six starting
+  positions (open/close), the binomial ↻ + ↺ transformation with a
+  position readout, and a G6 continuity section (cycle within and between
+  groups).
+- **Symmetric harmony** — the zero cycle C0, Type II (scale of roots,
+  cycle group, structural group) and Type III (tonics, form,
+  transformation, recurrence-cycles), groups typed as the book writes
+  them: "3S1 + S3 + 2S2", "2C7 + C3 + C5".
+- **Variable doublings** — the transformation tables between any two
+  forms, each map played through C3/C5/C7.
+- **Seventh chord** — negative cycles, ending on the resolution, the
+  preparation table, S(7) structures in C0 (Figure 142's r5÷4), and the
+  five-part (4 + 1) forms.
+- **Ninth chord** — Figure 157's resolutions with the "or:" bass; the two
+  families with the consecutive-sevenths check.
+- **Eleventh chord** — the C0 chain, the two preparations, the families.
+- **Generalized symmetric progressions** — any group typed freely, run
+  until it closes, with a structure on every root.
+- **Chromatic system** — all four bases, parallel double/triple/quadruple
+  chromatics, coinciding groups.
+- **Modulations in the chromatic system** (new panel, Ch. 14).
+- **Passing seventh** — Figures 254-255 first, then Section A, then
+  Figure 276.
+- **Automatic chromatic continuities** — any group of moves in three or
+  four parts, checked against the equal-participation rule.
+- **Hybrid harmonic continuities** — a di/ch/sy plan checker.
+
+Rows of controls now shrink long dropdowns and text fields to the row
+instead of widening the page, which also cured an older horizontal
+scroll at phone width.
+
 ## Modulations in the chromatic system (Book V, Ch. 14)
 
-Core only, `src/core/chromaticModulation.ts` (added during the Book V
+`ChromaticModulationPanel.tsx` (`src/core/chromaticModulation.ts`, added during the Book V
 audit; earlier skipped as OCR-garbled, but the arithmetic is plain once
 read off the page). The chapter works with musical names, not pitches: a
 common chord is the chord on one letter in both keys, respelled with the
@@ -1788,7 +1825,7 @@ out to be nothing more than `symmetricTonics(3, root)`/`symmetricTonics(4,
 root)` reused directly — no new tonic-spacing logic needed.
 
 **The chapter's opening idea (Figures 254-255, p.531) is now built**
-(`passingSeventhContinuity`, core only). It had resisted modeling only
+(`passingSeventhContinuity`, now the first section of the panel). It had resisted modeling only
 because the cycles ran the wrong way: with C3 running downward the figure
 reads exactly — C Am F Dm B° G Em C, constant C3, one triad per two
 beats, over a bass walking down two octaves one step per beat, c b a g f

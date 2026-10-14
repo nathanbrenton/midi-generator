@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  MAJOR_BASIS_OPERATIONS,
-  MINOR_BASIS_OPERATIONS,
   chromaticGroupRoots,
   chromaticGroupFormCount,
+  basisOperations,
+  PARALLEL_DOUBLE_CHROMATICS,
+  chromaticPitchPath,
+  parallelChromatics,
+  coincidingChromaticGroup,
   type ChromaticOperation,
   type TriadChordFunction,
 } from "../core/chromaticSystem";
-import { S5_STRUCTURES, symmetricTriad, type StructureId } from "../core/symmetricHarmony";
+import { S5_STRUCTURES, symmetricTriad, symmetricSeventhChord, type StructureId } from "../core/symmetricHarmony";
+import NotePlayback, { chordsToNotes } from "./NotePlayback";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
 import "./SchillingerGenerator.css";
@@ -33,7 +37,7 @@ function chordLabel(root: number, structure: StructureId): string {
 
 export default function ChromaticSystemPanel() {
   const [root, setRoot] = useState(60);
-  const [basis, setBasis] = useState<"major" | "minor">("major");
+  const [basis, setBasis] = useState<StructureId>(1);
   const [operationIndex, setOperationIndex] = useState(0);
   const [tripleIndex, setTripleIndex] = useState(0);
   const [chord2Structure, setChord2Structure] = useState<StructureId>(1);
@@ -45,9 +49,9 @@ export default function ChromaticSystemPanel() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const playTokenRef = useRef(0);
 
-  const startStructure: StructureId = basis === "major" ? 1 : 2;
-  const operations = basis === "major" ? MAJOR_BASIS_OPERATIONS : MINOR_BASIS_OPERATIONS;
-  const operation = operations[operationIndex];
+  const startStructure: StructureId = basis;
+  const operations = basisOperations(basis);
+  const operation = operations[Math.min(operationIndex, operations.length - 1)];
   const triple = TRIPLES[tripleIndex];
 
   const roots = useMemo(
@@ -68,6 +72,43 @@ export default function ChromaticSystemPanel() {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roots, startStructure, chord2Structure, chord3Structure]);
+
+  // Sections C-D: parallel double, triple and quadruple chromatics.
+  const [parallelForm, setParallelForm] = useState(0);
+  const PARALLEL_FORMS = [
+    { label: "S1 basis: 1♭ with 3♭ (c-c♭-b♭, e-e♭)", basis: 1 as const, index: 0 },
+    { label: "S1 basis: 5♭ with 3♭", basis: 1 as const, index: 1 },
+    { label: "S2 basis: 1♯ with 3♯ (c-c♯-d, e♭-e)", basis: 2 as const, index: 0 },
+    { label: "S2 basis: 5♯ with 3♯", basis: 2 as const, index: 1 },
+    { label: "Triple: S4(5), 1♯ with 3♯ and 5♯", basis: 4 as const, index: -1 },
+    { label: "Quadruple: diminished S(7), 1♯ with 3♯, 5♯, 7♯", basis: 5 as const, index: -1 },
+  ];
+  const parallelChords = useMemo(() => {
+    const form = PARALLEL_FORMS[parallelForm];
+    if (form.basis === 4 || form.basis === 5) {
+      const start = form.basis === 4 ? symmetricTriad(4, root) : symmetricSeventhChord(5, root);
+      return [start, parallelChromatics(start), parallelChromatics(parallelChromatics(start))];
+    }
+    const { fundamental, complementary } = PARALLEL_DOUBLE_CHROMATICS[form.basis][form.index];
+    const triad = symmetricTriad(form.basis, root);
+    const index = { root: 0, third: 1, fifth: 2 } as const;
+    const f = chromaticPitchPath(triad[index[fundamental.function]], fundamental.direction);
+    const c = chromaticPitchPath(triad[index[complementary.function]], complementary.direction);
+    // The fundamental completes its group; the complementary tone "does not necessarily" move on.
+    return [0, 1, 2].map((k) =>
+      triad.map((pitch, i) => (i === index[fundamental.function] ? f[k] : i === index[complementary.function] ? c[Math.min(k, 1)] : pitch)),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parallelForm, root]);
+  const parallelNotes = useMemo(() => chordsToNotes(parallelChords), [parallelChords]);
+
+  // Section G: coinciding chromatic groups.
+  const [coinciding, setCoinciding] = useState<"outward" | "inward">("outward");
+  const coincidingChords = useMemo(() => {
+    const [a, b] = coincidingChromaticGroup(root, coinciding);
+    return [0, 1, 2].map((k) => [a[k], b[k]]);
+  }, [root, coinciding]);
+  const coincidingNotes = useMemo(() => chordsToNotes(coincidingChords), [coincidingChords]);
 
   const secondsPerUnit = 60 / bpm;
   const cycleSeconds = 3 * secondsPerUnit;
@@ -166,9 +207,11 @@ export default function ChromaticSystemPanel() {
         </label>
         <label>
           Basis
-          <select value={basis} onChange={(e) => { setBasis(e.target.value as "major" | "minor"); setOperationIndex(0); }}>
-            <option value="major">Major (1♯ / 3♭ / 5♯)</option>
-            <option value="minor">Minor (1♭ / 3♯ / 5♭)</option>
+          <select value={basis} onChange={(e) => { setBasis(Number(e.target.value) as StructureId); setOperationIndex(0); }}>
+            <option value={1}>S1 major (1♯ / 3♭ / 5♯)</option>
+            <option value={2}>S2 minor (1♭ / 3♯ / 5♭)</option>
+            <option value={3}>S3 augmented (1♯ / 3♭ — Section A)</option>
+            <option value={4}>S4 diminished (1♭ / 3♯ — Section A)</option>
           </select>
         </label>
         <label>
@@ -194,7 +237,7 @@ export default function ChromaticSystemPanel() {
         <label>
           Chord 2
           <select value={chord2Structure} onChange={(e) => setChord2Structure(Number(e.target.value) as StructureId)}>
-            {([1, 2] as StructureId[]).map((s) => (
+            {([1, 2, 3, 4] as StructureId[]).map((s) => (
               <option key={s} value={s}>
                 {S5_STRUCTURES[s].name}
               </option>
@@ -204,7 +247,7 @@ export default function ChromaticSystemPanel() {
         <label>
           Chord 3
           <select value={chord3Structure} onChange={(e) => setChord3Structure(Number(e.target.value) as StructureId)}>
-            {([1, 2] as StructureId[]).map((s) => (
+            {([1, 2, 3, 4] as StructureId[]).map((s) => (
               <option key={s} value={s}>
                 {S5_STRUCTURES[s].name}
               </option>
@@ -232,6 +275,48 @@ export default function ChromaticSystemPanel() {
           Download MIDI
         </button>
       </div>
+
+      <h4>Parallel chromatics (Sections C-D, p.503-507)</h4>
+      <p className="schillinger__hint">
+        "Parallel double chromatics occur when fundamental operations are performed from an opposite
+        base. In such a case the rectification of the third is required": on the major basis, 1♭ or
+        5♭ with 3♭; on the minor, 1♯ or 5♯ with 3♯. "If c - c♭ - b♭ is a fundamental operation, the
+        complementary chromatic is e - e♭," which "does not necessarily move" further. Raising the 1
+        of the diminished triad drags 3♯ and 5♯ along (triple); of the diminished seventh, 3♯, 5♯ and
+        7♯ (quadruple) — "the quintessence of chromatic style."
+      </p>
+      <div className="schillinger__row">
+        <label>
+          Operation
+          <select value={parallelForm} onChange={(e) => setParallelForm(Number(e.target.value))}>
+            {PARALLEL_FORMS.map((f, i) => (
+              <option key={i} value={i}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="schillinger__readout">{parallelChords.map((c) => c.map(noteName).join("-")).join(" → ")}</div>
+      <NotePlayback notes={parallelNotes} lengthUnits={3} fileName="schillinger-parallel-chromatics.mid" />
+
+      <h4>Coinciding chromatic groups (Section G, p.514-516)</h4>
+      <p className="schillinger__hint">
+        Two voices on one function move in contrary motion, outward (x→x♯→y above, x→x♭→y below) or
+        inward from the octave. "In moving outward from unison or octave, the last term of the group
+        produces a major third"; inward from an octave, a minor sixth.
+      </p>
+      <div className="schillinger__row">
+        <label>
+          Direction
+          <select value={coinciding} onChange={(e) => setCoinciding(e.target.value as "outward" | "inward")}>
+            <option value="outward">Outward from a unison</option>
+            <option value="inward">Inward from an octave</option>
+          </select>
+        </label>
+      </div>
+      <div className="schillinger__readout">{coincidingChords.map((c) => c.map(noteName).join("+")).join(" → ")}</div>
+      <NotePlayback notes={coincidingNotes} lengthUnits={3} fileName="schillinger-coinciding-chromatics.mid" />
     </section>
   );
 }

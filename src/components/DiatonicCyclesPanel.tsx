@@ -7,7 +7,11 @@ import {
   negativeFormCycle,
   voiceLeadProgression,
   buildPassingSixthGroups,
-  type CycleType,
+  passingSixthContinuity,
+  voicingPosition,
+  S5_POSITIONS,
+  type S5Position,
+  type SignedCycleType,
   type TransformDirection,
   type Voicing,
 } from "../core/diatonicHarmony";
@@ -20,15 +24,27 @@ import {
 import { intervalCellScale } from "../core/scales";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
+import NotePlayback, { chordsToNotes } from "./NotePlayback";
 import "./SchillingerGenerator.css";
 
 const NOTE_NAMES = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"];
 const MAJOR_SCALE = intervalCellScale([2, 2, 1, 2, 2, 2, 1]);
-const CYCLE_LABELS: Record<CycleType, string> = {
-  3: "Cycle of the third (C3) — roots down a 3rd: c-a-f-d-b-g-e",
-  5: "Cycle of the fifth (C5) — roots down a 5th: c-f-b-e-a-d-g",
-  7: "Cycle of the seventh (C7) — roots down a 7th (up a step): c-d-e-f-g-a-b",
+const CYCLES: readonly SignedCycleType[] = [3, 5, 7, -3, -5, -7];
+const CYCLE_LABELS: Record<SignedCycleType, string> = {
+  3: "C3, cycle of the third — roots down a 3rd: c-a-f-d-b-g-e",
+  5: "C5, cycle of the fifth — roots down a 5th: c-f-b-e-a-d-g",
+  7: "C7, cycle of the seventh — roots down a 7th (up a step): c-d-e-f-g-a-b",
+  [-3]: "C-3, negative — roots up a 3rd: c-e-g-b-d-f-a",
+  [-5]: "C-5, negative — roots up a 5th: c-g-d-a-e-b-f",
+  [-7]: "C-7, negative — roots up a 7th (down a step): c-b-a-g-f-e-d",
 };
+const FUNCTION_NUMBER = { root: 1, third: 3, fifth: 5 } as const;
+/** The six S(5) positions, top voice first: open (clockwise phases) then close (p.377). */
+const POSITION_OPTIONS: readonly { label: string; position: S5Position }[] = [
+  ...S5_POSITIONS.open.map((p) => ({ label: `Open ${p.map((f) => FUNCTION_NUMBER[f]).join("-")}`, position: p })),
+  ...S5_POSITIONS.close.map((p) => ({ label: `Close ${p.map((f) => FUNCTION_NUMBER[f]).join("-")}`, position: p })),
+];
+type TransformChoice = TransformDirection | "binomial";
 
 function noteName(midiNote: number): string {
   return `${NOTE_NAMES[((midiNote % 12) + 12) % 12]}${Math.floor(midiNote / 12) - 1}`;
@@ -48,11 +64,15 @@ function fourSixChordToArray(chord: FourSixGroupChord): number[] {
 
 export default function DiatonicCyclesPanel() {
   const [root, setRoot] = useState(60);
-  const [firstCycle, setFirstCycle] = useState<CycleType>(5);
+  const [firstCycle, setFirstCycle] = useState<SignedCycleType>(5);
   const [useBinomial, setUseBinomial] = useState(false);
-  const [secondCycle, setSecondCycle] = useState<CycleType>(3);
+  const [secondCycle, setSecondCycle] = useState<SignedCycleType>(3);
   const [voiceLead, setVoiceLead] = useState(false);
-  const [direction, setDirection] = useState<TransformDirection>("clockwise");
+  const [direction, setDirection] = useState<TransformChoice>("clockwise");
+  const [positionIndex, setPositionIndex] = useState(4); // close 5-3-1, root position
+  const [g6Within, setG6Within] = useState<SignedCycleType>(-5);
+  const [g6Between, setG6Between] = useState<SignedCycleType>(7);
+  const [g6Groups, setG6Groups] = useState(4);
   const [form, setForm] = useState<"positive" | "negative">("positive");
   const [passingSixths, setPassingSixths] = useState(false);
   const [showFourSix, setShowFourSix] = useState(false);
@@ -66,8 +86,11 @@ export default function DiatonicCyclesPanel() {
   const playTokenRef = useRef(0);
 
   const rootDegrees = useMemo(() => {
-    const inForm = (cycle: CycleType) => (form === "negative" ? negativeFormCycle(cycle) : cycle);
-    return useBinomial ? binomialCycle(inForm(firstCycle), inForm(secondCycle)) : diatonicCycle(inForm(firstCycle));
+    const inForm = (cycle: SignedCycleType) => (form === "negative" ? negativeFormCycle(cycle) : cycle);
+    // Cycles that cancel (C3 + C-3) never leave the first chord; fall back to the first alone.
+    return useBinomial && secondCycle !== -firstCycle
+      ? binomialCycle(inForm(firstCycle), inForm(secondCycle))
+      : diatonicCycle(inForm(firstCycle));
   }, [useBinomial, firstCycle, secondCycle, form]);
   const stackedProgression = useMemo(
     () =>
@@ -78,8 +101,15 @@ export default function DiatonicCyclesPanel() {
   );
   const voiceLedProgression = useMemo(
     // A passing third needs clockwise between the S(5) chords around it (p.415, 418).
-    () => voiceLeadProgression(MAJOR_SCALE, root, rootDegrees, passingSixths ? "clockwise" : direction),
-    [root, rootDegrees, direction, passingSixths],
+    () =>
+      voiceLeadProgression(
+        MAJOR_SCALE,
+        root,
+        rootDegrees,
+        passingSixths ? "clockwise" : direction === "binomial" ? ["clockwise", "counterclockwise"] : direction,
+        POSITION_OPTIONS[positionIndex].position,
+      ),
+    [root, rootDegrees, direction, passingSixths, positionIndex],
   );
   const withPassingSixths = useMemo(
     () => (passingSixths ? buildPassingSixthGroups(voiceLedProgression) : voiceLedProgression),
@@ -101,6 +131,19 @@ export default function DiatonicCyclesPanel() {
     if (showFourSix) return fourSixGroup.map(fourSixChordToArray);
     return voiceLead ? withPassingSixths.map(voicingToArray) : stackedProgression;
   }, [showFourSix, fourSixGroup, voiceLead, withPassingSixths, stackedProgression]);
+
+  const positions = useMemo(
+    () => (voiceLead && !showFourSix ? withPassingSixths.map(voicingPosition) : []),
+    [voiceLead, showFourSix, withPassingSixths],
+  );
+
+  // Ch.8 A-D: groups with a passing sixth-chord, G6(Cn), joined by a cycle between groups.
+  const g6Chords = useMemo(
+    () =>
+      passingSixthContinuity(MAJOR_SCALE, root, Array.from({ length: g6Groups }, () => g6Within), [g6Between]).map(voicingToArray),
+    [root, g6Within, g6Between, g6Groups],
+  );
+  const g6Notes = useMemo(() => chordsToNotes(g6Chords), [g6Chords]);
 
   const notes: NoteEvent[] = useMemo(() => {
     return progression.flatMap((chord, i) =>
@@ -230,8 +273,8 @@ export default function DiatonicCyclesPanel() {
         </label>
         <label>
           Cycle
-          <select value={firstCycle} onChange={(e) => setFirstCycle(Number(e.target.value) as CycleType)}>
-            {([3, 5, 7] as CycleType[]).map((c) => (
+          <select value={firstCycle} onChange={(e) => setFirstCycle(Number(e.target.value) as SignedCycleType)}>
+            {CYCLES.map((c) => (
               <option key={c} value={c}>
                 {CYCLE_LABELS[c]}
               </option>
@@ -247,8 +290,8 @@ export default function DiatonicCyclesPanel() {
         {useBinomial && (
           <label>
             Second cycle
-            <select value={secondCycle} onChange={(e) => setSecondCycle(Number(e.target.value) as CycleType)}>
-              {([3, 5, 7] as CycleType[]).map((c) => (
+            <select value={secondCycle} onChange={(e) => setSecondCycle(Number(e.target.value) as SignedCycleType)}>
+              {CYCLES.filter((c) => c !== -firstCycle).map((c) => (
                 <option key={c} value={c}>
                   {CYCLE_LABELS[c]}
                 </option>
@@ -287,11 +330,24 @@ export default function DiatonicCyclesPanel() {
             <select
               value={passingSixths ? "clockwise" : direction}
               disabled={passingSixths}
-              onChange={(e) => setDirection(e.target.value as TransformDirection)}
+              onChange={(e) => setDirection(e.target.value as TransformChoice)}
             >
-              <option value="clockwise">Clockwise (root→third→fifth→root)</option>
-              <option value="counterclockwise">Counterclockwise (root→fifth→third→root)</option>
+              <option value="clockwise">↻ Clockwise (root→third→fifth→root)</option>
+              <option value="counterclockwise">↺ Counterclockwise (root→fifth→third→root)</option>
               <option value="const3">Const. 3 (3 stays 3, root↔fifth: close ↔ open)</option>
+              <option value="binomial">Binomial ↻ + ↺, alternating (p.382)</option>
+            </select>
+          </label>
+        )}
+        {voiceLead && (
+          <label>
+            Starting position
+            <select value={positionIndex} onChange={(e) => setPositionIndex(Number(e.target.value))}>
+              {POSITION_OPTIONS.map((option, index) => (
+                <option key={option.label} value={index}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
         )}
@@ -331,6 +387,12 @@ export default function DiatonicCyclesPanel() {
       </div>
       <div className="schillinger__readout">
         {progression.length} chords: {progression.map(chordLabel).join(" · ")}
+        {positions.length > 0 && (
+          <>
+            <br />
+            Positions: {positions.join(" · ")}
+          </>
+        )}
       </div>
 
       <h4>Playback</h4>
@@ -349,6 +411,46 @@ export default function DiatonicCyclesPanel() {
           Download MIDI
         </button>
       </div>
+
+      <h4>Groups with a passing sixth-chord: G6 continuity (Ch. 8, Sections A-D)</h4>
+      <p className="schillinger__hint">
+        G6 = S(5) + S(6)③ + S(5): the extreme chords connected by a cycle, "always clockwise for both
+        the positive and the negative cycles," and the intermediate third of the first chord added in
+        the bass "without moving the remaining voices" (p.415). The classical form uses C-5, so the
+        bass rises c-e-g; "other than C-5 cycles within the group" give G6(C3), G6(C-7) and the rest,
+        "each cycle [producing] its own characteristic bass pattern" (p.417). Groups follow one
+        another through a cycle chosen between them: H = G6(C-5) + C7 + G6(C3) + … (p.418).
+      </p>
+      <div className="schillinger__row">
+        <label>
+          Cycle within each group
+          <select value={g6Within} onChange={(e) => setG6Within(Number(e.target.value) as SignedCycleType)}>
+            {CYCLES.map((c) => (
+              <option key={c} value={c}>
+                G6(C{c}){c === -5 ? " — classical" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Cycle between groups
+          <select value={g6Between} onChange={(e) => setG6Between(Number(e.target.value) as SignedCycleType)}>
+            {CYCLES.map((c) => (
+              <option key={c} value={c}>
+                C{c}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Groups
+          <input type="number" min={1} max={8} value={g6Groups} onChange={(e) => setG6Groups(Math.max(1, Math.min(8, Number(e.target.value) || 1)))} />
+        </label>
+      </div>
+      <div className="schillinger__readout">
+        {g6Chords.length} chords (bass first): {g6Chords.map(chordLabel).join(" · ")}
+      </div>
+      <NotePlayback notes={g6Notes} lengthUnits={g6Chords.length} fileName="schillinger-g6-continuity.mid" />
     </section>
   );
 }

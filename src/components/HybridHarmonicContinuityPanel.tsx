@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { HYBRID_CONTINUITY_RATIO, buildHybridSegmentJoin } from "../core/hybridHarmonicContinuity";
+import { HYBRID_CONTINUITY_RATIO, buildHybridSegmentJoin, isHybridSequence, type HarmonicType } from "../core/hybridHarmonicContinuity";
 import {
   MAJOR_BASIS_OPERATIONS,
   MINOR_BASIS_OPERATIONS,
@@ -33,6 +33,10 @@ function chordLabel(root: number, structure: StructureId): string {
 }
 
 export default function HybridHarmonicContinuityPanel() {
+  const [sequenceText, setSequenceText] = useState("di + ch + sy + ch + sy + ch + di + ch + di");
+  const sequence = sequenceText.split("+").map((t) => t.trim().toLowerCase());
+  const sequenceValid = sequence.every((t) => t === "di" || t === "ch" || t === "sy");
+  const sequenceOk = sequenceValid && isHybridSequence(sequence as HarmonicType[]);
   const [root, setRoot] = useState(60);
   const [basis, setBasis] = useState<"major" | "minor">("major");
   const [operationIndex, setOperationIndex] = useState(0);
@@ -227,6 +231,26 @@ export default function HybridHarmonicContinuityPanel() {
         <button type="button" onClick={downloadMidi} disabled={notes.length === 0}>
           Download MIDI
         </button>
+      </div>
+
+      <h4>Planning a hybrid continuity (p.552)</h4>
+      <p className="schillinger__hint">
+        "The first necessary condition for successful mixing of harmonic types is the insertion of
+        the chromatic type between the diatonic and the symmetric... providing that the diatonic and
+        the symmetric have no immediate contact." Write a plan with di, ch and sy.
+      </p>
+      <div className="schillinger__row">
+        <label>
+          Plan
+          <input type="text" value={sequenceText} onChange={(e) => setSequenceText(e.target.value)} />
+        </label>
+      </div>
+      <div className="schillinger__readout">
+        {!sequenceValid
+          ? "Use di, ch and sy joined by +."
+          : sequenceOk
+            ? `Satisfactory: the diatonic and the symmetric never touch (${sequence.filter((t) => t === "ch").length} chromatic of ${sequence.length}).`
+            : "The diatonic and the symmetric touch here — insert ch between them."}
       </div>
     </section>
   );

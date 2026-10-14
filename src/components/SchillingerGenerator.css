@@ -36,6 +36,15 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Long option text and free-text fields shrink to the row instead of widening the page. */
+.schillinger__row select,
+.schillinger__row input[type="text"] {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .schillinger__row input[type="number"] {

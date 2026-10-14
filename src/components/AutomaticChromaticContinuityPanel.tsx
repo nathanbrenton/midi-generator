@@ -3,11 +3,14 @@ import {
   voiceOrders,
   automaticChromaticContinuity,
   automaticContinuityFormCount,
+  continuityFromMoves,
+  fourPartFormCount,
   VOICES,
   type ChromaticDirection,
   type Voice,
 } from "../core/automaticChromaticContinuity";
-import { S5_STRUCTURES, type StructureId } from "../core/symmetricHarmony";
+import { S5_STRUCTURES, S7_STRUCTURES, symmetricTriad, symmetricSeventhChord, type StructureId, type SeventhStructureId } from "../core/symmetricHarmony";
+import NotePlayback, { chordsToNotes } from "./NotePlayback";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
 import "./SchillingerGenerator.css";
@@ -36,6 +39,30 @@ export default function AutomaticChromaticContinuityPanel() {
   const allSteps = useMemo(() => automaticChromaticContinuity(structure, order, direction, root), [structure, order, direction, root]);
   const steps = useMemo(() => allSteps.filter((s) => s.group < groupLimit), [allSteps, groupLimit]);
   const formCount = useMemo(() => automaticContinuityFormCount(), []);
+
+  // Any group of simultaneous moves (p.546-551).
+  const [parts, setParts] = useState<3 | 4>(3);
+  const [seventhStructure, setSeventhStructure] = useState<SeventhStructureId>(1);
+  const [movesText, setMovesText] = useState("SA, T");
+  const [movesDirection, setMovesDirection] = useState<ChromaticDirection>("down");
+  const moveResult = useMemo(() => {
+    const voices = parts === 3 ? "TAS" : "BTAS"; // index = position from the bottom
+    const moves = movesText
+      .split(/[,;]+/)
+      .map((t) => t.trim().toUpperCase())
+      .filter(Boolean)
+      .map((t) => [...t].map((ch) => voices.indexOf(ch)));
+    if (moves.length === 0 || moves.some((m) => m.length === 0 || m.some((i) => i < 0))) {
+      return { error: `Use the letters ${[...voices].reverse().join(", ")}, one move per comma.` };
+    }
+    const start = parts === 3 ? symmetricTriad(structure, root) : symmetricSeventhChord(seventhStructure, root - 12);
+    try {
+      return { chords: continuityFromMoves(start, moves, movesDirection) };
+    } catch {
+      return { error: "Every voice must move equally often in the group: \"the direction can be changed only after all voices have performed their moves\" (p.548)." };
+    }
+  }, [parts, movesText, structure, seventhStructure, root, movesDirection]);
+  const moveNotes = useMemo(() => chordsToNotes(moveResult.chords ?? []), [moveResult]);
 
   const notes: NoteEvent[] = useMemo(() => {
     return steps.flatMap((step, i) => VOICES.map((voice, voiceIndex) => ({
@@ -124,7 +151,7 @@ export default function AutomaticChromaticContinuityPanel() {
 
   return (
     <section className="schillinger__section schillinger__section--wide">
-      <h3>Automatic Chromatic Continuities (Book V, Ch. 16, Section A)</h3>
+      <h3>Automatic Chromatic Continuities (Book V, Ch. 16)</h3>
       <p className="schillinger__hint">
         A plain S(5) triad (Soprano=fifth, Alto=third, Tenor=root) walks chromatically: within each of
         12 semitone-transposed "groups," the 3 voices are altered one at a time, cumulatively, in a
@@ -189,6 +216,61 @@ export default function AutomaticChromaticContinuityPanel() {
           Download MIDI
         </button>
       </div>
+
+      <h4>Any group of simultaneous moves (p.546-551, Figures 288-293)</h4>
+      <p className="schillinger__hint">
+        Two voices may move together ("the number of combinations out of three elements, taken two at a
+        time... = 3"), a pair may be compensated by the remaining voice, and in four-part harmony —
+        starting from any of the seven S(7) structures, "7 × 24 × 2 = {fourPartFormCount()} forms" for
+        single moves — pairs and three-plus-one groups follow the same rule: "the direction may be
+        changed only after the participation of all four voices in equal quantities." Write a group as
+        the book does, one move per comma: SA, T (Figure 289); SA, AT, ST (Figure 288); SA, AT, B, ST, B
+        (Figure 292, "all voices participate twice"). It repeats until the chord has moved an octave.
+      </p>
+      <div className="schillinger__row">
+        <label>
+          Parts
+          <select value={parts} onChange={(e) => setParts(Number(e.target.value) as 3 | 4)}>
+            <option value={3}>Three (S, A, T on the S(5) above)</option>
+            <option value={4}>Four (S, A, T, B on an S(7))</option>
+          </select>
+        </label>
+        {parts === 4 && (
+          <label>
+            S(7) structure
+            <select value={seventhStructure} onChange={(e) => setSeventhStructure(Number(e.target.value) as SeventhStructureId)}>
+              {(Object.keys(S7_STRUCTURES).map(Number) as SeventhStructureId[]).map((id) => (
+                <option key={id} value={id}>
+                  S{id} {S7_STRUCTURES[id].name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label>
+          Group of moves
+          <input type="text" value={movesText} onChange={(e) => setMovesText(e.target.value)} />
+        </label>
+        <label>
+          Direction
+          <select value={movesDirection} onChange={(e) => setMovesDirection(e.target.value as ChromaticDirection)}>
+            <option value="down">Down</option>
+            <option value="up">Up</option>
+          </select>
+        </label>
+      </div>
+      <div className="schillinger__readout">
+        {moveResult.chords ? (
+          <>
+            {moveResult.chords.length} chords, closing on chord {moveResult.chords.length}:{" "}
+            {moveResult.chords.slice(0, 13).map((c) => c.map(noteName).join("-")).join(" · ")}
+            {moveResult.chords.length > 13 ? " …" : ""}
+          </>
+        ) : (
+          moveResult.error
+        )}
+      </div>
+      <NotePlayback notes={moveNotes} lengthUnits={moveResult.chords?.length ?? 0} fileName="schillinger-automatic-moves.mid" defaultBpm={160} />
     </section>
   );
 }

@@ -5,14 +5,60 @@ import {
   INVERSION_DOUBLING_FORMS,
   doublingPositions,
   buildDoublingVoicing,
+  doublingTransformations,
   type DoubledFunction,
+  type DoublingForm,
+  type FunctionMove,
 } from "../core/variableDoublings";
+import { cycleDegreeStep, nearestPitch, stackedTriad } from "../core/diatonicHarmony";
+import { intervalCellScale } from "../core/scales";
+import NotePlayback, { chordsToNotes } from "./NotePlayback";
 import { S5_STRUCTURES, type StructureId } from "../core/symmetricHarmony";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
 import "./SchillingerGenerator.css";
 
 const NOTE_NAMES = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"];
+
+const MAJOR_SCALE = intervalCellScale([2, 2, 1, 2, 2, 2, 1]);
+const ALL_FORMS: readonly DoublingForm[] = [
+  ...DOUBLED_FUNCTIONS.map((fn) => VARIABLE_DOUBLING_FORMS[fn]),
+  ...DOUBLED_FUNCTIONS.map((fn) => INVERSION_DOUBLING_FORMS[fn]),
+];
+
+/**
+ * Plays one transformation map in C major: the first form on c, voiced
+ * close from the bass with its functions in the map's order (lowest
+ * last-listed), then each voice -- bass included -- moving to the nearest
+ * pitch of its new function on the cycle's next root.
+ */
+function realizeMap(from: DoublingForm, to: DoublingForm, map: readonly FunctionMove[], cycle: 3 | 5 | 7): number[][] {
+  const pitchOf = (degree: number) => {
+    const [r, t, f] = stackedTriad(MAJOR_SCALE, 60, degree);
+    return { 1: r, 3: t, 5: f } as Record<1 | 3 | 5, number>;
+  };
+  const first = pitchOf(0);
+  const next = pitchOf(cycleDegreeStep(cycle));
+  const bass = first[from.bassFunction] - 12;
+  let below = bass;
+  const upper = [...map].reverse().map(([fn]) => {
+    let note = first[fn as 1 | 3 | 5];
+    while (note <= below) note += 12;
+    while (note - 12 > below) note -= 12;
+    below = note;
+    return note;
+  });
+  const movedUpper = [...map].reverse().map(([, fn], k) => nearestPitch(upper[k], next[fn as 1 | 3 | 5]));
+  return [
+    [bass, ...upper],
+    [nearestPitch(bass, next[to.bassFunction]), ...movedUpper],
+  ];
+}
+
+/** Bass first, then the upper voices from low to high, for reading. */
+function lowToHigh(chord: readonly number[]): string {
+  return [chord[0], ...chord.slice(1).sort((x, y) => x - y)].map(noteName).join("-");
+}
 
 function noteName(midiNote: number): string {
   return `${NOTE_NAMES[((midiNote % 12) + 12) % 12]}${Math.floor(midiNote / 12) - 1}`;
@@ -38,6 +84,17 @@ export default function VariableDoublingsPanel() {
   const form = forms[doubledFunction];
 
   const positions = useMemo(() => doublingPositions(form), [form]);
+
+  // Ch.6 Figures 58-62, Ch.7 Figures 68-69: transformations between doubling forms.
+  const [fromIndex, setFromIndex] = useState(0);
+  const [toIndex, setToIndex] = useState(1);
+  const [tableCycle, setTableCycle] = useState<3 | 5 | 7>(3);
+  const maps = useMemo(() => doublingTransformations(ALL_FORMS[fromIndex], ALL_FORMS[toIndex]), [fromIndex, toIndex]);
+  const mapChords = useMemo(
+    () => maps.flatMap((map) => realizeMap(ALL_FORMS[fromIndex], ALL_FORMS[toIndex], map, tableCycle)),
+    [maps, fromIndex, toIndex, tableCycle],
+  );
+  const mapNotes = useMemo(() => chordsToNotes(mapChords), [mapChords]);
   useEffect(() => setPositionIndex(0), [inversion, doubledFunction]);
   const activePosition = positions[Math.min(positionIndex, positions.length - 1)];
 
@@ -215,6 +272,57 @@ export default function VariableDoublingsPanel() {
           Download MIDI
         </button>
       </div>
+
+      <h4>Transformations between forms (Ch. 6, Figures 58-62; Ch. 7, Figures 68-69)</h4>
+      <p className="schillinger__hint">
+        Each of the book's tables lists how the upper voices of one form take the functions of the
+        next — "5↔5, 3↔3, 1↔3" — the same maps serving C3, C5 and C7. All seven tables follow one
+        rule: voices that share a function (an upper voice doubling the bass included) must take
+        different functions in the next chord, so no octaves move into octaves. That is why "there
+        always are three transformations when S(5)① participates and only one when it does not."
+        Play hears each map on c, then on the cycle's next root, in C major.
+      </p>
+      <div className="schillinger__row">
+        <label>
+          From
+          <select value={fromIndex} onChange={(e) => setFromIndex(Number(e.target.value))}>
+            {ALL_FORMS.map((f, i) => (
+              <option key={f.label} value={i}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          To
+          <select value={toIndex} onChange={(e) => setToIndex(Number(e.target.value))}>
+            {ALL_FORMS.map((f, i) => (
+              <option key={f.label} value={i}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Cycle
+          <select value={tableCycle} onChange={(e) => setTableCycle(Number(e.target.value) as 3 | 5 | 7)}>
+            <option value={3}>C3</option>
+            <option value={5}>C5</option>
+            <option value={7}>C7</option>
+          </select>
+        </label>
+      </div>
+      <div className="schillinger__readout">
+        {ALL_FORMS[fromIndex].label} ↔ {ALL_FORMS[toIndex].label}: {maps.length} transformation{maps.length === 1 ? "" : "s"}
+        {maps.map((map, i) => (
+          <span key={i}>
+            <br />
+            ({i + 1}) {map.map(([f, t]) => `${f}↔${t}`).join(", ")} — {lowToHigh(mapChords[2 * i])} →{" "}
+            {lowToHigh(mapChords[2 * i + 1])}
+          </span>
+        ))}
+      </div>
+      <NotePlayback notes={mapNotes} lengthUnits={mapChords.length} fileName="schillinger-doubling-transformations.mid" />
     </section>
   );
 }

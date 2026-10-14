@@ -4,8 +4,20 @@ import {
   symmetricStructureProgression,
   symmetricHarmonyScale,
   SYMMETRIC_CYCLE_FOR_TONIC_COUNT,
+  expandStructuralGroup,
+  zeroCyclePositions,
+  symmetricZeroCycle,
+  diatonicSymmetricProgression,
+  symmetricProgression,
+  symmetricRoots,
+  recurrenceCycles,
   type StructureId,
+  type TonicCount,
 } from "../core/symmetricHarmony";
+import { voicingPosition, type TransformDirection, type Voicing } from "../core/diatonicHarmony";
+import { parseCycleGroup, parseStructuralGroup, formatCycleGroup, formatStructuralGroup } from "../core/notation/harmony";
+import { intervalCellScale } from "../core/scales";
+import NotePlayback, { chordsToNotes } from "./NotePlayback";
 import { TONIC_COUNTS, symmetricTonics } from "../core/symmetricScales";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
@@ -19,6 +31,24 @@ function noteName(midiNote: number): string {
 
 function chordLabel(triad: readonly number[]): string {
   return triad.map(noteName).join("-");
+}
+
+const TYPE_II_SCALES = {
+  mixolydian: { label: "c-d-e-f-g-a-b♭ (Figure 47)", cells: [2, 2, 1, 2, 2, 1, 2] },
+  major: { label: "natural major", cells: [2, 2, 1, 2, 2, 2, 1] },
+  aeolian: { label: "natural minor (Aeolian)", cells: [2, 1, 2, 2, 1, 2, 2] },
+  harmonicMinor: { label: "harmonic minor", cells: [2, 1, 2, 2, 1, 3, 1] },
+} as const;
+type TypeIIScale = keyof typeof TYPE_II_SCALES;
+const TRANSFORM_LABELS: Record<TransformDirection, string> = {
+  clockwise: "↻ clockwise",
+  counterclockwise: "↺ counterclockwise",
+  const3: "const. 3",
+};
+
+/** Bass first, then the upper voices from low to high. */
+function voicingArray(v: Voicing): number[] {
+  return [v.bass, ...[v.root, v.third, v.fifth].sort((x, y) => x - y)];
 }
 
 function parseStructures(text: string): StructureId[] {
@@ -50,6 +80,53 @@ export default function SymmetricHarmonyPanel() {
   const scaleAsNotes = useMemo(() => scale.map((pc) => [octaveBase + pc]), [scale, octaveBase]);
 
   const progression: number[][] = mode === "scale" ? scaleAsNotes : chordProgression;
+
+  // Ch.3 B: the symmetric zero cycle.
+  const [c0Text, setC0Text] = useState("3S1 + S3 + 2S2");
+  const [c0Direction, setC0Direction] = useState<TransformDirection>("counterclockwise");
+  const c0Group = useMemo(() => parseStructuralGroup(c0Text), [c0Text]);
+  const c0Structures = useMemo(() => (c0Group ? expandStructuralGroup(c0Group) : []), [c0Group]);
+  const c0Chords = useMemo(
+    () => (c0Structures.length > 0 ? symmetricZeroCycle(c0Structures, root, c0Direction).map(voicingArray) : []),
+    [c0Structures, root, c0Direction],
+  );
+  const c0Notes = useMemo(() => chordsToNotes(c0Chords), [c0Chords]);
+
+  // Ch.4: Type II.
+  const [t2Scale, setT2Scale] = useState<TypeIIScale>("mixolydian");
+  const [t2CyclesText, setT2CyclesText] = useState("2C7 + C3 + C5");
+  const [t2StructuresText, setT2StructuresText] = useState("S1");
+  const t2Cycles = useMemo(() => parseCycleGroup(t2CyclesText), [t2CyclesText]);
+  const t2Structures = useMemo(() => parseStructuralGroup(t2StructuresText), [t2StructuresText]);
+  const t2 = useMemo(() => {
+    if (!t2Cycles || !t2Structures || t2Structures.some(([, s]) => s > 4)) return null;
+    try {
+      return diatonicSymmetricProgression(intervalCellScale([...TYPE_II_SCALES[t2Scale].cells]), root - 12, t2Cycles, t2Structures);
+    } catch {
+      return null;
+    }
+  }, [t2Cycles, t2Structures, t2Scale, root]);
+  const t2Notes = useMemo(() => chordsToNotes(t2?.chords ?? []), [t2]);
+
+  // Ch.5: Type III.
+  const [t3Tonics, setT3Tonics] = useState<Exclude<TonicCount, 1>>(2);
+  const [t3Form, setT3Form] = useState<"positive" | "negative">("positive");
+  const [t3Transform, setT3Transform] = useState<TransformDirection>("clockwise");
+  const [t3StructuresText, setT3StructuresText] = useState("S1");
+  const t3Group = useMemo(() => parseStructuralGroup(t3StructuresText), [t3StructuresText]);
+  const t3Roots = useMemo(() => symmetricRoots(t3Tonics, t3Form), [t3Tonics, t3Form]);
+  const t3 = useMemo(
+    () =>
+      t3Group && t3Group.every(([, s]) => s <= 4)
+        ? symmetricProgression(root, t3Tonics, t3Group, t3Transform, {
+            form: t3Form,
+            chords: Math.max(recurrenceCycles(t3Tonics, t3Transform) * t3Tonics, expandStructuralGroup(t3Group).length) + 1,
+          })
+        : null,
+    [root, t3Tonics, t3Group, t3Transform, t3Form],
+  );
+  const t3Chords = useMemo(() => (t3 ? t3.voicings.map(voicingArray) : []), [t3]);
+  const t3Notes = useMemo(() => chordsToNotes(t3Chords), [t3Chords]);
 
   const notes: NoteEvent[] = useMemo(() => {
     return progression.flatMap((chord, i) =>
@@ -140,7 +217,7 @@ export default function SymmetricHarmonyPanel() {
 
   return (
     <section className="schillinger__section schillinger__section--wide">
-      <h3>The Symmetric System of Harmony (Book V, Ch. 3)</h3>
+      <h3>The Symmetric System of Harmony (Book V, Ch. 3-5)</h3>
       <p className="schillinger__hint">
         Unlike diatonic harmony, symmetric chord structures are pre-selected independent of any
         scale, built directly from semitone intervals — "scale is the result... the consequence of
@@ -230,6 +307,146 @@ export default function SymmetricHarmonyPanel() {
           Download MIDI
         </button>
       </div>
+
+      <h4>The symmetric zero cycle, C0 (Ch. 3, Section B)</h4>
+      <p className="schillinger__hint">
+        "A group of chords with a common root-tone but with variable positions and variable
+        structures." Coefficients of recurrence decide the positions: "a structure with a coefficient
+        greater than one changes its positions until the next structure appears. The change of
+        structure requires the preservation of the position" (p.391) — S const., position var.; S
+        var., position const. Write the structural group as the book does: 3S1 + S3 + 2S2.
+      </p>
+      <div className="schillinger__row">
+        <label>
+          Structural group
+          <input type="text" value={c0Text} onChange={(e) => setC0Text(e.target.value)} />
+        </label>
+        <label>
+          Position change by
+          <select value={c0Direction} onChange={(e) => setC0Direction(e.target.value as TransformDirection)}>
+            {(Object.keys(TRANSFORM_LABELS) as TransformDirection[]).map((t) => (
+              <option key={t} value={t}>
+                {TRANSFORM_LABELS[t]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="schillinger__readout">
+        {c0Group ? (
+          <>
+            {formatStructuralGroup(c0Group)} = {c0Structures.map((k) => `S${k}`).join(" + ")}
+            <br />
+            Positions: {zeroCyclePositions(c0Structures).join(", ") || "—"}
+            <br />
+            {c0Chords.map(chordLabel).join(" · ")}
+          </>
+        ) : (
+          "Write a structural group such as 3S1 + S3 + 2S2 (structures 1-4)."
+        )}
+      </div>
+      <NotePlayback notes={c0Notes} lengthUnits={c0Chords.length} fileName="schillinger-zero-cycle.mid" />
+
+      <h4>Diatonic-symmetric harmony, Type II (Ch. 4)</h4>
+      <p className="schillinger__hint">
+        "All root-tones... must belong to one scale of the First Group" and "all chord structures must
+        be pre-selected; they are not affected by the intonation of scale formed by the root-tones"
+        (p.393). The roots move through the scale by a group of tonal cycles with coefficients; the
+        structural group runs over them independently. Figure 47: in c-d-e-f-g-a-b♭, 2C7 + C3 + C5
+        under S1 const.
+      </p>
+      <div className="schillinger__row">
+        <label>
+          Scale of roots
+          <select value={t2Scale} onChange={(e) => setT2Scale(e.target.value as TypeIIScale)}>
+            {(Object.keys(TYPE_II_SCALES) as TypeIIScale[]).map((k) => (
+              <option key={k} value={k}>
+                {TYPE_II_SCALES[k].label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Tonal cycles
+          <input type="text" value={t2CyclesText} onChange={(e) => setT2CyclesText(e.target.value)} />
+        </label>
+        <label>
+          Structural group
+          <input type="text" value={t2StructuresText} onChange={(e) => setT2StructuresText(e.target.value)} />
+        </label>
+      </div>
+      <div className="schillinger__readout">
+        {t2 && t2Cycles && t2Structures ? (
+          <>
+            {formatCycleGroup(t2Cycles)}; {formatStructuralGroup(t2Structures)} — {t2.chords.length} chords
+            <br />
+            Roots: {t2.chords.map((c) => noteName(c[0]).replace(/\d+$/, "")).join(" ")}
+            <br />
+            {t2.chords.map(chordLabel).join(" · ")}
+          </>
+        ) : (
+          "Write tonal cycles such as 2C7 + C3 + C5 and a structural group such as S1 or S1 + 2S2 (structures 1-4)."
+        )}
+      </div>
+      <NotePlayback notes={t2Notes} lengthUnits={t2?.chords.length ?? 0} fileName="schillinger-type-ii.mid" />
+
+      <h4>Symmetric harmony, Type III (Ch. 5)</h4>
+      <p className="schillinger__hint">
+        Roots on the points of symmetry of the octave, each step a tonal cycle (p.396): two tonics
+        C-F#-C by C5 and C-5; three C-A♭-E by C3; four C-A-F#-E♭ by C3; six and twelve by C7 — the
+        negative form runs the other way. The voices keep their positions through one transformation,
+        so the original position returns on the first tonic after lcm(transformation period,
+        tonics) ÷ tonics rounds: "two tonics produce a triple recurrence-cycle" for ↻ and ↺, and
+        "const. 3 produces a closed system" (p.397-399). The structural group runs alongside the
+        tonics, "S changes with each tonic."
+      </p>
+      <div className="schillinger__row">
+        <label>
+          Tonics
+          <select value={t3Tonics} onChange={(e) => setT3Tonics(Number(e.target.value) as Exclude<TonicCount, 1>)}>
+            {([2, 3, 4, 6, 12] as const).map((n) => (
+              <option key={n} value={n}>
+                {n} tonics
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Form
+          <select value={t3Form} onChange={(e) => setT3Form(e.target.value as "positive" | "negative")}>
+            <option value="positive">Positive</option>
+            <option value="negative">Negative</option>
+          </select>
+        </label>
+        <label>
+          Transformation
+          <select value={t3Transform} onChange={(e) => setT3Transform(e.target.value as TransformDirection)}>
+            {(Object.keys(TRANSFORM_LABELS) as TransformDirection[]).map((t) => (
+              <option key={t} value={t}>
+                {TRANSFORM_LABELS[t]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Structural group
+          <input type="text" value={t3StructuresText} onChange={(e) => setT3StructuresText(e.target.value)} />
+        </label>
+      </div>
+      <div className="schillinger__readout">
+        Roots {t3Roots.tonics.map((pc) => noteName(root + pc).replace(/\d+$/, "")).join("-")} by{" "}
+        {t3Roots.cycles.join(", ")}; recurrence-cycles: {recurrenceCycles(t3Tonics, t3Transform)}
+        {recurrenceCycles(t3Tonics, t3Transform) === 1 ? " (a closed system)" : " (a continuous system)"}
+        {t3 && (
+          <>
+            <br />
+            {t3Chords.map(chordLabel).join(" · ")}
+            <br />
+            Positions: {t3.voicings.map(voicingPosition).join(" · ")}
+          </>
+        )}
+      </div>
+      <NotePlayback notes={t3Notes} lengthUnits={t3Chords.length} fileName="schillinger-type-iii.mid" />
     </section>
   );
 }

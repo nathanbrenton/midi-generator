@@ -3,7 +3,10 @@ import {
   modulationInterval,
   chordRootProgression,
   symmetricProgressionCycleLength,
+  completeSymmetricProgression,
 } from "../core/generalizedSymmetricProgressions";
+import { S5_STRUCTURES, symmetricTriad, type StructureId } from "../core/symmetricHarmony";
+import NotePlayback, { chordsToNotes } from "./NotePlayback";
 import { generateCompositions } from "../core/symmetricScales";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
@@ -38,6 +41,21 @@ export default function GeneralizedSymmetricProgressionsPanel() {
     () => roots.map((midiNote, i) => ({ midiNote, startUnits: i, durationUnits: 0.9, velocity: 90, voice: 0 })),
     [roots],
   );
+
+  // A free group repeated until it closes (p.490-491, Figures 205-207).
+  const [freeText, setFreeText] = useState("3+2");
+  const [freeStructure, setFreeStructure] = useState<StructureId>(1);
+  const freeGroup = useMemo(() => {
+    const steps = freeText.split(/[+\s,-]+/).filter(Boolean).map(Number);
+    return steps.length > 0 && steps.every((n) => Number.isInteger(n) && n >= 0 && n <= 24) && steps.some((n) => n > 0) ? steps : null;
+  }, [freeText]);
+  const freeRoots = useMemo(() => (freeGroup ? completeSymmetricProgression(48, freeGroup) : []), [freeGroup]);
+  const freeChords = useMemo(
+    // Roots descend through several octaves; each is heard within one octave, the bass under its chord.
+    () => freeRoots.map((r) => [(((r % 12) + 12) % 12) + 48, ...symmetricTriad(freeStructure, (((r % 12) + 12) % 12) + 60)]),
+    [freeRoots, freeStructure],
+  );
+  const freeNotes = useMemo(() => chordsToNotes(freeChords), [freeChords]);
 
   const secondsPerUnit = 60 / bpm;
   const cycleSeconds = notes.length * secondsPerUnit;
@@ -192,6 +210,45 @@ export default function GeneralizedSymmetricProgressionsPanel() {
           Download MIDI
         </button>
       </div>
+
+      <h4>Any group until it closes (p.490-491, Figures 204-207)</h4>
+      <p className="schillinger__hint">
+        "The vitality of such groups, i.e., the periodicity of their recurrence until the completion
+        of their cycle, depends upon the divisibility-properties of the sums." Type a group of
+        descending steps: 3+2 runs twelve times (Figure 205); 3+1+2+2+1+3 (r4÷3) closes at once;
+        3+3+5+10 is "between Wagner and Ravel"; a telephone number, Columbus 5-7573, "closes after 4
+        cycles" (Figure 207). "If he wants to obtain the tonic-dominant character of classical music,
+        the only thing he needs is an excess of the value 5." Zeros are zero cycles. Each root carries
+        the chosen structure.
+      </p>
+      <div className="schillinger__row">
+        <label>
+          Group
+          <input type="text" value={freeText} onChange={(e) => setFreeText(e.target.value)} />
+        </label>
+        <label>
+          Structure
+          <select value={freeStructure} onChange={(e) => setFreeStructure(Number(e.target.value) as StructureId)}>
+            {([1, 2, 3, 4] as StructureId[]).map((id) => (
+              <option key={id} value={id}>
+                S{id} {S5_STRUCTURES[id].name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="schillinger__readout">
+        {freeGroup ? (
+          <>
+            {freeGroup.join("+")} (sum {freeGroup.reduce((a, b) => a + b, 0)}) closes after{" "}
+            {symmetricProgressionCycleLength(freeGroup.reduce((a, b) => a + b, 0))} cycle(s), {freeRoots.length - 1} steps:{" "}
+            {freeRoots.map((r) => NOTE_NAMES[((r % 12) + 12) % 12].toUpperCase()).join("-")}
+          </>
+        ) : (
+          "Type steps such as 3+2 or 5-7-5-7-3."
+        )}
+      </div>
+      <NotePlayback notes={freeNotes} lengthUnits={freeChords.length} fileName="schillinger-symmetric-group.mid" />
     </section>
   );
 }
