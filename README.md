@@ -1426,7 +1426,24 @@ positive cycles"; descending C0, C-3, C-5; ascending C-3, C-5, C-7
 seventh, Ch. 10's S(9) Table of Preparations as well. Both tables come
 out right only with positive cycles running downward. `cycleBetween`
 names the cycle between any two roots ("skipping two chords in C3, we
-obtain C7").
+obtain C7"). Section C's negative cycles take the same maps reversed — C-3
+counterclockwise, C-5 crosswise, C-7 clockwise — so that, read with
+positive chords, "the C-3 requires the ascending of 1; the C-5 … of 1
+and 3; the C-7 … of 1, 3 and 5" (p.444). Section D's **S(7) Table of
+Structures** (Figure 141) is `S7_STRUCTURES`: major 4+3+4, minor 3+4+3,
+large 4+3+3, small 3+3+4, diminished 3+3+3, augmented I 4+4+3, augmented
+II 3+4+4 — adjectives "chosen so that they do not pertain to degrees of a
+particular scale," so "dominant" is abandoned. Figure 142's coefficients
+are Book I's r(5÷4) laid over S3 + S7 + S4 + S1 in turn
+(`applyCoefficients`), and in Type III each tonic count's own cycle
+fixes its seventh-chord map, which reproduces every closed/continuous
+statement for S(7) ("two tonics… becomes closed on S(7)," three tonics
+"moves four times," six "moves two times": `seventhRecurrenceCycles`).
+Section E's five-part (4 + 1) forms — an S(7) on the bass's root, third,
+fifth or seventh, and S(5) with the added 13th — are `FIVE_PART_FORMS`/
+`fivePartChord` in `hybridFourPartHarmony.ts`, checked against the
+book's own spelling in c-d-e-f♯-g-a-b♭ and its remark that D S(9) → G
+S(13) is C5 in the bass but C0 above it.
 
 **Section B (Resolution of S(7), p.439-442) and Section C (Negative
 Cycles, p.443-444) are not yet built.** The rules are clear in prose —

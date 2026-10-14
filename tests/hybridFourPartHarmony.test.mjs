@@ -5,11 +5,12 @@ import {
   hybridFormsForTension,
   stackedHybridChord,
   transformHybridVoicing,
+  fivePartChord,
 } from "../src/core/hybridFourPartHarmony.ts";
 import { stackedNinthChord } from "../src/core/ninthChords.ts";
 import { stackedEleventhChord } from "../src/core/eleventhChords.ts";
 import { intervalCellScale } from "../src/core/scales.ts";
-import { nearestPitch } from "../src/core/diatonicHarmony.ts";
+import { nearestPitch, cycleBetween } from "../src/core/diatonicHarmony.ts";
 
 const C_MAJOR = intervalCellScale([2, 2, 1, 2, 2, 2, 1]);
 
@@ -104,4 +105,27 @@ test("constantA holds a fixed and swaps b/c; constantB holds b fixed and swaps a
   assert.equal(nextC.c, nearestPitch(voicing.c, target.c)); // c -> c
   assert.equal(nextC.b, nearestPitch(voicing.a, target.b)); // old a -> new b
   assert.equal(nextC.a, nearestPitch(voicing.b, target.a)); // old b -> new a
+});
+
+// Book V Ch.9 E: hybrid five-part (4 + 1) harmony (p.451-452, Figure 148).
+test("five-part forms in c-d-e-f#-g-a-bb, as p.452 spells them: S(5) c-e-g-a ... S(13) c-bb-d-f#-a", () => {
+  const scale = intervalCellScale([2, 2, 2, 1, 2, 1, 2]); // c d e f# g a bb
+  const names = ["c", "c#", "d", "eb", "e", "f", "f#", "g", "ab", "a", "bb", "b"];
+  const spell = (tension) => {
+    const { bass, upper } = fivePartChord(scale, 48, 0, tension);
+    return [bass, ...upper].map((n) => names[n % 12]).join("-");
+  };
+  assert.equal(spell(5), "c-c-e-g-a"); // bass c under 1, 3, 5, 13
+  assert.equal(spell(7), "c-c-e-g-bb");
+  assert.equal(spell(9), "c-e-g-bb-d");
+  assert.equal(spell(11), "c-g-bb-d-f#");
+  assert.equal(spell(13), "c-bb-d-f#-a");
+});
+
+test("f-a-c-e is 3-5-7-9 of D S(9) and 7-9-11-13 of G S(13): C5 in the bass, C0 in the upper four parts (p.452)", () => {
+  const d9 = fivePartChord(C_MAJOR, 48, 1, 9);
+  const g13 = fivePartChord(C_MAJOR, 48, 4, 13);
+  assert.deepEqual(d9.upper.map((n) => n % 12), g13.upper.map((n) => n % 12)); // f a c e
+  assert.deepEqual(d9.upper.map((n) => n % 12), [5, 9, 0, 4]);
+  assert.equal(cycleBetween(1, 4), 5);
 });

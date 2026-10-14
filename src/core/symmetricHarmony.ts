@@ -310,3 +310,64 @@ export function symmetricProgression(
 export const G6_STRUCTURE_FORMS: readonly (readonly [StructureId, StructureId, StructureId])[] = ([1, 2, 3, 4] as StructureId[]).flatMap(
   (last) => ([1, 2, 3, 4] as StructureId[]).map((first) => [first, first, last] as const),
 );
+
+export type SeventhStructureId = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+/**
+ * Ch.9 D, the S(7) Table of Structures (Figure 141, rendered): seven
+ * structures, named "so that they do not pertain to degrees of a
+ * particular scale but to structure alone. Thus, so common an adjective
+ * as 'dominant' must be abandoned" (p.447). Intervals in semitones from
+ * the root up.
+ */
+export const S7_STRUCTURES: Readonly<Record<SeventhStructureId, { name: string; intervals: readonly [number, number, number] }>> = {
+  1: { name: "major", intervals: [4, 3, 4] },
+  2: { name: "minor", intervals: [3, 4, 3] },
+  3: { name: "large", intervals: [4, 3, 3] },
+  4: { name: "small", intervals: [3, 3, 4] },
+  5: { name: "diminished", intervals: [3, 3, 3] },
+  6: { name: "augmented I", intervals: [4, 4, 3] },
+  7: { name: "augmented II", intervals: [3, 4, 4] },
+};
+
+/** One of the seven S(7) structures on `rootMidiNote`: root, third, fifth, seventh. */
+export function symmetricSeventhChord(structure: SeventhStructureId, rootMidiNote: number): number[] {
+  const [a, b, c] = S7_STRUCTURES[structure].intervals;
+  return [rootMidiNote, rootMidiNote + a, rootMidiNote + a + b, rootMidiNote + a + b + c];
+}
+
+/**
+ * "A continuity on symmetric C0 of all seven structures offers 5,040
+ * permutations. Thus a c-chord alone can move (without changing its
+ * position and without coefficients of recurrence being applied) for
+ * 5,040 x 7 = 35,280 chords" (p.446): 7! orders of seven chords each.
+ */
+export const S7_ZERO_CYCLE_PERMUTATIONS = 5040;
+export const S7_ZERO_CYCLE_CHORDS = S7_ZERO_CYCLE_PERMUTATIONS * 7;
+
+/**
+ * Lays a sequence of coefficients over a sequence of structures in turn,
+ * each repeating until both run out together -- the book's "Structures:
+ * S3 + S7 + S4 + S1; Coefficients (r5÷4): 4S3 + S7 + 3S4 + 2S1 + 2S3 +
+ * 3S7 + S4 + 4S1" (p.447, Figure 142).
+ */
+export function applyCoefficients<T>(structures: readonly T[], coefficients: readonly number[]): (readonly [number, T])[] {
+  const length = lcm(structures.length, coefficients.length);
+  return Array.from({ length }, (_, k) => [coefficients[k % coefficients.length], structures[k % structures.length]] as const);
+}
+
+/** The seventh-chord maps of Ch.9 A return voices to their functions every 4 chords (clockwise C3, counterclockwise C7) or 2 (crosswise C5). */
+const SEVENTH_TRANSFORMATION_PERIOD: Readonly<Record<SymmetricCycleLabel, number>> = { C3: 4, C5: 2, C7: 4 };
+
+/**
+ * Ch.9 D, S(7) in Type III (p.449-451): each tonic count moves by its own
+ * cycle (`SYMMETRIC_CYCLE_FOR_TONIC_COUNT`), so its transformation is that
+ * cycle's seventh-chord map -- and the recurrence-cycles follow as for
+ * S(5): two tonics, "continuous on S(5), becomes closed on S(7)"; three
+ * tonics "moves four times"; four tonics closed; six "moves two times";
+ * twelve closed.
+ */
+export function seventhRecurrenceCycles(tonicCount: Exclude<TonicCount, 1>): number {
+  const period = SEVENTH_TRANSFORMATION_PERIOD[SYMMETRIC_CYCLE_FOR_TONIC_COUNT[tonicCount]];
+  return lcm(period, tonicCount) / tonicCount;
+}

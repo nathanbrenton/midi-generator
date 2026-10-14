@@ -143,3 +143,34 @@ export function transformHybridVoicing(
   });
   return next;
 }
+
+/**
+ * Book V Ch.9 E, hybrid five-part (4 + 1) harmony (p.451-452): "the bass
+ * is a constant root tone and the four upper functions assume variable
+ * forms of S(7) with respect to the bass" -- an S(7) placed on the root,
+ * third, fifth or seventh gives S(7), S(9), S(11), S(13), and "an S(5) has
+ * to be represented with the addition of 13th (the so-called 'added
+ * sixth')". Figure 148, the upper parts from the top.
+ */
+export const FIVE_PART_FORMS: Readonly<Record<HybridTension, readonly [number, number, number, number]>> = {
+  5: [5, 3, 1, 13],
+  7: [7, 5, 3, 1],
+  9: [9, 7, 5, 3],
+  11: [11, 9, 7, 5],
+  13: [13, 11, 9, 7],
+};
+
+/**
+ * A five-part chord on `rootDegree`: the root in the bass and the four
+ * upper functions of `tension`, each n-1 degrees above the root, lowest
+ * first. "For example, if the scale selected is c-d-e-f#-g-a-bb; S(5) =
+ * c-e-g-a; S(7) = c-e-g-bb; S(9) = c-e-g-bb-d; S(11) = c-g-bb-d-f#;
+ * S(13) = c-bb-d-f#-a" (p.452).
+ */
+export function fivePartChord(scale: PitchScale, rootMidiNote: number, rootDegree: number, tension: HybridTension): { bass: number; upper: number[] } {
+  const bass = midiNoteForDegree(scale, rootMidiNote, rootDegree);
+  const upper = [...FIVE_PART_FORMS[tension]]
+    .sort((x, y) => x - y)
+    .map((fn) => midiNoteForDegree(scale, rootMidiNote, rootDegree + (fn - 1)));
+  return { bass, upper };
+}

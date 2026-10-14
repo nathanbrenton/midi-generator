@@ -14,6 +14,11 @@ import {
   recurrenceCycles,
   symmetricProgression,
   G6_STRUCTURE_FORMS,
+  S7_STRUCTURES,
+  symmetricSeventhChord,
+  S7_ZERO_CYCLE_CHORDS,
+  applyCoefficients,
+  seventhRecurrenceCycles,
 } from "../src/core/symmetricHarmony.ts";
 import { generalPermutations, generalPermutationsOf } from "../src/core/permutations.ts";
 import { compositionCount, symmetricTonics } from "../src/core/symmetricScales.ts";
@@ -275,4 +280,36 @@ test("Ch.8 F: G6 in Types II/III -- S(5) and its passing S(6) share a structure,
   assert.equal(G6_STRUCTURE_FORMS.length, 16);
   assert.ok(G6_STRUCTURE_FORMS.every(([first, passing]) => first === passing));
   assert.equal(new Set(G6_STRUCTURE_FORMS.map((f) => f.join())).size, 16);
+});
+
+// Ch.9 D: S(7) in the symmetric zero cycle (p.446-447).
+test("the S(7) Table of Structures, as Figure 141 notates them on c", () => {
+  const names = ["c", "db", "d", "eb", "e", "f", "gb", "g", "ab", "a", "bb", "b"];
+  const spell = (id) => symmetricSeventhChord(id, 60).map((n) => names[n % 12]).join("-");
+  assert.equal(spell(1), "c-e-g-b"); // major
+  assert.equal(spell(2), "c-eb-g-bb"); // minor
+  assert.equal(spell(3), "c-e-g-bb"); // large: "c-e-g-bb (4+3+3) as the most common form"
+  assert.equal(spell(4), "c-eb-gb-bb"); // small
+  assert.equal(spell(5), "c-eb-gb-a"); // diminished, c-eb-gb-bbb
+  assert.equal(spell(6), "c-e-ab-b"); // augmented I, c-e-g#-b
+  assert.equal(spell(7), "c-eb-g-b"); // augmented II
+  assert.equal(S7_STRUCTURES[3].name, "large");
+});
+
+test("seven structures in C0: 5,040 permutations, 5,040 x 7 = 35,280 chords (p.446)", () => {
+  assert.equal(generalPermutations([1, 2, 3, 4, 5, 6, 7]).length * 7, S7_ZERO_CYCLE_CHORDS);
+  assert.equal(S7_ZERO_CYCLE_CHORDS, 35280);
+});
+
+test("Figure 142: structures S3 + S7 + S4 + S1 under the coefficients r(5÷4) give 4S3 + S7 + 3S4 + 2S1 + 2S3 + 3S7 + S4 + 4S1", async () => {
+  const { generateResultant } = await import("../src/core/resultant.ts");
+  const coefficients = generateResultant([5, 4]).segments.map((s) => s.duration);
+  assert.deepEqual(coefficients, [4, 1, 3, 2, 2, 3, 1, 4]);
+  assert.deepEqual(applyCoefficients([3, 7, 4, 1], coefficients), [
+    [4, 3], [1, 7], [3, 4], [2, 1], [2, 3], [3, 7], [1, 4], [4, 1],
+  ]);
+});
+
+test("S(7) in Type III: two tonics closed, three move four times, four closed, six move two times, twelve closed (p.449-451)", () => {
+  assert.deepEqual([2, 3, 4, 6, 12].map(seventhRecurrenceCycles), [1, 4, 1, 2, 1]);
 });
