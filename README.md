@@ -2109,6 +2109,27 @@ diminished. So II is the natural major and XIII c-e-g-b♭-d-f♯-a, "a large
 S(7) and a major S(5)." Blends of two and three Σ give 36² = 1,296 and
 36³ = 46,656 styles.
 
+## The harmonization of melody (Book VI, Ch. 3)
+
+`HarmonizationPanel.tsx` (`src/core/harmonization.ts`). Melodization
+reversed, in nine forms (diatonic, chromatic or symmetric harmony for a
+diatonic, symmetric or chromatic melody). A diatonic melody takes two
+decisions — how many tones one chord harmonizes (M/H = 1 … 12, or a
+resultant) and the range of tension — and each group of tones becomes
+functions of one root (`groupAssignments`; Figure 45's "13-7-1-9" over C,
+"9-7-13-1" over D), preferring "those forming a positive cycle of roots"
+(`harmonize`). Symmetric harmonization places melodic forms where their
+intervals fit a master-structure (`placements`, `chordsForNote`,
+`triadPlacements`): with XIII, the book's two placements of c-e♭-b♭
+(3-5-9, 13-1-5), its seven chords for the note c (C, B♭, A♭, G♭, F, E♭,
+D), its two minor triads for the second method (5-7-9, 13-1-3, so 2³ =
+8 harmonizations), and the first method's 7 + 126 + 210 = 343 = 7³ all
+check out. One discrepancy: the book says c-e♭-b♭ has "no other
+location" on XIII, but 11-13-3 (f♯-a-e) has the same intervals — the
+code reports all three. Sections B and E-I (chromatic insertions,
+chromatic groups as in Book V Ch. 13, symmetric connections of diatonic
+sections) reuse earlier machinery and are documented, not rebuilt.
+
 ## Book V, Chapter 3 Section B, Chapter 4, and Chapter 5 Section A
 
 Chapter 3 Section B, the **symmetric zero cycle** (C0): chords on one
