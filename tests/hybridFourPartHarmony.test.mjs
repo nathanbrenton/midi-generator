@@ -115,8 +115,8 @@ test("five-part forms in c-d-e-f#-g-a-bb, as p.452 spells them: S(5) c-e-g-a ...
     const { bass, upper } = fivePartChord(scale, 48, 0, tension);
     return [bass, ...upper].map((n) => names[n % 12]).join("-");
   };
-  assert.equal(spell(5), "c-c-e-g-a"); // bass c under 1, 3, 5, 13
-  assert.equal(spell(7), "c-c-e-g-bb");
+  assert.equal(spell(5), "c-e-g-c-a"); // bass c under 3, 5, 1, 13
+  assert.equal(spell(7), "c-e-g-bb-c");
   assert.equal(spell(9), "c-e-g-bb-d");
   assert.equal(spell(11), "c-g-bb-d-f#");
   assert.equal(spell(13), "c-bb-d-f#-a");

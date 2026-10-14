@@ -360,8 +360,9 @@ export function voicingPosition(voicing: Voicing): "open" | "close" {
  * "The commas indicate an octave variation introduced when the extension
  * of range becomes impractical" (p.380): the bass, a constant root, stays
  * within a fourth of where it began, and the upper voices move together
- * by an octave once their middle wanders more than an octave from home --
- * the transformation itself, and so the position, is untouched.
+ * by an octave once their middle wanders more than an octave from home,
+ * or would sink to the bass -- the transformation itself, and so the
+ * position, is untouched.
  */
 export function octaveVariation(voicing: Voicing, home: Voicing): Voicing {
   const middle = (v: Voicing) => (v.root + v.third + v.fifth) / 3;
@@ -369,7 +370,9 @@ export function octaveVariation(voicing: Voicing, home: Voicing): Voicing {
   let bass = voicing.bass;
   while (bass - home.bass > 6) bass -= 12;
   while (home.bass - bass > 6) bass += 12;
-  const upper = Math.abs(middle(voicing) - middle(home)) > 12 ? upperShift : 0;
+  let upper = Math.abs(middle(voicing) - middle(home)) > 12 ? upperShift : 0;
+  // The upper voices never sink to or below the bass.
+  while (Math.min(voicing.root, voicing.third, voicing.fifth) + upper <= bass) upper += 12;
   return { bass, root: voicing.root + upper, third: voicing.third + upper, fifth: voicing.fifth + upper };
 }
 

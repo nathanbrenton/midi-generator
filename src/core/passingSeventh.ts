@@ -108,8 +108,8 @@ export function passingSeventhContinuity(
   const rootDegrees = Array.from({ length: 7 * cycles + 1 }, (_, k) => diatonicCycle(cycle)[k % 7]);
   const chords = voiceLeadProgression(scale, rootMidiNote, rootDegrees, direction === "descending" ? "clockwise" : "counterclockwise");
   const step = direction === "descending" ? -1 : 1;
-  // The figures' register: down from an octave below the chords, or up to it.
-  const start = rootMidiNote - (direction === "descending" ? 12 : 12 + 12 * 2 * cycles);
+  // The figures' register: down from the chords' own root (c4 under c-e-g), or up to it.
+  const start = rootMidiNote - (direction === "descending" ? 0 : 12 * 2 * cycles);
   const bass = Array.from({ length: 2 * rootDegrees.length - 1 }, (_, k) => midiNoteForDegree(scale, start, k * step));
   return { chords, rootDegrees, bass };
 }

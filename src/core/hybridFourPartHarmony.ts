@@ -162,15 +162,16 @@ export const FIVE_PART_FORMS: Readonly<Record<HybridTension, readonly [number, n
 
 /**
  * A five-part chord on `rootDegree`: the root in the bass and the four
- * upper functions of `tension`, each n-1 degrees above the root, lowest
- * first. "For example, if the scale selected is c-d-e-f#-g-a-bb; S(5) =
+ * upper functions of `tension`, each n-1 degrees above the root (an upper
+ * 1 an octave above the bass), lowest first. "For example, if the scale selected is c-d-e-f#-g-a-bb; S(5) =
  * c-e-g-a; S(7) = c-e-g-bb; S(9) = c-e-g-bb-d; S(11) = c-g-bb-d-f#;
  * S(13) = c-bb-d-f#-a" (p.452).
  */
 export function fivePartChord(scale: PitchScale, rootMidiNote: number, rootDegree: number, tension: HybridTension): { bass: number; upper: number[] } {
   const bass = midiNoteForDegree(scale, rootMidiNote, rootDegree);
-  const upper = [...FIVE_PART_FORMS[tension]]
-    .sort((x, y) => x - y)
-    .map((fn) => midiNoteForDegree(scale, rootMidiNote, rootDegree + (fn - 1)));
+  // An upper 1 doubles the bass an octave up rather than in unison with it.
+  const upper = FIVE_PART_FORMS[tension]
+    .map((fn) => midiNoteForDegree(scale, rootMidiNote, rootDegree + (fn === 1 ? 7 : fn - 1)))
+    .sort((x, y) => x - y);
   return { bass, upper };
 }

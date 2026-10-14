@@ -140,6 +140,13 @@ export const SYMMETRIC_CYCLE_FOR_TONIC_COUNT: Readonly<Record<number, SymmetricC
   12: "C7",
 };
 
+/** Lifts the upper voices by octaves until the lowest is at or above `floor`: Figure 46 sets e-g-c above the bass c, not around it. */
+function raiseToRoot(voicing: Voicing, floor: number): Voicing {
+  let shift = 0;
+  while (Math.min(voicing.root, voicing.third, voicing.fifth) + shift < floor) shift += 12;
+  return { ...voicing, root: voicing.root + shift, third: voicing.third + shift, fifth: voicing.fifth + shift };
+}
+
 /** A structural group with coefficients of recurrence: 3S1 + S3 + 2S2 is [[3, 1], [1, 3], [2, 2]] (p.390-391). */
 export type StructuralGroup = readonly (readonly [coefficient: number, structure: StructureId])[];
 
@@ -176,7 +183,7 @@ export function symmetricZeroCycle(
     const [root, third, fifth] = symmetricTriad(structure, rootMidiNote);
     return { root, third, fifth };
   };
-  let current = positionVoicingFrom(chord(structures[0]), rootMidiNote - 12, startPosition);
+  let current = raiseToRoot(positionVoicingFrom(chord(structures[0]), rootMidiNote - 12, startPosition), rootMidiNote);
   const voicings = [current];
   const home = current;
   zeroCyclePositions(structures).forEach((change, k) => {
@@ -291,7 +298,7 @@ export function symmetricProgression(
     const [root, third, fifth] = symmetricTriad(structures[k], tonics[k]);
     return { root, third, fifth };
   };
-  let current = positionVoicingFrom(chord(0), rootMidiNote - 12, options.startPosition ?? S5_POSITIONS.close[1]);
+  let current = raiseToRoot(positionVoicingFrom(chord(0), rootMidiNote - 12, options.startPosition ?? S5_POSITIONS.close[1]), rootMidiNote);
   const home = current;
   const voicings = [current];
   for (let k = 1; k < length; k++) {
