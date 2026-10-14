@@ -2175,6 +2175,30 @@ polynomial for M_I, M_II and H ((2 + 1 + 1): 27, 9 and 3 attacks, each
 part's groups summing to the next — `threePowerSynchronization`); and
 ostinatos, whose counterparts meet them again after lcm bars.
 
+## Instrumental forms (Book VIII)
+
+`InstrumentalFormsPanel.tsx` (`src/core/instrumentalForms.ts`).
+"Multiplication of attacks" — all forms of arpeggio, with the book's
+nomenclature Σ (score), S (stratum), p (part), a (attack). Chapters 3-5
+are long tables of how A attacks can be shared among the parts a, b, c, d
+of a stratum: every split into coefficients (2a + b + c …), each with
+A!/(k₁!k₂!…) general permutations or A circular ones (`distributions`,
+`splitSequences`). The tables reduce to two formulas: the general forms
+are every assignment of A attacks to the parts that uses all of them
+(2^A − 2 for two parts: 2, 6, 14, 30, 62, 126, 254, 4094; 3^A − 3·2^A + 3
+for three: 36, 150, 540, 1806), the circular forms A·C(A−1, parts−1)
+(`attackFormCounts`). Every figure in the tables checks, except four of
+the book's own sums, confirmed on the rendered pages: for three parts and
+12 attacks it prints 5544 × 6 = 32,264 (33,264) and 1386 × 6 = 8316 (the
+multinomial is 13,860), so its 443,312 should be 519,156; for four parts
+and 12 attacks its summands are all right but add to 14,676,024, not the
+printed 14,646,024, and its circular ones to 1980, not 1960. Ch. 4's
+elements of the second order (b/a, c/a, c/b) and Ch. 6's rules for
+strata — identical octave positions, "never an open position above a
+close," couplings outward (above a melody, below a bass) — are built too
+(`secondOrderElements`, `strataAllowed`, `outwardCouplings`). The panel
+plays any form on a four-chord theme, optionally doubled an octave up.
+
 ## Book V, Chapter 3 Section B, Chapter 4, and Chapter 5 Section A
 
 Chapter 3 Section B, the **symmetric zero cycle** (C0): chords on one

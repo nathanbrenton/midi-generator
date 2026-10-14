@@ -64,6 +64,7 @@ import ContrapuntalVariationsPanel from "./ContrapuntalVariationsPanel";
 import MelodizationPanel from "./MelodizationPanel";
 import HarmonizationPanel from "./HarmonizationPanel";
 import CounterpointPanel from "./CounterpointPanel";
+import InstrumentalFormsPanel from "./InstrumentalFormsPanel";
 import "./SchillingerGenerator.css";
 
 const LANE_COLORS = {
@@ -940,6 +941,8 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
       <HarmonizationPanel />
 
       <CounterpointPanel />
+
+      <InstrumentalFormsPanel />
 
       <section className="schillinger__section schillinger__section--wide">
         <h3>Playback (melody / percussion)</h3>
