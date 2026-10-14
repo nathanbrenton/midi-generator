@@ -2253,6 +2253,57 @@ The panel has three players:
   listed.
 - A phasic-rotation calculator.
 
+## Evolution of pitch-families (Book X)
+
+`PitchFamiliesPanel.tsx` (`src/core/pitchFamilies.ts`). Style, for the
+book, is "the identity of pitch-units, and... the identity of
+intervals." It carries one incomplete scale through the earlier books'
+techniques. Every figure was read from the rendered pages.
+
+**Figure 1** works on the primitive d0 = c d f. Its derivative scales
+are:
+
+1. Pitch-units permuted: d f c, f c d.
+2. Moved to one axis: c e♭ b♭, c g a.
+3. Intervals permuted: c e♭ f.
+4. Intervals moved onto its own units: d e g, f g b♭.
+
+The modernized form repeats the scale at the interval between its
+extreme units: c d f g b♭ c e♭ f a♭.
+
+**Chapter 2** harmonizes the Balinese E0 = c d♭ e♭ g a♭ with its first
+tonal expansion E1. Σ(E1) on I is c e♭ a♭ d♭ g. Without seven note
+names the cycles are numbered:
+
+- C1 is the harmony scale read downward.
+- C2 and C3 are its expansions.
+
+So Ck steps 2k degrees down: I IV II V III, I II III IV V and
+I V IV III II (`cycleDegrees`). The same rule gives Book V's C3/C5/C7 in
+seven units. The cadences in Figure 4 are I with the chord after it in
+the cycle, the chord before it, or both (`cadences`). Strata harmony
+(Figure 10) splits Σ into a; b, c; d, e, with roots c a e c♯ g♯ f c
+descending 3 + 5 semitones. These are Σ's own lowest intervals, though
+the book labels them "8 + 5".
+
+**Figures 11-12** derive leading units from the derivative scales on
+one axis:
+
+- Pitch-unit permutations add d e f f♯ a b♭ b. The book prints six of
+  these and leaves out a, although a is in its own d2 (c e f a b♭). It
+  also labels its d4 as "d5".
+- Interval permutations add d e f f♯, as printed.
+
+**Chapter 3** melodizes n functions of harmony with n + 1.
+
+The panel lists every derivative of either scale. It plays:
+
+- Σ(E1) through C1-C3 in hybrid three-part harmony, or any cadence.
+- Type III symmetric harmony (∜2).
+- The strata progression.
+
+Each can carry the n + 1-function melody.
+
 ## Book V, Chapter 3 Section B, Chapter 4, and Chapter 5 Section A
 
 Chapter 3 Section B, the **symmetric zero cycle** (C0): chords on one
