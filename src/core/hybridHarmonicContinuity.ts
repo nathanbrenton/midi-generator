@@ -61,3 +61,15 @@ export function buildHybridSegmentJoin(precedingGroupSecondLastRoot: number, pre
   const interval = precedingGroupLastRoot - precedingGroupSecondLastRoot;
   return { joinRoot: smoothJoinRoot(precedingGroupSecondLastRoot, precedingGroupLastRoot), interval };
 }
+
+export type HarmonicType = "di" | "ch" | "sy";
+
+/**
+ * The first requirement of hybrid continuity (p.552): "the insertion of
+ * the chromatic type between the diatonic and the symmetric... providing
+ * that the diatonic and the symmetric have no immediate contact" -- e.g.
+ * di + ch + sy + ch + sy + ch + di + ch + di (Figure 296).
+ */
+export function isHybridSequence(types: readonly HarmonicType[]): boolean {
+  return types.every((type, k) => k === 0 || !((type === "di" && types[k - 1] === "sy") || (type === "sy" && types[k - 1] === "di")));
+}

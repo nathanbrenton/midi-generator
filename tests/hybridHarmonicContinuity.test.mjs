@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { HYBRID_CONTINUITY_RATIO, smoothJoinRoot, buildHybridSegmentJoin } from "../src/core/hybridHarmonicContinuity.ts";
+import { HYBRID_CONTINUITY_RATIO, smoothJoinRoot, buildHybridSegmentJoin, isHybridSequence } from "../src/core/hybridHarmonicContinuity.ts";
 
 test("HYBRID_CONTINUITY_RATIO matches the book's own stated formula exactly: Hy = di3H + ch6H + sy3H (p.552)", () => {
   assert.deepEqual(HYBRID_CONTINUITY_RATIO, { diatonic: 3, chromatic: 6, symmetric: 3 });
@@ -26,4 +26,12 @@ test("buildHybridSegmentJoin reports both the join root and the repeated interva
   const join = buildHybridSegmentJoin(4, 5); // E -> F
   assert.equal(join.interval, 1);
   assert.equal(join.joinRoot, 6); // F#
+});
+
+test("the diatonic and the symmetric never touch: the book's di+ch+sy+ch+sy+ch+di+ch+di passes, di+sy does not (p.552)", () => {
+  assert.ok(isHybridSequence(["di", "ch", "sy", "ch", "sy", "ch", "di", "ch", "di"]));
+  assert.ok(!isHybridSequence(["di", "sy"]));
+  assert.ok(!isHybridSequence(["ch", "sy", "di"]));
+  // The ratio di + 2ch + sy, as chord counts Hy = di3H + ch6H + sy3H.
+  assert.equal(HYBRID_CONTINUITY_RATIO.chromatic, 2 * HYBRID_CONTINUITY_RATIO.diatonic);
 });
