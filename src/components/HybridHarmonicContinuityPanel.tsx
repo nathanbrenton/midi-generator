@@ -11,6 +11,7 @@ import { S5_STRUCTURES, symmetricTriad, type StructureId } from "../core/symmetr
 import { symmetricTonics } from "../core/symmetricScales";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
+import NotePlayback from "./NotePlayback";
 import "./SchillingerGenerator.css";
 
 const NOTE_NAMES = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"];
@@ -76,6 +77,42 @@ export default function HybridHarmonicContinuityPanel() {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chromaticRoots, symmetricRoots, symmetricStructure]);
+
+  // The plan, realized: each token a group of three chords continuing from the previous chord --
+  // di = I-VI-IV (C3) on the last root as tonic, ch = the chromatic group above, sy = three tonics.
+  const planChords = useMemo(() => {
+    if (!sequenceValid) return [];
+    const near = (r: number) => 55 + ((((r - 55) % 12) + 12) % 12);
+    const out: { root: number; structure: StructureId; type: string }[] = [];
+    let last = { root: root, structure: startStructure as StructureId };
+    sequence.forEach((type, i) => {
+      let group: { root: number; structure: StructureId }[];
+      if (type === "di") {
+        group = [
+          { root: last.root, structure: 1 },
+          { root: last.root - 3, structure: 2 },
+          { root: last.root + 5, structure: 1 },
+        ];
+      } else if (type === "ch") {
+        const roots = chromaticGroupRoots(last, operation, triple, chord2Structure, chord3Structure);
+        group = roots.map((r, k) => ({ root: r, structure: [last.structure, chord2Structure, chord3Structure][k] }));
+      } else {
+        group = symmetricTonics(3, last.root).map((r) => ({ root: r, structure: symmetricStructure }));
+      }
+      const fresh = i === 0 ? group : group.slice(1);
+      for (const c of fresh) out.push({ root: near(c.root), structure: c.structure, type });
+      last = out[out.length - 1];
+    });
+    return out;
+  }, [sequence.join(), sequenceValid, root, startStructure, operation, triple, chord2Structure, chord3Structure, symmetricStructure]);
+  const planNotes = useMemo<NoteEvent[]>(
+    () =>
+      planChords.flatMap((c, i) => [
+        ...symmetricTriad(c.structure, c.root).map((midiNote, voice) => ({ midiNote, startUnits: i, durationUnits: 0.9, velocity: 85, voice })),
+        { midiNote: c.root - 24, startUnits: i, durationUnits: 0.9, velocity: 85, voice: 3 },
+      ]),
+    [planChords],
+  );
 
   const secondsPerUnit = 60 / bpm;
   const cycleSeconds = chords.length * secondsPerUnit;
@@ -251,7 +288,14 @@ export default function HybridHarmonicContinuityPanel() {
           : sequenceOk
             ? `Satisfactory: the diatonic and the symmetric never touch (${sequence.filter((t) => t === "ch").length} chromatic of ${sequence.length}).`
             : "The diatonic and the symmetric touch here — insert ch between them."}
+        {sequenceValid && (
+          <>
+            <br />
+            {planChords.map((c) => `${c.type} ${chordLabel(c.root, c.structure)}`).join(" · ")}
+          </>
+        )}
       </div>
+      <NotePlayback notes={planNotes} lengthUnits={planChords.length} fileName="schillinger-hybrid-plan.mid" />
     </section>
   );
 }

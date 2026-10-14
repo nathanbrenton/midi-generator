@@ -14,7 +14,7 @@ import { S7_STRUCTURES, symmetricSeventhChord, applyCoefficients, type SeventhSt
 import { generateResultant } from "../core/resultant";
 import { fivePartChord, FIVE_PART_FORMS, type HybridTension } from "../core/hybridFourPartHarmony";
 import NotePlayback, { chordsToNotes } from "./NotePlayback";
-import { intervalCellScale } from "../core/scales";
+import { intervalCellScale, midiNoteForDegree } from "../core/scales";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
 import "./SchillingerGenerator.css";
@@ -50,6 +50,24 @@ function voicingToArray(voicing: SeventhVoicing): number[] {
 }
 
 export default function SeventhChordPanel() {
+  // Section B: S(5) on I prepares the seventh of the next chord, which resolves through C3.
+  const [prepMethod, setPrepMethod] = useState<"suspending" | "descending" | "ascending">("suspending");
+  const [prepFrom, setPrepFrom] = useState<1 | 3 | 5>(1);
+  const preparation = useMemo(() => {
+    const seventhDegree = { 1: 0, 3: 2, 5: 4 }[prepFrom] + { suspending: 0, descending: -1, ascending: 1 }[prepMethod];
+    const rootDegree = seventhDegree - 6;
+    const [r, t, f, sev] = stackedSeventhChord(MAJOR_SCALE, 60, rootDegree);
+    const voicing: SeventhVoicing = { root: r, third: t, fifth: f, seventh: sev };
+    const resolved = resolveSeventhVoicing(voicing, MAJOR_SCALE, 60, rootDegree - 2, 3).map((v) => v.pitch);
+    const triad = [0, 2, 4].map((d) => midiNoteForDegree(MAJOR_SCALE, 60, d));
+    const chords = [triad, [r, t, f, sev], resolved];
+    const bass = [0, rootDegree, rootDegree - 2].map((d) => midiNoteForDegree(MAJOR_SCALE, 36, ((d % 7) + 7) % 7));
+    const notes: NoteEvent[] = chords.flatMap((chord, k) => [
+      ...chord.map((midiNote, voice) => ({ midiNote, startUnits: 2 * k, durationUnits: 1.9, velocity: voice === 3 && k === 1 ? 105 : 85, voice })),
+      { midiNote: bass[k], startUnits: 2 * k, durationUnits: 1.9, velocity: 85, voice: 4 },
+    ]);
+    return { chords, notes, cycle: seventhPreparationCycle(prepMethod, prepFrom) };
+  }, [prepMethod, prepFrom]);
   const [root, setRoot] = useState(60);
   const [cycle, setCycle] = useState<SignedSeventhCycle>(3);
   const [voiceLead, setVoiceLead] = useState(true);
@@ -273,6 +291,31 @@ export default function SeventhChordPanel() {
           </span>
         ))}
       </div>
+      <div className="schillinger__row">
+        <label>
+          Preparation
+          <select value={prepMethod} onChange={(e) => setPrepMethod(e.target.value as typeof prepMethod)}>
+            <option value="suspending">Suspending</option>
+            <option value="descending">Descending</option>
+            <option value="ascending">Ascending</option>
+          </select>
+        </label>
+        <label>
+          From
+          <select value={prepFrom} onChange={(e) => setPrepFrom(Number(e.target.value) as 1 | 3 | 5)}>
+            {[1, 3, 5].map((fn) => (
+              <option key={fn} value={fn}>
+                {fn} of S(5)
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="schillinger__readout">
+        {preparation.chords.map(chordLabel).join(" → ")} ({preparation.cycle === 0 ? "C0" : `C${preparation.cycle}`} into the
+        seventh-chord, then resolved through C3)
+      </div>
+      <NotePlayback notes={preparation.notes} lengthUnits={6} fileName="schillinger-seventh-preparation.mid" defaultBpm={80} />
 
       <h4>S(7) in the symmetric zero cycle (Section D, p.446-447)</h4>
       <p className="schillinger__hint">

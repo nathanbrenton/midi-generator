@@ -42,8 +42,8 @@ export default function OrganicMelodyPanel() {
   const [patternType, setPatternType] = useState<PatternType>("basic");
   const [root, setRoot] = useState(60);
 
-  const [selectedLabel, setSelectedLabel] = useState("");
-  const [selectedNotes, setSelectedNotes] = useState<number[]>([]);
+  const [pickedLabel, setSelectedLabel] = useState("");
+  const [pickedNotes, setSelectedNotes] = useState<number[]>([]);
 
   const [bpm, setBpm] = useState(120);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -66,6 +66,10 @@ export default function OrganicMelodyPanel() {
       }),
     [patternType, series, root],
   );
+
+  // Until a row is picked, the first one plays.
+  const selectedLabel = pickedNotes.length > 0 ? pickedLabel : rows[0] ? `index ${rows[0].startIndex} (first)` : "";
+  const selectedNotes = pickedNotes.length > 0 ? pickedNotes : (rows[0]?.notes ?? []);
 
   function preview(label: string, notes: readonly number[]) {
     setSelectedLabel(label);

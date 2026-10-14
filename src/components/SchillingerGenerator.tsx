@@ -66,6 +66,7 @@ import HarmonizationPanel from "./HarmonizationPanel";
 import CounterpointPanel from "./CounterpointPanel";
 import InstrumentalFormsPanel from "./InstrumentalFormsPanel";
 import GeneralHarmonyPanel from "./GeneralHarmonyPanel";
+import NotePlayback from "./NotePlayback";
 import PitchFamiliesPanel from "./PitchFamiliesPanel";
 import "./SchillingerGenerator.css";
 
@@ -150,6 +151,20 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
       : null;
   }, [analysisNotes, analysisTicksPerQuarter, manualPatternText]);
   const analysisPattern = analysisResult?.pattern ?? null;
+  // The identified pattern, heard four times over on one pitch (the first attack of each pass accented).
+  const analysisPlayback = useMemo(() => {
+    if (!analysisPattern) return { notes: [] as NoteEvent[], length: 0 };
+    const cycle = analysisPattern.reduce((a, b) => a + b, 0);
+    const notes: NoteEvent[] = [];
+    for (let r = 0; r < 4; r++) {
+      let t = r * cycle;
+      analysisPattern.forEach((d, k) => {
+        notes.push({ midiNote: 72, startUnits: t, durationUnits: d * 0.9, velocity: k === 0 ? 110 : 80, voice: 0 });
+        t += d;
+      });
+    }
+    return { notes, length: 4 * cycle };
+  }, [analysisPattern]);
 
   const matchingCases = useMemo(
     () => (analysisPattern ? findMatchingCases(analysisPattern) : null),
@@ -520,6 +535,16 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
     URL.revokeObjectURL(url);
   }
 
+  // The melody / percussion player's controls, repeated beside the sections that shape it.
+  const mainPlayControls = (
+    <div className="schillinger__actions">
+      <button type="button" onClick={togglePlayback} disabled={playbackNotes.length === 0 && !isPlaying}>
+        {isPlaying ? "Stop" : "Play"}
+      </button>
+      <span className="schillinger__hint">Melody and percussion; tempo and MIDI download under Playback at the end of the page.</span>
+    </div>
+  );
+
   return (
     <div className="schillinger">
       <section className="schillinger__section schillinger__section--wide">
@@ -559,6 +584,9 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
             Pattern {analysisPattern.join(" ")} found in {matchingCases?.length ?? 0} of 19 canonical cases
             {matchingCases && matchingCases.length > 0 && `: ${matchingCases.map((m) => m.case.label).join(", ")}`}
           </div>
+        )}
+        {analysisPattern && (
+          <NotePlayback notes={analysisPlayback.notes} lengthUnits={analysisPlayback.length} fileName="schillinger-identified-pattern.mid" defaultBpm={200} />
         )}
         {pitchAnalysis && (
           <div className="schillinger__readout">
@@ -729,6 +757,7 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
             )}
           </div>
         )}
+        {mainPlayControls}
       </section>
 
       <section className="schillinger__section schillinger__section--wide">
@@ -765,6 +794,7 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
             </div>
           )}
         </div>
+        {mainPlayControls}
       </section>
 
       <section className="schillinger__section schillinger__section--wide">
@@ -801,6 +831,7 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
             );
           })}
         </div>
+        {mainPlayControls}
       </section>
 
       {children}
@@ -848,6 +879,7 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
         <div className="schillinger__readout">
           Intervals {scale.intervals.join(" ")} · degrees {scale.degrees.join(" ")}
         </div>
+        {mainPlayControls}
       </section>
 
       <section className="schillinger__section">
@@ -886,6 +918,7 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
             </select>
           </label>
         </div>
+        {mainPlayControls}
       </section>
 
       <PitchScaleEvolutionPanel />

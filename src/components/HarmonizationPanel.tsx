@@ -74,6 +74,23 @@ export default function HarmonizationPanel() {
   const form = useMemo(() => formText.split(/\s+/).map(parsePitch), [formText]);
   const fits = useMemo(() => (form.every((p) => p !== null) ? placements(sigma, form as number[]) : null), [sigma, form]);
   const counts = assignmentCount(7);
+  // Heard: the Σ arpeggiated from 1 to 13, then held under the melodic form at its first placement.
+  const sigmaNotes = useMemo<NoteEvent[]>(() => {
+    const out: NoteEvent[] = sigma.offsets.map((o, i) => ({ midiNote: 48 + o, startUnits: i * 0.5, durationUnits: 0.45, velocity: 80, voice: i }));
+    const start = sigma.offsets.length * 0.5;
+    const placement = fits?.[0];
+    const length = Math.max(placement?.length ?? 0, 3);
+    sigma.offsets.forEach((o, i) => out.push({ midiNote: 48 + o, startUnits: start, durationUnits: length - 0.1, velocity: 60, voice: i }));
+    let prev = 72;
+    placement?.forEach((fn, k) => {
+      const pc = sigma.offsets[[1, 3, 5, 7, 9, 11, 13].indexOf(fn)] % 12;
+      const pitch = [60, 72, 84].map((b) => b + pc).reduce((best, x) => (Math.abs(x - prev) < Math.abs(best - prev) ? x : best));
+      prev = pitch;
+      out.push({ midiNote: pitch, startUnits: start + k, durationUnits: 0.95, velocity: 100, voice: 8 });
+    });
+    return out;
+  }, [sigma, fits]);
+  const sigmaLength = sigma.offsets.length * 0.5 + Math.max(fits?.[0]?.length ?? 0, 3);
 
   return (
     <section className="schillinger__section schillinger__section--wide">
@@ -163,7 +180,10 @@ export default function HarmonizationPanel() {
         <br />
         Minor triads in this Σ: {triadPlacements(sigma, [3, 4]).map((p) => p.join("-")).join(", ") || "none"}; major:{" "}
         {triadPlacements(sigma, [4, 3]).map((p) => p.join("-")).join(", ") || "none"}
+        <br />
+        Heard: the Σ from 1 to 13, then held under the melodic form{fits?.length ? ` at ${fits[0].join("-")}` : " (it does not fit this Σ, so the Σ alone)"}
       </div>
+      <NotePlayback notes={sigmaNotes} lengthUnits={sigmaLength} fileName="schillinger-master-structure.mid" defaultBpm={90} />
     </section>
   );
 }

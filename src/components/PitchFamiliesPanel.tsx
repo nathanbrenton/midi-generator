@@ -49,6 +49,22 @@ export default function PitchFamiliesPanel() {
     };
   }, [pcs]);
 
+  // Heard: every derivative scale in turn, from c4 -- (1), (2), (3), (4), then the modernized scale.
+  const derivativeRows = useMemo(
+    () => [...derivatives.units, ...derivatives.onAxis, ...derivatives.intervals, ...derivatives.transpositions, derivatives.modernized],
+    [derivatives],
+  );
+  const derivativeNotes = useMemo<NoteEvent[]>(() => {
+    const out: NoteEvent[] = [];
+    let t = 0;
+    for (const row of derivativeRows) {
+      row.forEach((p, k) => out.push({ midiNote: 60 + p, startUnits: t + k * 0.5, durationUnits: 0.45, velocity: k === 0 ? 100 : 80, voice: 0 }));
+      t += row.length * 0.5 + 1;
+    }
+    return out;
+  }, [derivativeRows]);
+  const derivativeLength = derivativeRows.reduce((a, r) => a + r.length * 0.5 + 1, 0);
+
   const [form, setForm] = useState<Form>("cycle");
   const [cycle, setCycle] = useState(1);
   const [cadenceType, setCadenceType] = useState<"initial" | "final" | "compound">("compound");
@@ -124,6 +140,7 @@ export default function PitchFamiliesPanel() {
         Leading units from (2): {names(derivatives.unitAux)}; from (3): {names(derivatives.intervalAux)}
         {scaleKey === "balinese" && " (the book's Figure 11 lists six and leaves out a, though a is in its own d2)"}
       </div>
+      <NotePlayback notes={derivativeNotes} lengthUnits={derivativeLength} fileName="schillinger-derivative-scales.mid" defaultBpm={140} />
 
       <h4>Harmony and melodization (Ch. 2-3)</h4>
       <p className="schillinger__hint">

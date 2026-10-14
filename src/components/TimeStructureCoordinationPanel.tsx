@@ -1,7 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { coordinateTimeStructures, type Fraction } from "../core/timeStructureCoordination";
 import type { Resultant } from "../core/resultant";
+import type { NoteEvent } from "../core/melody";
+import NotePlayback from "./NotePlayback";
 import "./SchillingerGenerator.css";
+
+const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+const lcm = (a: number, b: number) => (a / gcd(a, b)) * b;
+// One pitch per instrumental place: a c-major-ninth stack.
+const PLACE_PITCHES = [60, 64, 67, 71, 74, 77, 81, 84, 88];
+const MAX_UNITS = 256;
 
 function formatFraction(fraction: Fraction): string {
   return fraction.denominator === 1 ? `${fraction.numerator}` : `${fraction.numerator}/${fraction.denominator}`;
@@ -18,6 +26,35 @@ export default function TimeStructureCoordinationPanel({ resultant }: { resultan
 
   const result = coordinateTimeStructures(pli, pla, aa, aT, duration, finalDuration);
   const scaled = result.scaleFactor > 1;
+
+  // Heard: the resultant repeated until its attacks close with the attack-group (aa · pli′) and its
+  // length closes with T″. Each attack goes to the next instrumental place; the first attack of each
+  // attack-group is accented; a low pulse marks every T″.
+  const demo = useMemo(() => {
+    const A = result.synchronizedAttacks;
+    const repeats = lcm(A / gcd(A, aT), finalDuration / gcd(finalDuration, duration));
+    const total = repeats * duration;
+    const units = Math.min(total, MAX_UNITS);
+    const notes: NoteEvent[] = [];
+    let k = 0;
+    for (let r = 0; r < repeats; r++) {
+      let t = r * duration;
+      for (const seg of resultant.segments) {
+        if (t >= units) break;
+        notes.push({
+          midiNote: PLACE_PITCHES[k % result.reducedInstrumentalPlaces],
+          startUnits: t,
+          durationUnits: Math.min(seg.duration, units - t) * 0.9,
+          velocity: k % aa === 0 ? 110 : 70,
+          voice: k % result.reducedInstrumentalPlaces,
+        });
+        t += seg.duration;
+        k++;
+      }
+    }
+    for (let t = 0; t < units; t += finalDuration) notes.push({ midiNote: 36, startUnits: t, durationUnits: 0.9, velocity: 100, voice: 9 });
+    return { notes, units, total };
+  }, [result.synchronizedAttacks, result.reducedInstrumentalPlaces, aT, aa, duration, finalDuration, resultant.segments]);
 
   return (
     <section className="schillinger__section schillinger__section--wide">
@@ -83,6 +120,12 @@ export default function TimeStructureCoordinationPanel({ resultant }: { resultan
           </>
         )}
       </div>
+      <div className="schillinger__readout">
+        Heard: the resultant until everything closes — {demo.total} units
+        {demo.total > demo.units ? ` (the first ${demo.units} are played)` : ""}; one pitch per instrumental place,
+        an accent on the first attack of each attack-group, a low pulse every T″.
+      </div>
+      <NotePlayback notes={demo.notes} lengthUnits={demo.units} fileName="schillinger-time-structures.mid" defaultBpm={240} />
     </section>
   );
 }

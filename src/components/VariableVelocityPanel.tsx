@@ -9,6 +9,7 @@ import {
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
 import SchillingerPianoRoll, { type PianoRollLane } from "./SchillingerPianoRoll";
+import NotePlayback from "./NotePlayback";
 import "./SchillingerGenerator.css";
 
 const SERIES_OPTIONS: { label: string; values: readonly number[] }[] = [
@@ -188,6 +189,20 @@ export default function VariableVelocityPanel() {
     { label: "Shifted", ...RUBATO_COLORS[1], segments: [{ duration: shiftedX }, { duration: shiftedY }] },
   ];
   const rubatoCycleLength = rubatoX + rubatoY;
+  // Heard: the original binomial twice, then the shifted one twice, over a steady pulse.
+  const rubatoNotes = useMemo<NoteEvent[]>(() => rubatoValid
+    ? [
+        ...[0, 1, 2, 3].flatMap((k) => {
+          const [x, y] = k < 2 ? [rubatoX, rubatoY] : [shiftedX, shiftedY];
+          const start = k * rubatoCycleLength;
+          return [
+            { midiNote: 72, startUnits: start, durationUnits: x * 0.9, velocity: 100, voice: 0 },
+            { midiNote: 67, startUnits: start + x, durationUnits: y * 0.9, velocity: 85, voice: 0 },
+          ];
+        }),
+        ...Array.from({ length: 4 * rubatoCycleLength }, (_, t) => ({ midiNote: 48, startUnits: t, durationUnits: 0.4, velocity: 45, voice: 1 })),
+      ]
+    : [], [rubatoValid, rubatoX, rubatoY, shiftedX, shiftedY, rubatoCycleLength]);
 
   return (
     <>
@@ -318,8 +333,9 @@ export default function VariableVelocityPanel() {
             />
             <div className="schillinger__readout">
               ({rubatoX}, {rubatoY}) shifted by τ={tau} → ({shiftedX}, {shiftedY}) · both total{" "}
-              {rubatoCycleLength}
+              {rubatoCycleLength}; heard as the original twice, then the shifted form twice, over the pulse
             </div>
+            <NotePlayback notes={rubatoNotes} lengthUnits={4 * rubatoCycleLength} fileName="schillinger-rubato.mid" defaultBpm={160} />
           </>
         ) : (
           <div className="schillinger__readout schillinger__readout--error">

@@ -13,7 +13,7 @@ import {
   modalRelations,
 } from "../core/counterpoint";
 import { canon, canonTemporalStructure, expositionAxes, expositionForms } from "../core/canonAndFugue";
-import { intervalCellScale } from "../core/scales";
+import { intervalCellScale, midiNoteForDegree } from "../core/scales";
 import type { NoteEvent } from "../core/melody";
 import NotePlayback from "./NotePlayback";
 import "./SchillingerGenerator.css";
@@ -53,6 +53,23 @@ export default function CounterpointPanel() {
   // Ch.2.
   const [attacks, setAttacks] = useState(3);
   const patterns = useMemo(() => harmonicPatterns(attacks), [attacks]);
+  // Heard: CF holds c; CP sounds each pattern, c a consonance and d a dissonance, moving to the nearest one.
+  const patternNotes = useMemo<NoteEvent[]>(() => {
+    const consonant = [64, 67, 69, 72, 76];
+    const dissonant = [62, 65, 71, 74, 77];
+    const out: NoteEvent[] = [];
+    let prev = 67;
+    patterns.forEach((pattern, bar) => {
+      out.push({ midiNote: 48, startUnits: 2 * bar, durationUnits: 1.95, velocity: 75, voice: 0 });
+      [...pattern].forEach((x, k) => {
+        const pool = (x === "c" ? consonant : dissonant).filter((p) => p !== prev);
+        const pitch = pool.reduce((best, q) => (Math.abs(q - prev) < Math.abs(best - prev) ? q : best));
+        prev = pitch;
+        out.push({ midiNote: pitch, startUnits: 2 * bar + (2 / pattern.length) * k, durationUnits: (2 / pattern.length) * 0.9, velocity: x === "d" ? 100 : 85, voice: 1 });
+      });
+    });
+    return out;
+  }, [patterns]);
 
   // Ch.7.
   const [melodyText, setMelodyText] = useState("c d e c e f g e d c b c");
@@ -92,6 +109,22 @@ export default function CounterpointPanel() {
     [fugueType],
   );
   const counts = axialCombinationCounts();
+  // Heard: a short theme on each exposition's CF axis, its inversion on CP's axis above.
+  const fugueNotes = useMemo<NoteEvent[]>(() => {
+    const theme = [0, 1, 2, 3, 4, 2, 0];
+    const major = intervalCellScale([...SCALES.ionian.cells]);
+    const majorPcs = [0, 2, 4, 5, 7, 9, 11];
+    const pitch = (axis: number, step: number, base: number) =>
+      fugueType === "II"
+        ? midiNoteForDegree(major, base, majorPcs.indexOf(axis) + step)
+        : base + axis + [0, 2, 4, 5, 7, 9, 11][((step % 7) + 7) % 7] + 12 * Math.floor(step / 7);
+    return axes.flatMap((e, x) =>
+      theme.flatMap((step, k) => [
+        { midiNote: pitch(e.cf, step, 48), startUnits: 8 * x + k, durationUnits: 0.9, velocity: 85, voice: 0 },
+        { midiNote: pitch(e.cp, -step, 60), startUnits: 8 * x + k, durationUnits: 0.9, velocity: 85, voice: 1 },
+      ]),
+    );
+  }, [axes, fugueType]);
   const forms = expositionForms();
 
   return (
@@ -153,6 +186,7 @@ export default function CounterpointPanel() {
       <div className="schillinger__readout">
         {patterns.length} patterns: {patterns.map((p) => [...p].join("-")).join(" · ")}
       </div>
+      <NotePlayback notes={patternNotes} lengthUnits={2 * patterns.length} fileName="schillinger-cp-patterns.mid" />
 
       <h4>Canon (Ch. 7)</h4>
       <p className="schillinger__hint">
@@ -209,7 +243,10 @@ export default function CounterpointPanel() {
       </div>
       <div className="schillinger__readout">
         {axes.map((e, i) => `E${i + 1}: CF on ${NOTE_NAMES[e.cf]}, CP on ${NOTE_NAMES[e.cp]}`).join(" · ")}
+        <br />
+        Heard: a theme on each CF axis with its inversion on the CP axis, exposition by exposition.
       </div>
+      <NotePlayback notes={fugueNotes} lengthUnits={8 * axes.length} fileName="schillinger-fugue-axes.mid" defaultBpm={140} />
     </section>
   );
 }

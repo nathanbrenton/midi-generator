@@ -21,6 +21,18 @@ function noteName(midiNote: number): string {
 
 export default function PassingSeventhPanel() {
   const [root, setRoot] = useState(60);
+  // Section B: the chromatic scale in the bass under one major triad per symmetric tonic (Figures 273-276).
+  const [chromaticTonics, setChromaticTonics] = useState<1 | 2 | 3 | 4 | 6 | 12>(3);
+  const chromaticNotes = useMemo<NoteEvent[]>(() => {
+    const per = chromaticUnitsPerChord(chromaticTonics);
+    const bass = Array.from({ length: 13 }, (_, k) => ({ midiNote: 48 + k, startUnits: k, durationUnits: 0.9, velocity: 88, voice: 3 }));
+    const chords = Array.from({ length: chromaticTonics + 1 }, (_, i) => {
+      const tonic = 60 + i * per;
+      const length = i === chromaticTonics ? 1 : per;
+      return [0, 4, 7].map((o, voice) => ({ midiNote: tonic + o, startUnits: i * per, durationUnits: length - 0.1, velocity: 72, voice }));
+    }).flat();
+    return [...bass, ...chords];
+  }, [chromaticTonics]);
   const [tonicCount, setTonicCount] = useState<3 | 4>(3);
   const [structure, setStructure] = useState<StructureId>(1);
   const [quality, setQuality] = useState<PassingSeventhQuality>("major");
@@ -234,6 +246,23 @@ export default function PassingSeventhPanel() {
         one chord" — and in general one chord covers 12 ÷ tonics units:{" "}
         {([1, 2, 3, 4, 6, 12] as const).map((n) => `${n} tonic${n === 1 ? "" : "s"} → ${chromaticUnitsPerChord(n)}`).join(", ")}.
       </p>
+      <div className="schillinger__row">
+        <label>
+          Tonics
+          <select value={chromaticTonics} onChange={(e) => setChromaticTonics(Number(e.target.value) as typeof chromaticTonics)}>
+            {([1, 2, 3, 4, 6, 12] as const).map((n) => (
+              <option key={n} value={n}>
+                {n} ({chromaticUnitsPerChord(n)} units per chord)
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="schillinger__readout">
+        Bass c3 … c4 chromatically; above it major triads on{" "}
+        {Array.from({ length: chromaticTonics }, (_, i) => NOTE_NAMES[(i * chromaticUnitsPerChord(chromaticTonics)) % 12]).join(", ")}, then c
+      </div>
+      <NotePlayback notes={chromaticNotes} lengthUnits={13} fileName="schillinger-chromatic-harmonization.mid" defaultBpm={120} />
     </section>
   );
 }

@@ -32,8 +32,8 @@ export default function SymmetricScalesPanel() {
   const [unitsPerSectionalScale, setUnitsPerSectionalScale] = useState(4);
   const [tonic, setTonic] = useState(60);
 
-  const [selectedLabel, setSelectedLabel] = useState("");
-  const [selectedNotes, setSelectedNotes] = useState<number[]>([]);
+  const [pickedLabel, setSelectedLabel] = useState("");
+  const [pickedNotes, setSelectedNotes] = useState<number[]>([]);
 
   const [bpm, setBpm] = useState(120);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -52,6 +52,13 @@ export default function SymmetricScalesPanel() {
   const compositions = useMemo(
     () => generateCompositions(gap, clampedUnits),
     [gap, clampedUnits],
+  );
+
+  // Until a composition is picked, the first one plays.
+  const selectedLabel = pickedNotes.length > 0 ? pickedLabel : compositions[0] ? `${compositions[0].join("+")} (first)` : "";
+  const selectedNotes = useMemo(
+    () => (pickedNotes.length > 0 ? pickedNotes : compositions[0] ? buildCompoundSymmetricScale(tonics, compositions[0]) : []),
+    [pickedNotes, compositions, tonics],
   );
 
   function preview(label: string, composition: readonly number[]) {

@@ -82,6 +82,25 @@ export default function GeneralHarmonyPanel() {
   const [theta, setTheta] = useState(8);
   const [startPhase, setStartPhase] = useState(0);
   const rotations = useMemo(() => rotationText.trim().split(/\s+/).map(Number).filter((n) => Number.isInteger(n)), [rotationText]);
+  // Heard: a group of θ attacks up the scale; phase φm reads it circularly from its m-th attack. The
+  // starting phase, then the phase after each rotation in turn.
+  const phases = useMemo(() => {
+    const out = [startPhase % theta];
+    rotations.forEach((r, i) => out.push(rotatePhase(startPhase, rotations.slice(0, i + 1), theta)));
+    return out;
+  }, [startPhase, rotations, theta]);
+  const phaseNotes = useMemo<NoteEvent[]>(() => {
+    const unit = 4 / theta;
+    return phases.flatMap((phase, g) =>
+      Array.from({ length: theta }, (_, k) => ({
+        midiNote: midiNoteForDegree(MAJOR, 60, (phase + k) % theta),
+        startUnits: 4 * g + k * unit,
+        durationUnits: unit * 0.9,
+        velocity: k === 0 ? 105 : 75,
+        voice: 0,
+      })),
+    );
+  }, [phases, theta]);
 
   const counts = sigmaCounts();
   const triads = structureFamilies(2);
@@ -208,7 +227,10 @@ export default function GeneralHarmonyPanel() {
       </div>
       <div className="schillinger__readout">
         φ{startPhase} {rotations.map((r) => `${r < 0 ? "−" : "+"} ${Math.abs(r)}φ`).join(" ")} = φ{rotatePhase(startPhase, rotations, theta)}
+        <br />
+        Heard, one group per phase: {phases.map((p) => `φ${p}`).join(" → ")}
       </div>
+      <NotePlayback notes={phaseNotes} lengthUnits={4 * phases.length} fileName="schillinger-phasic-rotation.mid" defaultBpm={90} />
     </section>
   );
 }
