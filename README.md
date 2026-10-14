@@ -1759,24 +1759,22 @@ reproduced exactly (confirmed by test and live in the panel), and turn
 out to be nothing more than `symmetricTonics(3, root)`/`symmetricTonics(4,
 root)` reused directly — no new tonic-spacing logic needed.
 
-**The chapter's own opening idea (Figure 254, "passing seventh," p.531)
-was investigated and explicitly NOT modeled, after a wrong first guess
-got caught before shipping.** The prose reads as if it might just be
-Ch. 9's own C3 seventh-chord voice-leading reused directly ("in C3 the
-seventh, while resolving, becomes a new root-tone... this permits a
-continuity of the passing seventh") — but computing that hypothesis out
-loud produced root motion jumping around unpredictably (60→76→67→71→50…),
-nothing like the smoothly descending bass the chapter describes. Rendering
-the actual figure (PDF p.292) resolved why: the treble stays on plain
-triads ("all chords must be S(5)") that change slowly, while an
-independent bass voice descends continuously *stepwise* underneath —
-a walking-bass-under-static-harmony texture, not a chord-to-chord
-function-relabeling at all. Pinning down exactly how many bass steps
-occur per triad change would need more figure-reading than felt safe to
-commit to a formula, so it's left undone rather than shipped on a guess
-that was already caught being wrong once. Sections B (Generalization of
-Passing Chromatic Tones, p.537-538) and C (Altered Chords, p.542+)
-weren't assessed.
+**The chapter's opening idea (Figures 254-255, p.531) is now built**
+(`passingSeventhContinuity`, core only). It had resisted modeling only
+because the cycles ran the wrong way: with C3 running downward the figure
+reads exactly — C Am F Dm B° G Em C, constant C3, one triad per two
+beats, over a bass walking down two octaves one step per beat, c b a g f
+e d c b a g f e d c. Each root steps down to become its own chord's
+seventh ("the preparation of the seventh in C0 requires a descending
+step from the root-tone") and that seventh steps down to the next root
+("in C3 the seventh while resolving, becomes a new root-tone"). Read
+backwards, "the cycle… becomes negative (C-3) and the transformation is
+counterclockwise," with the bass ascending — both tested. Section B's
+Figure 276 (one chord harmonizes 12, 6, 4, 3, 2 or 1 units of the
+chromatic scale for 1-12 tonics) is `chromaticUnitsPerChord`; Section C's
+altered chords are notation advice, plus the checkable remark that an
+altered chord with a 2-semitone interval falls outside every structure
+classified so far (all built of 3s and 4s — tested).
 
 ## Automatic chromatic continuities (Book V, Ch. 16, Section A)
 

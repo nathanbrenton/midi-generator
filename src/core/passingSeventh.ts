@@ -5,19 +5,17 @@
  * a descending step from the root-tone. In C3 the seventh, while
  * resolving, becomes a new root-tone. This fact permits us to develop a
  * continuity of the passing seventh when C3 is constant. All chords must
- * be S(5)" (p.531, Figure 254). Rendering the actual figure (PDF p.292)
- * showed this is NOT simply Ch.9's own chord-to-chord seventh
- * voice-leading reapplied (that hypothesis was tested directly and
- * produces wide, non-stepwise root jumps, not what the figure shows):
- * the treble stays on plain triads (S(5), confirming "all chords must be
- * S(5)") that change slowly, while an independent bass voice descends
- * continuously *stepwise* underneath, one note per beat, creating
- * passing sevenths (and other intervals) against the more slowly-moving
- * harmony above -- a walking-bass-under-static-harmony texture. Getting
- * the precise relationship between the bass's step count and the
- * triads' own C3 change-points right would need more figure-reading than
- * was safe to commit to a formula here, so it's deliberately not modeled
- * -- see the README for the honest state of this.
+ * be S(5)" (p.531, Figure 254). With positive cycles running downward
+ * (the Book V audit's correction) the figure is exactly that: eight
+ * half-note triads, C Am F Dm B° G Em C -- constant C3 -- over fifteen
+ * quarter notes descending stepwise through two octaves, c b a g f e d c
+ * b a g f e d c. Each root steps down to become the seventh of its own
+ * chord (the C0 preparation, "a descending step from the root-tone") and
+ * that seventh steps down again to the next root, as C3 resolves it.
+ * "By reading the above figure backwards, we obtain an ascending scale
+ * in the bass. The cycle in such a case becomes negative (C-3) and the
+ * transformation is [counterclockwise]" (Figure 255) --
+ * `passingSeventhContinuity`.
  *
  * Section A (Generalized Passing Seventh in Progressions of Type III,
  * p.534-536) is genuinely new: symmetric triads (Ch.3's S1-S4,
@@ -42,11 +40,19 @@
  * step (beyond "a choice exists") reads as compositional guidance rather
  * than a single determinate formula, so `PassingSeventhQuality` is left
  * as an explicit caller choice here rather than guessed at. Section B
- * (Generalization of Passing Chromatic Tones, p.537-538) and Section C
- * (Altered Chords, p.542+) were not assessed.
+ * (Generalization of Passing Chromatic Tones, p.537-541) relates each
+ * symmetric system to how much of the chromatic scale one chord
+ * harmonizes, 12 divided by the tonics (Figure 276,
+ * `chromaticUnitsPerChord`); Section C (Altered Chords, p.542-543) is
+ * notation and voice-leading advice, plus the remark that some altered
+ * chords "contain an interval 2 -- and all structures previously
+ * classified contain 3 and 4 only," which the S(5) and S(7) tables bear
+ * out (tested).
  */
 
 import { symmetricTriad, type StructureId } from "./symmetricHarmony.ts";
+import { diatonicCycle, voiceLeadProgression, type Voicing } from "./diatonicHarmony.ts";
+import { midiNoteForDegree, type PitchScale } from "./scales.ts";
 import { symmetricTonics } from "./symmetricScales.ts";
 
 export type PassingSeventhQuality = "major" | "minor" | "diminished";
@@ -82,4 +88,37 @@ export function symmetricPassingSeventhProgression(
     triad: symmetricTriad(structure, root),
     seventh: root + SEVENTH_INTERVAL[quality],
   }));
+}
+
+/**
+ * Figures 254-255 (p.531): the continuity of the passing seventh. The
+ * chords run through C3 (descending) or C-3 (ascending, "read
+ * backwards"), voiced clockwise or counterclockwise, one per two beats;
+ * the bass walks a scale, one note per beat -- descending, each root and
+ * then its passing seventh; ascending, each passing seventh and then its
+ * root. `cycles` full rounds of seven chords, plus the closing chord.
+ */
+export function passingSeventhContinuity(
+  scale: PitchScale,
+  rootMidiNote: number,
+  direction: "descending" | "ascending" = "descending",
+  cycles = 1,
+): { chords: Voicing[]; rootDegrees: number[]; bass: number[] } {
+  const cycle = direction === "descending" ? 3 : -3;
+  const rootDegrees = Array.from({ length: 7 * cycles + 1 }, (_, k) => diatonicCycle(cycle)[k % 7]);
+  const chords = voiceLeadProgression(scale, rootMidiNote, rootDegrees, direction === "descending" ? "clockwise" : "counterclockwise");
+  const step = direction === "descending" ? -1 : 1;
+  // The figures' register: down from an octave below the chords, or up to it.
+  const start = rootMidiNote - (direction === "descending" ? 12 : 12 + 12 * 2 * cycles);
+  const bass = Array.from({ length: 2 * rootDegrees.length - 1 }, (_, k) => midiNoteForDegree(scale, start, k * step));
+  return { chords, rootDegrees, bass };
+}
+
+/**
+ * Figure 276 (p.539): "symmetric harmonization of the chromatic scale" --
+ * one tonic harmonizes all 12 units with one chord, √2 six, ∛2 four, ∜2
+ * three, ⁶√2 two, ¹²√2 one.
+ */
+export function chromaticUnitsPerChord(tonicCount: 1 | 2 | 3 | 4 | 6 | 12): number {
+  return 12 / tonicCount;
 }
