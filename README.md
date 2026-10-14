@@ -575,11 +575,39 @@ of Ch. 3 ("a3T + a2T + aT", "a3P + b2P + aP", "a2T2P + bTP") that feeds
 `buildAxialMelody`. The `tests/notation*.test.mjs` files check every symbol
 against a number the book itself prints.
 
+Book V is `notation/harmony.ts`:
+
+```ts
+import * as H from "./src/core/notation/harmony.ts"; // Book V
+
+H.C(5);                              // c-f-b-e-a-d-g as degrees: C₅, "constructed downward"
+H.formatCycle(-5);                   // "C₋₅"
+H.HS_E(1);                           // 5 -- HS_E₁ = C₅
+H.parseCycleGroup("2C7 + C3 + C5");  // [[2,7],[1,3],[1,5]]
+H.parseStructuralGroup("3S1 + S3 + 2S2");
+H.formatDoubling(5, 3);              // "S(5)③"
+H.formatG6(-5);                      // "G₆(C₋₅)"
+H.formatFamily("minor seventh", 1);  // "7♭S₁"
+H.tonicSystem(4);                    // ∜2: C-A-F♯-E♭ by C₃
+```
+
+covering the cycles C₀ C₃ C₅ C₇ and their negatives, HS_E₀…HS_E₅,
+binomial/trinomial cycles, ↻ ↺ and const. 3 with the open/close
+positions, the S(5) and S(7) structure tables, structural and cycle
+groups with coefficients (read and written in the book's form), Types
+I-III and the √2…¹²√2 tonic systems, doublings ①③⑤, G₆ and G₄₋₆, the
+7♭/7♮ families, Ch. 12's descending interval numbers and Ch. 17's
+Hy = di3H + ch6H + sy3H.
+
 Building this layer was part of a top-of-book audit of the underlying math,
-which also found and fixed two real bugs: generators were read as attack
+which also found and fixed real bugs: generators were read as attack
 counts instead of periods (swapping r/r′ for three generators, and every
-"Generator A/B" lane), and higher-order permutations of three elements
-didn't follow the book's own a₂…f₂ formula.
+"Generator A/B" lane); higher-order permutations of three elements
+didn't follow the book's own a₂…f₂ formula; and in Book V the positive
+diatonic cycles ran upward when the book constructs them downward (C₅ is
+C→F, not C→G — Figure 2, and every chapter after it, depends on this),
+binomial cycles were concatenated instead of alternated, and the G₆ bass
+dropped where the book has it rising by thirds.
 
 ## What's portable
 
