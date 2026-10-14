@@ -2012,6 +2012,58 @@ just left). Section D: Type III progressions over the pedal, and the
 extended form in which "each tonic [becomes] a pedal point in
 succession" (`symmetricPedalPoint`).
 
+## Melodic figuration and contrapuntal variations (Book V, Ch. 20-24)
+
+`MelodicFigurationPanel.tsx` (`src/core/melodicFiguration.ts`) and
+`ContrapuntalVariationsPanel.tsx` (`src/core/contrapuntalVariations.ts`),
+which close Book V. Melodic figuration is "the process of evolving
+leading tones for chordal tones in a given harmonic continuity" —
+suspended, passing, auxiliary and anticipated tones, classified in
+Figure 322 (`FIGURATION_ELEMENTS`) — and its one firm rule is that the
+result be a crystallized structure: one suspended or passing tone a 7th
+of S(7), two the 7th and 9th of S(9), three the 7th, 9th and 11th of
+S(11); "S(11) = 1, 5, 11," the old 4-3 suspension, is not one
+(`isCrystallized`).
+
+Ch. 21's suspensions turned out to be Ch. 9-11's own machinery chained:
+the held tones are the "suspending" rows of the S(7), S(9) and S(11)
+preparation tables (1, 3, 5 into 7 by C7, C5, C3; 1-3, 3-5, 5-7 into 7-9;
+1-3-5, 3-5-7 into 7-9-11), and the suspended functions resolve by those
+chapters' resolution tables, each stepping down (`suspension`). One
+result is the book's own remark from Ch. 9 (p.440): a held c over D,
+resolved by C5, gives G with a tripled root and no fifth — "why a tonic
+triad acquires a tripled root and loses its fifth." Triple passing tones
+are "7, 9 and 11 obtained by means of downward motion from the 1, 3 and
+5; this corresponds to a preparation of S(11) in C0" — Ch. 11's own
+preparation (`triplePassingTones`); single ones are Ch. 15's passing
+seventh. Double passing tones are left open: over a held bass, none of
+the book's three sources (1-3, 3-5, 5-7) gives the crystallized S(9),
+and the figure doesn't settle where the bass goes. Anticipations sing
+the next chord's function early, except on a common tone
+(`anticipations`).
+
+Ch. 22's auxiliary tones take their interval from the scale or the
+master-structure Σ — "in Σ c-d-e-f♯-g-a-b♭... ↗5, i = 1... in c-d-e-f-g-
+a-b♭, i = 2" (`auxiliaryTone`) — Figure 349's classification counts 8,
+24 and 32 single, double and triple forms over 1, 3, 5, 7
+(`auxiliaryClassification`), and all three of p.589's coefficient
+examples come out exactly (`directionalSequence`; the third applies
+r4÷3 to the functions 1, 3, 5, 7, 3, 1, as read off the page). Ch. 23's
+thematic figuration reads a motif's chordal tones ("either the first or
+the second pitch-unit is a chordal tone" — c-e-g-b or d-f-a-c),
+classifies the rest (Figure 357: g♯ the lower auxiliary to a, f the
+upper auxiliary to e — `analyzeMotif`) and assigns one of "the seven
+possible systems" (Figure 358): e as the ninth starts on the fifth and
+needs S(9) (`assignSystem`).
+
+Ch. 24, contrapuntal variations: parts entering and dropping out in any
+order — 12, 48 and 240 variations for three, four and five parts, or
+6, 8 and 10 by circular permutations — and the part-sequence laid over
+an attack group, each voice playing it from its own entrance: S, A, T,
+B under 4a + 3a + 2a + 2a is "S4a + S3a + S2a + S2a; A3a + A2a + A2a;
+T2a + T2a; B2a" over an 11-chord theme (`entrancePlan`,
+`soundingVoices`).
+
 ## Book V, Chapter 3 Section B, Chapter 4, and Chapter 5 Section A
 
 Chapter 3 Section B, the **symmetric zero cycle** (C0): chords on one
