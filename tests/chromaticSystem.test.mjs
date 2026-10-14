@@ -7,6 +7,11 @@ import {
   chromaticGroupFunctionTriples,
   chromaticGroupFormCount,
   chromaticGroupRoots,
+  basisOperations,
+  canLowerSeventh,
+  PARALLEL_DOUBLE_CHROMATICS,
+  parallelChromatics,
+  coincidingChromaticGroup,
 } from "../src/core/chromaticSystem.ts";
 
 test("MAJOR_BASIS_OPERATIONS / MINOR_BASIS_OPERATIONS match the book's own table exactly -- opposite directions (p.498)", () => {
@@ -67,4 +72,42 @@ test("chromaticGroupRoots's pitch path matches the book's own C-C#-D worked exam
   assert.equal(root1 + 0, 0); // chord1 root + "root" offset = C
   assert.equal(root2 + 4, 1); // chord2 root + "third" offset (major) = C#
   assert.equal(root3 + 7, 2); // chord3 root + "fifth" offset = D
+});
+
+const op = (o) => `${o.function}:${o.direction}`;
+
+test("Section A: the augmented basis takes the major's operations without the fifth; the diminished takes the minor's (p.501)", () => {
+  assert.deepEqual(basisOperations(3).map(op), ["root:raise", "third:lower"]);
+  assert.deepEqual(basisOperations(4).map(op), ["root:lower", "third:raise"]);
+  assert.deepEqual(basisOperations(1), MAJOR_BASIS_OPERATIONS);
+  assert.deepEqual(basisOperations(2), MINOR_BASIS_OPERATIONS);
+});
+
+test("Section B: the seventh is lowered from every S(7) except the diminished (p.503)", () => {
+  assert.deepEqual([1, 2, 3, 4, 5, 6, 7].filter((s) => !canLowerSeventh(s)), [5]);
+});
+
+test("Section C: c-cb-bb takes e-eb along; c-c#-d takes eb-e (p.504)", () => {
+  const [lowerRoot] = PARALLEL_DOUBLE_CHROMATICS[1];
+  assert.deepEqual(chromaticPitchPath(60, lowerRoot.fundamental.direction), [60, 59, 58]); // c, cb, bb
+  assert.deepEqual(chromaticPitchPath(64, lowerRoot.complementary.direction).slice(0, 2), [64, 63]); // e, eb
+  const [raiseRoot] = PARALLEL_DOUBLE_CHROMATICS[2];
+  assert.deepEqual(chromaticPitchPath(60, raiseRoot.fundamental.direction), [60, 61, 62]); // c, c#, d
+  assert.deepEqual(chromaticPitchPath(63, raiseRoot.complementary.direction).slice(0, 2), [63, 64]); // eb, e
+  // The fundamental operation always comes from the opposite basis.
+  for (const { fundamental } of PARALLEL_DOUBLE_CHROMATICS[1]) assert.ok(!MAJOR_BASIS_OPERATIONS.some((o) => op(o) === op(fundamental)));
+  for (const { fundamental } of PARALLEL_DOUBLE_CHROMATICS[2]) assert.ok(!MINOR_BASIS_OPERATIONS.some((o) => op(o) === op(fundamental)));
+});
+
+test("Section D: triple and quadruple parallel chromatics keep the diminished structures, every function raised (p.507)", async () => {
+  const { symmetricTriad, symmetricSeventhChord } = await import("../src/core/symmetricHarmony.ts");
+  assert.deepEqual(parallelChromatics(symmetricTriad(4, 59)), symmetricTriad(4, 60));
+  assert.deepEqual(parallelChromatics(symmetricSeventhChord(5, 59)), symmetricSeventhChord(5, 60));
+});
+
+test("Section G: coinciding groups outward from a unison end a major third apart, inward from an octave a minor sixth (p.516)", () => {
+  const [up, down] = coincidingChromaticGroup(60, "outward");
+  assert.equal(up[2] - down[2], 4);
+  const [low, high] = coincidingChromaticGroup(60, "inward");
+  assert.equal(high[2] - low[2], 8);
 });

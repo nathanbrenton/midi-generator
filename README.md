@@ -1706,6 +1706,20 @@ first basis only," p.498) — function 7 (the seventh) appears in the full
 Figure 211 table but isn't realized here, since it needs an S(7) chord,
 not a plain triad.
 
+The audit added Sections A-D and G, each stated as a plain rule:
+operations from the augmented and diminished bases (S3(5) like the major
+without its already-altered fifth, S4(5) like the minor —
+`basisOperations`); lowering the seventh from every S(7) except the
+diminished (`canLowerSeventh`); parallel double chromatics, a
+fundamental operation from the opposite basis with the third rectified
+("c - c♭ - b♭... the complementary chromatic is e - e♭",
+`PARALLEL_DOUBLE_CHROMATICS`); triple and quadruple parallel chromatics,
+the diminished triad or seventh raised in every function
+(`parallelChromatics`); and coinciding groups, two voices from one
+function in contrary motion, ending a major third apart outward from a
+unison or a minor sixth inward from an octave (`coincidingChromaticGroup`).
+Section E's enharmonic formula is garbled in the scan and left unbuilt.
+
 ## The passing seventh generalized (Book V, Ch. 15, Section A)
 
 `PassingSeventhPanel.tsx` (`src/core/passingSeventh.ts`). Only Section A

@@ -51,6 +51,24 @@
  * is 4(784+448) = 4,928" exactly. `chromaticGroupFormCount` reproduces
  * this arithmetic.
  *
+ * The audit added Sections A-D and G (p.501-516), each a rule stated in
+ * plain text: `basisOperations` for all four S(5) bases -- the augmented
+ * S3(5) "identical with the 3 of S1(5)" takes raising 1 and lowering 3
+ * (its fifth "does not participate... as it is already altered"), the
+ * diminished S4(5) takes lowering 1 and raising 3; `canLowerSeventh`
+ * (Section B: the seventh is lowered, "from all forms of S(7)... Do not
+ * operate from a diminished seventh"); `PARALLEL_DOUBLE_CHROMATICS`
+ * (Section C: a fundamental operation "performed from an opposite base"
+ * with the third rectified -- c-cb-bb with e-eb; c-c#-d with eb-e);
+ * `parallelChromatics` (Section D: raising 1 of S4(5) drags 3 and 5,
+ * raising 1 of the diminished seventh drags 3, 5 and 7); and
+ * `coincidingChromaticGroup` (Section G: two voices from one function in
+ * contrary motion -- "moving outward from unison or octave, the last
+ * term of the group produces a major third"). Section E's enharmonic
+ * formula ("x# = yb") is garbled in the scan and left unbuilt; Section
+ * F's overlap is a scheduling form ("4 variants" of ascending and
+ * descending pairs), not a new operation.
+ *
  * Honest scope note: Figure 212's actual realized musical examples (the
  * specific chord voicings for each function-triple) were not
  * hand-verified note-by-note -- unlike the Ch.9/10/11 chord chapters,
@@ -165,4 +183,74 @@ export function chromaticGroupRoots(
 
 function triadFunctionName(fn: TriadChordFunction): ChromaticFunction {
   return fn === 1 ? "root" : fn === 3 ? "third" : "fifth";
+}
+
+/**
+ * Section A (p.501): the fundamental operations of every S(5) basis. The
+ * augmented S3(5) behaves like the major (raise 1, lower 3; its fifth is
+ * already raised and "does not participate"), the diminished S4(5) like
+ * the minor (lower 1, raise 3).
+ */
+export function basisOperations(structure: StructureId): readonly ChromaticOperation[] {
+  if (structure === 1) return MAJOR_BASIS_OPERATIONS;
+  if (structure === 2) return MINOR_BASIS_OPERATIONS;
+  if (structure === 3) return MAJOR_BASIS_OPERATIONS.filter((op) => op.function !== "fifth");
+  return MINOR_BASIS_OPERATIONS.filter((op) => op.function !== "fifth");
+}
+
+/**
+ * Section B (p.503): "Because of the classical tendency toward a downward
+ * resolution of the seventh, chromatic alterations in this case
+ * conventionally follow the same direction. This lowering of the seventh
+ * (both major and minor) can be carried out from all forms of S(7)...
+ * Do not operate from a diminished seventh." Structures as in Ch.9 D's
+ * S(7) table, where 5 is the diminished.
+ */
+export function canLowerSeventh(seventhStructure: 1 | 2 | 3 | 4 | 5 | 6 | 7): boolean {
+  return seventhStructure !== 5;
+}
+
+/**
+ * Section C (p.503-504, Figure 219): a fundamental operation taken from
+ * the opposite basis, with the third rectified to match -- on S1(5), 1b
+ * or 5b with 3b; on S2(5), 1# or 5# with 3#. "If c - cb - bb is a
+ * fundamental operation, the complementary chromatic is e - eb"; "if
+ * c - c# - d is the fundamental operation, the complementary chromatic is
+ * eb - e." The complementary tone need not continue: "it may remain, or
+ * it may even move" the other way.
+ */
+export const PARALLEL_DOUBLE_CHROMATICS: Readonly<Record<1 | 2, readonly { fundamental: ChromaticOperation; complementary: ChromaticOperation }[]>> = {
+  1: [
+    { fundamental: { function: "root", direction: "lower" }, complementary: { function: "third", direction: "lower" } },
+    { fundamental: { function: "fifth", direction: "lower" }, complementary: { function: "third", direction: "lower" } },
+  ],
+  2: [
+    { fundamental: { function: "root", direction: "raise" }, complementary: { function: "third", direction: "raise" } },
+    { fundamental: { function: "fifth", direction: "raise" }, complementary: { function: "third", direction: "raise" } },
+  ],
+};
+
+/**
+ * Section D (p.507): triple and quadruple parallel chromatics. Raising
+ * the 1 of the diminished triad S4(5) "requires the correction of the
+ * third (3#) and of the fifth (5#)"; raising the 1 of the diminished
+ * seventh "requires the alteration of all remaining functions, i.e., 3#,
+ * 5# and 7#" -- the whole chord moves up a semitone and, "the chromatic
+ * system [being] limited to four functions," each keeps its assignment.
+ * Takes the chord's pitches, root first.
+ */
+export function parallelChromatics(chord: readonly number[]): number[] {
+  return chord.map((pitch) => pitch + 1);
+}
+
+/**
+ * Section G (p.514-516): a coinciding chromatic group, two voices on one
+ * function (unison or octave) altered in contrary motion -- outward
+ * (x -> x# -> y above, x -> xb -> y below) or inward from the octave.
+ * Outward from a unison the group ends a major third apart; inward from
+ * an octave, a minor sixth. Returns the two voices' paths.
+ */
+export function coincidingChromaticGroup(pitch: number, direction: "outward" | "inward"): [[number, number, number], [number, number, number]] {
+  if (direction === "outward") return [chromaticPitchPath(pitch, "raise"), chromaticPitchPath(pitch, "lower")];
+  return [chromaticPitchPath(pitch, "raise"), chromaticPitchPath(pitch + 12, "lower")];
 }
