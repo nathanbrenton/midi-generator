@@ -1553,12 +1553,22 @@ checkable claim, not prose to interpret: resolving the eleventh alone
 same-root chord `stackedNinthChord` already builds for Ch. 10 Section A.
 `resolveEleventhToNinth` is a two-line function that calls it directly —
 confirmed in the panel (toggle "Resolve the eleventh") and by test.
-**Only this first link is built.** The rest of the chain (S(9)→S(7)→
-S(6)③) depends on Ch. 10 Section A's own S(9) resolution mechanic, which
-was deliberately left unbuilt there — not re-guessed here either.
-Section B (Preparation, p.470-472) and Section C (Symmetric System,
-p.473-477) lean on the same two-"family" combinatorics already deferred
-in Ch. 10 Section B, for the same reason. **Section D (Hybrid Four-Part
+The audit built the rest. `eleventhResolutionChain` is the whole C0
+chain, one function down a step at a time, 11 first: c | b-d-f → c |
+b-d-e → c | b-c-e → c | a-c-e, the last an A minor over its third (the
+S(6)③ the book names). `ELEVENTH_RESOLUTIONS` records Figure 177's
+simultaneous resolutions — C3 to that S(6)③ (or, with the bass moved to
+g, S(2)), C5 to F S(7) — and why C7 is missing ("1, 5, 7, 9... does not
+sound satisfactory"). Section B's preparations (`prepareEleventh`)
+follow the book's own two propositions: take S(5), move its bass a step
+up (C7), or keep the bass and move the three upper voices down a degree
+(C0). Section C's two families are classified, as the book says, "as
+S(5) with regard to their upper functions" — a triad on the minor or
+major seventh (Figures 182-183, `ELEVENTH_FAMILIES`):
+7♭S1 b♭-d-f, 7♭S2 b♭-d♭-f, 7♭S3 b♭-d-f♯, 7♮S1 b-d♯-f♯, 7♮S2 b-d-f♯,
+7♮S4 b-d-f, plus the two less common 7♭S4 and 7♮S3. And the rule that
+symmetric resolutions work only under C3 (∛2, ∜2) and C5 (√2) is the
+same set of cycles the resolution table uses. **Section D (Hybrid Four-Part
 Harmony) is built — see below.**
 
 ## Hybrid four-part harmony (Book V, Ch. 11, Section D)

@@ -118,6 +118,12 @@ export interface NinthResolution {
   /** The function the bass takes in the next chord: 1, or 3 under C3 (the bass holds, an S(6)). */
   bass: 1 | 3;
   result: "S(7)" | "S(6)";
+  /**
+   * The figure's "or:" -- the same upper voices with the bass moved to g:
+   * in C0 the fifth, "a complete S(4/3)" (as p.469 recalls it); in C3 the
+   * seventh of A, an S(2).
+   */
+  alternative?: { bass: 5 | 7; result: "S(4/3)" | "S(2)" };
 }
 
 /**
@@ -127,8 +133,8 @@ export interface NinthResolution {
  * a-c, e up to f, bass up to d: D S(7) without its root above.
  */
 export const NINTH_RESOLUTIONS: readonly NinthResolution[] = [
-  { cycle: "C0", moves: { third: 3, seventh: 7, ninth: 1 }, bass: 1, result: "S(7)" },
-  { cycle: "C3", moves: { third: 5, seventh: 1, ninth: 3 }, bass: 3, result: "S(6)" },
+  { cycle: "C0", moves: { third: 3, seventh: 7, ninth: 1 }, bass: 1, result: "S(7)", alternative: { bass: 5, result: "S(4/3)" } },
+  { cycle: "C3", moves: { third: 5, seventh: 1, ninth: 3 }, bass: 3, result: "S(6)", alternative: { bass: 7, result: "S(2)" } },
   { cycle: "C5", moves: { third: 7, seventh: 3, ninth: 5 }, bass: 1, result: "S(7)" },
   { cycle: "C7", moves: { third: 3, seventh: 5, ninth: 7 }, bass: 1, result: "S(7)" },
 ];

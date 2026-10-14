@@ -87,3 +87,9 @@ test("the two families of S(9) (Figures 162-163) and the four C0 pairs that make
       if (consecutiveSevenths(NINTH_FAMILIES[i], NINTH_FAMILIES[j])) bad.push(`${label(NINTH_FAMILIES[i])}-${label(NINTH_FAMILIES[j])}`);
   assert.deepEqual(bad.sort(), ["7bS1-7bS4", "7bS3-7nS2", "7bS4-7nS1", "7nS2-7nS3"]);
 });
+
+test("Figure 157's 'or:' chords: the bass moves to g -- the fifth in C0 (a complete S(4/3)), the seventh of A in C3 (S(2))", () => {
+  const byCycle = Object.fromEntries(NINTH_RESOLUTIONS.map((r) => [r.cycle, r]));
+  assert.deepEqual(byCycle.C0.alternative, { bass: 5, result: "S(4/3)" }); // g is 5 of C
+  assert.deepEqual(byCycle.C3.alternative, { bass: 7, result: "S(2)" }); // g is 7 of A
+});
