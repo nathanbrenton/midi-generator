@@ -64,10 +64,17 @@
  * raising 1 of the diminished seventh drags 3, 5 and 7); and
  * `coincidingChromaticGroup` (Section G: two voices from one function in
  * contrary motion -- "moving outward from unison or octave, the last
- * term of the group produces a major third"). Section E's enharmonic
- * formula ("x# = yb") is garbled in the scan and left unbuilt; Section
- * F's overlap is a scheduling form ("4 variants" of ascending and
- * descending pairs), not a new operation.
+ * term of the group produces a major third"). Section E, the enharmonic
+ * treatment (p.508, read from the rendered page):
+ *     (1) x -> x# = yb -> z (1, 3, 5, 7)
+ *     (2) x -> xb = y# -> z (1, 3, 5, 7)
+ * the altered tone is respelled so that it tends back, and resolves by a
+ * semitone to z, any function of the third chord -- "substitution of
+ * raising for lowering, and vice versa," bringing the tension chord "to a
+ * new point of release" (`enharmonicGroupRoots`). The book's p.509 bass
+ * c - c# = db - c, with db as 7, 5 or 3 of the middle chord and c as 1 (or
+ * 1, 3, 5) of the last. Section F's overlap is a scheduling form ("4
+ * variants" of ascending and descending pairs), not a new operation.
  *
  * Honest scope note: Figure 212's actual realized musical examples (the
  * specific chord voicings for each function-triple) were not
@@ -179,6 +186,29 @@ export function chromaticGroupRoots(
   const root3 = pitch3 - functionOffset(triadFunctionName(functionTriple[2]), chord3Structure);
 
   return [root1, root2, root3];
+}
+
+/** Section E's path: the tone is altered, then -- respelled -- turns back: x, x#, x (raise) or x, xb, x (lower). */
+export function enharmonicPitchPath(startPitch: number, direction: ChromaticDirection): [number, number, number] {
+  const step = direction === "raise" ? 1 : -1;
+  return [startPitch, startPitch + step, startPitch];
+}
+
+/** Section E: a chromatic group under enharmonic treatment -- as `chromaticGroupRoots`, along the path x, x#=yb, z. */
+export function enharmonicGroupRoots(
+  startChord: ChromaticGroupChord,
+  operation: ChromaticOperation,
+  functionTriple: readonly [TriadChordFunction, TriadChordFunction, TriadChordFunction],
+  chord2Structure: StructureId,
+  chord3Structure: StructureId,
+): [number, number, number] {
+  const startPitch = startChord.root + functionOffset(operation.function, startChord.structure);
+  const [pitch1, pitch2, pitch3] = enharmonicPitchPath(startPitch, operation.direction);
+  return [
+    pitch1 - functionOffset(triadFunctionName(functionTriple[0]), startChord.structure),
+    pitch2 - functionOffset(triadFunctionName(functionTriple[1]), chord2Structure),
+    pitch3 - functionOffset(triadFunctionName(functionTriple[2]), chord3Structure),
+  ];
 }
 
 function triadFunctionName(fn: TriadChordFunction): ChromaticFunction {

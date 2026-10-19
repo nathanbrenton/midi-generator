@@ -4,6 +4,8 @@ import { intervalsToMidiNotes } from "../core/pitchScaleEvolution";
 import { compositionCount, factorial } from "../core/symmetricScales";
 import type { NoteEvent } from "../core/melody";
 import { buildMidiFile } from "../core/midi";
+import { chromaticAlterationGroups, spelledLine, spell } from "../core/melodicModulation";
+import { majorTonic } from "../core/chromaticModulation";
 import "./SchillingerGenerator.css";
 
 const NOTE_NAMES = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"];
@@ -34,6 +36,9 @@ function parseMelody(text: string): { midiNote: number; durationUnits: number }[
 }
 
 export default function MelodicModulationPanel() {
+  // Section E: from one major key to another through chromatic alteration.
+  const [fromSignature, setFromSignature] = useState(0);
+  const [toSignature, setToSignature] = useState(-3);
   const [melodyText, setMelodyText] = useState("60:2,62:1,60:5,64:3");
   const [intervalsText, setIntervalsText] = useState("2,2,3,2");
   const [tonic, setTonic] = useState(60);
@@ -315,6 +320,63 @@ export default function MelodicModulationPanel() {
         ) : (
           <>Enter an interval sequence above.</>
         )}
+      </div>
+
+      <h4>E. Modulating through Chromatic Alteration</h4>
+      <p className="schillinger__hint">
+        "Find the units that are not in common but have identical musical names (like c - c#)" and lead each
+        through its altered form into the next unit of the new key; with several, run them together and use
+        "the third term of a chromatic group in the last group only." From C major to E♭ major: b - b♭ - a♭,
+        e - e♭ - d, a - a♭ - g, or b - b♭ - e - e♭ - a - a♭ - g (p.130).
+      </p>
+      <div className="schillinger__row">
+        <label>
+          From
+          <select value={fromSignature} onChange={(e) => setFromSignature(Number(e.target.value))}>
+            {Array.from({ length: 15 }, (_, k) => k - 7).map((sig) => (
+              <option key={sig} value={sig}>
+                {spell(majorTonic(sig))} major
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          To
+          <select value={toSignature} onChange={(e) => setToSignature(Number(e.target.value))}>
+            {Array.from({ length: 15 }, (_, k) => k - 7).map((sig) => (
+              <option key={sig} value={sig}>
+                {spell(majorTonic(sig))} major
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="schillinger__readout">
+        {(() => {
+          const { groups, chained } = chromaticAlterationGroups(fromSignature, toSignature);
+          if (groups.length === 0) return <>The two keys have every unit in common.</>;
+          return (
+            <>
+              {groups.map((g) => {
+                const label = g.map(spell).join("-");
+                return (
+                  <div key={label}>
+                    {label}
+                    <button type="button" onClick={() => preview(label, spelledLine(g))}>
+                      Preview
+                    </button>
+                  </div>
+                );
+              })}
+              <div>
+                Together: {chained.map(spell).join("-")}
+                <button type="button" onClick={() => preview(`Together ${chained.map(spell).join("-")}`, spelledLine(chained))}>
+                  Preview
+                </button>
+              </div>
+            </>
+          );
+        })()}
       </div>
 
       <h4>Playback</h4>

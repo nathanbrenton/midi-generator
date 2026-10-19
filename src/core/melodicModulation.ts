@@ -62,10 +62,23 @@
  * transposed to root d gives "d-e-f#-a-b" -- confirmed exactly by hand.
  * Also needs no new math: `intervalsToMidiNotes` applied to a different
  * root already does exactly this.
+ *
+ * Section E (Modulating through Chromatic Alteration, p.130): "find the
+ * units that are not in common but have identical musical names (like
+ * c - c#)" and lead each through its altered form into "the next unit
+ * bearing a different musical name" -- a chromatic group x - x' - y. With
+ * several, "proceed immediately with the other intended chromatic
+ * operations and... use the third term of a chromatic group in the last
+ * group only." The book's example, C major to Eb major: b - bb - ab,
+ * e - eb - d, a - ab - g, or together b - bb - e - eb - a - ab - g
+ * (`chromaticAlterationGroups`): the altered letters in key-signature
+ * order, the third term the next unit of the new key in the alteration's
+ * direction. Section F (identical motifs) is compositional guidance.
  */
 
 import { circularPermutations, generalPermutationsOf } from "./permutations.ts";
 import { intervalsToMidiNotes } from "./pitchScaleEvolution.ts";
+import { accidentalInKey, pitchClass, spell, type Letter, type SpelledNote } from "./chromaticModulation.ts";
 
 export interface PrimaryAxisResult {
   midiNote: number;
@@ -117,3 +130,39 @@ export function axisRelationCount(unitsPerScale: number): number {
 export function axialContinuityPermutations(transposedScales: readonly number[][]): number[][][] {
   return generalPermutationsOf(transposedScales);
 }
+
+const LETTERS: readonly Letter[] = ["C", "D", "E", "F", "G", "A", "B"];
+const SHARP_ORDER: readonly Letter[] = ["F", "C", "G", "D", "A", "E", "B"];
+
+/**
+ * Section E: modulation from one key signature to another through chromatic
+ * alteration. Each group is the old unit, its altered form, and the new
+ * key's next unit in the same direction; `chained` runs the operations
+ * together with the third term only at the end.
+ */
+export function chromaticAlterationGroups(fromSignature: number, toSignature: number): { groups: SpelledNote[][]; chained: SpelledNote[] } {
+  const raising = toSignature > fromSignature;
+  const order = raising ? SHARP_ORDER : [...SHARP_ORDER].reverse();
+  const altered = order.filter((l) => accidentalInKey(l, fromSignature) !== accidentalInKey(l, toSignature));
+  const inKey = (l: Letter, sig: number): SpelledNote => ({ letter: l, accidental: accidentalInKey(l, sig) });
+  const groups = altered.map((l) => {
+    const next = LETTERS[(LETTERS.indexOf(l) + (raising ? 1 : 6)) % 7];
+    return [inKey(l, fromSignature), inKey(l, toSignature), inKey(next, toSignature)];
+  });
+  const chained = groups.flatMap((g, i) => (i === groups.length - 1 ? g : g.slice(0, 2)));
+  return { groups, chained };
+}
+
+/** Spelled notes as a line of MIDI pitches, each in the octave nearest the one before. */
+export function spelledLine(notes: readonly SpelledNote[], start = 60): number[] {
+  const out: number[] = [];
+  for (const n of notes) {
+    const pc = pitchClass(n);
+    const prev = out[out.length - 1] ?? start;
+    const base = prev - (((prev % 12) + 12) % 12) + pc;
+    out.push([base - 12, base, base + 12].reduce((a, b) => (Math.abs(b - prev) < Math.abs(a - prev) ? b : a)));
+  }
+  return out;
+}
+
+export { spell };

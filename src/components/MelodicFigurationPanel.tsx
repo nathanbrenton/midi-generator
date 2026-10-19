@@ -3,6 +3,7 @@ import {
   FIGURATION_ELEMENTS,
   suspension,
   triplePassingTones,
+  doublePassingTones,
   auxiliaryTone,
   auxiliaryClassification,
   directionalSequence,
@@ -72,7 +73,13 @@ export default function MelodicFigurationPanel() {
 
   // Ch.21 B.
   const [passingCycle, setPassingCycle] = useState<3 | 5>(5);
-  const passing = useMemo(() => triplePassingTones(MAJOR, 48, 0, passingCycle), [passingCycle]);
+  const [passingKind, setPassingKind] = useState<"double" | "triple">("double");
+  const [doubleFrom, setDoubleFrom] = useState<1 | 3 | 5>(1);
+  const [doubleCycle, setDoubleCycle] = useState<"C0" | "C3" | "C5" | "C7">("C7");
+  const passing = useMemo(
+    () => (passingKind === "triple" ? triplePassingTones(MAJOR, 48, 0, passingCycle) : doublePassingTones(MAJOR, 48, 0, doubleFrom, doubleCycle)),
+    [passingKind, passingCycle, doubleFrom, doubleCycle],
+  );
   const passingNotes = useMemo(() => tiedNotes(passing), [passing]);
 
   // Ch.22.
@@ -163,18 +170,51 @@ export default function MelodicFigurationPanel() {
 
       <h4>Passing tones (Ch. 21 B, p.575-576)</h4>
       <p className="schillinger__hint">
-        Single passing tones are the passing seventh of Ch. 15 (the walking bass). "Triple passing
-        tones are 7, 9 and 11 obtained by means of downward motion from the 1, 3 and 5; this
-        corresponds to a preparation of S(11) in C0" — the bass held, the S(11) then resolving.
+        Single passing tones are the passing seventh of Ch. 15 (the walking bass). Double ones are "the
+        passing 7 and 9 obtained by means of downward motion from the 1 and 3, or the 3 and 5, or the 5 and
+        7": in Figure 330 the pair stands twice, held below while its doubling steps down, so the passing
+        chord is the crystallized S(9), 1-3-7-9, resolving by Ch. 10's table. "Triple passing tones are 7, 9
+        and 11 obtained by means of downward motion from the 1, 3 and 5; this corresponds to a preparation
+        of S(11) in C0."
       </p>
       <div className="schillinger__row">
         <label>
-          Resolution
-          <select value={passingCycle} onChange={(e) => setPassingCycle(Number(e.target.value) as 3 | 5)}>
-            <option value={5}>C5 — to S(7)</option>
-            <option value={3}>C3 — to S(6), the bass held</option>
+          Kind
+          <select value={passingKind} onChange={(e) => setPassingKind(e.target.value as "double" | "triple")}>
+            <option value="double">Double (S(9))</option>
+            <option value="triple">Triple (S(11))</option>
           </select>
         </label>
+        {passingKind === "double" ? (
+          <>
+            <label>
+              From
+              <select value={doubleFrom} onChange={(e) => setDoubleFrom(Number(e.target.value) as 1 | 3 | 5)}>
+                <option value={1}>the 1 and 3</option>
+                <option value={3}>the 3 and 5</option>
+                <option value={5}>the 5 and 7</option>
+              </select>
+            </label>
+            <label>
+              Resolution
+              <select value={doubleCycle} onChange={(e) => setDoubleCycle(e.target.value as typeof doubleCycle)}>
+                {(["C0", "C3", "C5", "C7"] as const).map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        ) : (
+          <label>
+            Resolution
+            <select value={passingCycle} onChange={(e) => setPassingCycle(Number(e.target.value) as 3 | 5)}>
+              <option value={5}>C5 — to S(7)</option>
+              <option value={3}>C3 — to S(6), the bass held</option>
+            </select>
+          </label>
+        )}
       </div>
       <div className="schillinger__readout">
         {passing.map((c, i) => (

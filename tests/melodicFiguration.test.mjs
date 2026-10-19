@@ -175,3 +175,20 @@ test("neutral figuration through the parts: TABS + ABST + BSTA + STAB, the rotat
   const rotations = circularPermutations([0, 1, 2, 3]).map((p) => p.map((i) => "TABS"[i]).join(""));
   assert.deepEqual(rotations, ["TABS", "ABST", "BSTA", "STAB"]);
 });
+
+test("Figure 330 (p.576): double passing tones -- c | e c e to c | e b d (C S(9)), resolved by C7 to d | f a c; g | b g b to g | b f a, by C5 to c | b e g", async () => {
+  const { doublePassingTones } = await import("../src/core/melodicFiguration.ts");
+  const { intervalCellScale } = await import("../src/core/scales.ts");
+  const MAJOR = intervalCellScale([2, 2, 1, 2, 2, 2, 1]);
+  const N = ["c", "c#", "d", "eb", "e", "f", "f#", "g", "ab", "a", "bb", "b"];
+  const nm = (p) => `${N[p % 12]}${Math.floor(p / 12) - 1}`;
+  const show = (c) => `${nm(c.bass)} | ${c.upper.map(nm).join(" ")}`;
+  const onC = doublePassingTones(MAJOR, 48, 0, 1, "C7").map(show);
+  assert.deepEqual(onC, ["c3 | e4 c5 e5", "c3 | e4 b4 d5", "d3 | f4 a4 c5"]);
+  const onG = doublePassingTones(MAJOR, 48, 4, 1, "C5").map(show);
+  // the figure's G example an octave higher here: the bass rises a fourth, g to c, as in the figure (g2 to c3)
+  assert.deepEqual(onG, ["g3 | b4 g5 b5", "g3 | b4 f5 a5", "c4 | b4 e5 g5"]);
+  // from the 3 and 5: the S(9) stands on the 3 -- e | g e g to e | g d f
+  const from3 = doublePassingTones(MAJOR, 48, 0, 3, "C7").map(show);
+  assert.equal(from3[1], "e3 | g4 d5 f5");
+});

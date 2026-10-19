@@ -184,3 +184,28 @@ test("Section D's binomial pattern (e.g. 0+a) has exactly 2 permutations, matchi
 test("Section D's quadrinomial '4 places with 3 identical terms' pattern has exactly 4 permutations, matching the book's own stated count (p.255)", () => {
   assert.equal(generalPermutations([0, 0, 0, 1]).length, 4);
 });
+
+test("Figures 34 and 36 (p.272-273): a P on b or c is where the term starts -- a4P + bP + c3P rises to +4, leaps to +1, falls to the axis, leaps to -3, rises to the axis", async () => {
+  const { buildAxialMelody } = await import("../src/core/melodicAxes.ts");
+  const offsets = (terms) => buildAxialMelody(terms, 60, 1).map((n) => n.midiNote - 60);
+  assert.deepEqual(
+    offsets([
+      { axis: "a", timeUnits: 4, pitchUnits: 4 },
+      { axis: "b", timeUnits: 1, pitchUnits: 1 },
+      { axis: "c", timeUnits: 3, pitchUnits: 3 },
+    ]),
+    [1, 2, 3, 4, 0, -2, -1, 0],
+  );
+  // Figure 36, a4P + bP + c3P + d2P, ends two P below the axis
+  assert.deepEqual(
+    offsets([
+      { axis: "a", timeUnits: 4, pitchUnits: 4 },
+      { axis: "b", timeUnits: 1, pitchUnits: 1 },
+      { axis: "c", timeUnits: 3, pitchUnits: 3 },
+      { axis: "d", timeUnits: 2, pitchUnits: 2 },
+    ]).at(-1),
+    -2,
+  );
+  // without a P, b still falls from wherever a ended
+  assert.deepEqual(offsets([{ axis: "a", timeUnits: 2 }, { axis: "b", timeUnits: 2 }]), [1, 2, 1, 0]);
+});

@@ -66,12 +66,15 @@
  *   one chosen key, reusing Ch.2's own cycle step sizes and
  *   `stackedTriad`.
  *
- * Honest scope note: form 8 ("selection of a root which does not produce
- * chromatic steps in any voice") is not built. A chromatic step in this
- * book is an alteration that keeps a tone's *name* (C -> C#), and this
- * project models pitch classes, not note names -- so a semitone motion
- * can't be told apart from a diatonic one (B -> C) without inventing a
- * spelling system the book hasn't supplied here. Form 9's "contrasting
+ * - Symmetric connection of chromatic progressions (form 8, p.557): "the
+ *   selection of a root which does not produce chromatic steps in any
+ *   voice." A chromatic step keeps a tone's name (c -> c#), so this is
+ *   read on spelled chords: no letter may stand in both chords with
+ *   different accidentals (`chromaticSteps`, `spelledChord`). Figure 306
+ *   (rendered) connects D7 (c f# a d) to E7 (b e g# d) and A to B by
+ *   two semitones, with none; D7 to Eb7 would make d -> db.
+ *
+ * Form 9's "contrasting
  * forms of chromatics" (parallel vs. contrary, chromatics vs.
  * enharmonics) is qualitative guidance, not a formula.
  */
@@ -79,6 +82,7 @@
 import { intervalCellScale, type PitchScale } from "./scales.ts";
 import { cycleDegreeStep, stackedTriad, type SignedCycleType } from "./diatonicHarmony.ts";
 import { gapSemitones } from "./symmetricScales.ts";
+import { pitchClass, type Letter, type SpelledNote } from "./chromaticModulation.ts";
 
 export type HarmonyType = "diatonic" | "symmetric" | "chromatic";
 
@@ -200,4 +204,27 @@ export function diatonicCycleConnection(
   const rootDegree = (((degree + cycleDegreeStep(cycle)) % length) + length) % length;
   const keyRoot = rootMidiNote + pitchClassInterval(keyTonicPitchClass - rootMidiNote);
   return { rootDegree, triad: stackedTriad(scale, keyRoot, rootDegree) };
+}
+
+const LETTERS: readonly Letter[] = ["C", "D", "E", "F", "G", "A", "B"];
+
+/** A chord spelled in thirds on a root: each interval (in semitones, from the tone below) on the letter two above. */
+export function spelledChord(root: SpelledNote, intervals: readonly number[]): SpelledNote[] {
+  const out: SpelledNote[] = [root];
+  let pitch = pitchClass(root);
+  for (const step of intervals) {
+    const prev = out[out.length - 1];
+    const letter = LETTERS[(LETTERS.indexOf(prev.letter) + 2) % 7];
+    pitch = (pitch + step) % 12;
+    const natural = pitchClass({ letter, accidental: 0 });
+    let accidental = ((pitch - natural) % 12 + 12) % 12;
+    if (accidental > 6) accidental -= 12;
+    out.push({ letter, accidental });
+  }
+  return out;
+}
+
+/** Form 8: the letters standing in both chords with different accidentals -- each a chromatic step in some voice. */
+export function chromaticSteps(from: readonly SpelledNote[], to: readonly SpelledNote[]): { letter: Letter; from: number; to: number }[] {
+  return from.flatMap((a) => to.filter((b) => b.letter === a.letter && b.accidental !== a.accidental).map((b) => ({ letter: a.letter, from: a.accidental, to: b.accidental })));
 }

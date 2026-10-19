@@ -217,11 +217,12 @@ export function formatAxes(terms: readonly AxisTermNotation[]): string {
 
 /**
  * Converts parsed terms into `buildAxialMelody`'s terms: T time-units each,
- * and P (scaled by how many p one P stands for) as the distance of an a or
- * d term. `buildAxialMelody` returns every b and c term fully to the axis
- * (read from Figure 19's time-ratio examples), so a P written on b or c --
- * as in "a2T2P + bTP" -- is kept in the parsed form but not yet honored;
- * whether the book means a partial return there is an open question.
+ * and P scaled by how many p one P stands for. On a or d, P is the
+ * distance reached; on b or c it is the distance the term starts from,
+ * leaping there and returning to the axis. Figures 33-37 settle this
+ * (rendered: "a4P + bP + c3P" rises to +4, leaps to +1, falls to the axis,
+ * leaps to -3, rises to the axis), so "a2T2P + bTP" ends on the axis -- b's
+ * P is not a partial return.
  */
 export function toAxialTerms(terms: readonly AxisTermNotation[], pPerP = 1): AxialTerm[] {
   return terms.map((term) => ({

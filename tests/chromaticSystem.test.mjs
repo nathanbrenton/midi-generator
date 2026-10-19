@@ -111,3 +111,18 @@ test("Section G: coinciding groups outward from a unison end a major third apart
   const [low, high] = coincidingChromaticGroup(60, "inward");
   assert.equal(high[2] - low[2], 8);
 });
+
+test("Section E (p.508-509): enharmonic treatment -- C major, c raised to c# = db as 5 of Gb, back to c as 1 of C; as 3 of Bbb (A); lowering mirrors it", async () => {
+  const { enharmonicPitchPath, enharmonicGroupRoots, chromaticGroupRoots } = await import("../src/core/chromaticSystem.ts");
+  assert.deepEqual(enharmonicPitchPath(48, "raise"), [48, 49, 48]);
+  assert.deepEqual(enharmonicPitchPath(48, "lower"), [48, 47, 48]);
+  const C = { root: 60, structure: 1 };
+  const raiseRoot = { function: "root", direction: "raise" };
+  assert.deepEqual(enharmonicGroupRoots(C, raiseRoot, [1, 5, 1], 1, 1), [60, 54, 60]); // C, Gb (db as 5), C
+  assert.deepEqual(enharmonicGroupRoots(C, raiseRoot, [1, 3, 1], 1, 1), [60, 57, 60]); // db as 3 of Bbb = A
+  // c as 3 or 5 of the last chord: Ab and F
+  assert.deepEqual(enharmonicGroupRoots(C, raiseRoot, [1, 5, 3], 1, 1)[2], 56);
+  assert.deepEqual(enharmonicGroupRoots(C, raiseRoot, [1, 5, 5], 1, 1)[2], 53);
+  // the plain group, for contrast, goes on to d
+  assert.deepEqual(chromaticGroupRoots(C, raiseRoot, [1, 5, 1], 1, 1)[2], 62);
+});

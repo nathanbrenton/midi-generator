@@ -47,9 +47,11 @@
  * illustrate *parallel/contrary/oblique* relationships between the T and
  * P number sequences as a compositional/expressive choice -- not a
  * different mechanical rule. `buildAxialMelody` accepts an optional
- * explicit `pitchUnits` on 'a'/'d' terms for this generality; 'b'/'c'
- * terms keep returning fully to the axis regardless, consistent with
- * every directly-observed graph.
+ * explicit `pitchUnits` on every term for this generality. 'b'/'c' terms
+ * still always return fully to the axis; their P is where they start
+ * (Section G's pitch-ratio graphs, Figures 33-37, p.272-274: "a4P + bP +
+ * c3P" rises to +4, leaps to +1 and falls to the axis, leaps to -3 and
+ * rises to it).
  *
  * Section D's huge worked enumeration of "axial combinations" (p.253-258
  * -- monomial through quintinomial, broken down by repeated-symbol
@@ -72,7 +74,14 @@ export interface AxialTerm {
   axis: AxisType;
   /** Duration of this segment, in time-units (T). */
   timeUnits: number;
-  /** Pitch distance from the axis for 'a'/'d' only (default: timeUnits, giving slope 1). Ignored for 'b'/'c'/'0'. */
+  /**
+   * Pitch distance from the axis (default: timeUnits for 'a'/'d', giving
+   * slope 1). For 'a'/'d' it is where the term ends; for 'b'/'c' it is where
+   * the term starts, reached by a leap, before returning to the axis --
+   * Figures 33-37 draw "a4P + bP + c3P" as a rise to +4, a leap to +1, b down
+   * to the axis, a leap to -3, c up to the axis. Without it, 'b'/'c' start
+   * where the previous term ended. Ignored for '0'.
+   */
   pitchUnits?: number;
 }
 
@@ -119,11 +128,11 @@ export function buildAxialMelody(
         targetOffset = -(term.pitchUnits ?? term.timeUnits);
         break;
       case "b":
-        startOffset = Math.max(currentOffset, 0);
+        startOffset = term.pitchUnits !== undefined ? term.pitchUnits : Math.max(currentOffset, 0);
         targetOffset = 0;
         break;
       case "c":
-        startOffset = Math.min(currentOffset, 0);
+        startOffset = term.pitchUnits !== undefined ? -term.pitchUnits : Math.min(currentOffset, 0);
         targetOffset = 0;
         break;
     }

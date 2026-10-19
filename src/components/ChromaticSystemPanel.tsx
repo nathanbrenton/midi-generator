@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   chromaticGroupRoots,
+  enharmonicGroupRoots,
   chromaticGroupFormCount,
   basisOperations,
   PARALLEL_DOUBLE_CHROMATICS,
@@ -42,6 +43,8 @@ export default function ChromaticSystemPanel() {
   const [tripleIndex, setTripleIndex] = useState(0);
   const [chord2Structure, setChord2Structure] = useState<StructureId>(1);
   const [chord3Structure, setChord3Structure] = useState<StructureId>(1);
+  // Section E: the altered tone respelled (x# = yb), turning back to x as a function of the third chord.
+  const [enharmonic, setEnharmonic] = useState(false);
 
   const [bpm, setBpm] = useState(100);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -55,8 +58,8 @@ export default function ChromaticSystemPanel() {
   const triple = TRIPLES[tripleIndex];
 
   const roots = useMemo(
-    () => chromaticGroupRoots({ root, structure: startStructure }, operation, triple, chord2Structure, chord3Structure),
-    [root, startStructure, operation, triple, chord2Structure, chord3Structure],
+    () => (enharmonic ? enharmonicGroupRoots : chromaticGroupRoots)({ root, structure: startStructure }, operation, triple, chord2Structure, chord3Structure),
+    [root, startStructure, operation, triple, chord2Structure, chord3Structure, enharmonic],
   );
   const structures: StructureId[] = [startStructure, chord2Structure, chord3Structure];
 
@@ -254,9 +257,14 @@ export default function ChromaticSystemPanel() {
             ))}
           </select>
         </label>
+        <label>
+          <input type="checkbox" checked={enharmonic} onChange={(e) => setEnharmonic(e.target.checked)} />
+          Enharmonic (Section E: x → x♯ = y♭ → z)
+        </label>
       </div>
       <div className="schillinger__readout">
         {chordLabel(roots[0], startStructure)} → {chordLabel(roots[1], chord2Structure)} → {chordLabel(roots[2], chord3Structure)}
+        {enharmonic && " — the altered tone is respelled and turns back a semitone into the third chord (p.508)"}
       </div>
 
       <h4>Playback</h4>

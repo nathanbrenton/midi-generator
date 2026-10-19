@@ -30,7 +30,9 @@
  * produced by moving the 1 downward to 7, stepwise" -- in C3 const., the
  * passing seventh of Ch.15 -- and triple ones are "7, 9 and 11 obtained by
  * means of downward motion from the 1, 3 and 5... a preparation of S(11)
- * in C0" (`triplePassingTones`). Double ones are left open (see there).
+ * in C0" (`triplePassingTones`); double ones are the 7 and 9 of an S(9)
+ * on the moving pair's lower tone, its doubling held below
+ * (`doublePassingTones`, Figure 330).
  *
  * Ch.21 C, anticipations (p.579): "anticipated tones may be evolved from
  * any chordal function of the following chord, provided that such a
@@ -189,10 +191,7 @@ export function suspension(
  * of S(11) in C0" -- the bass stays, the three upper voices step down a
  * degree, and the S(11) then resolves by Ch.11's table (C3 to S(6) over
  * the held bass, C5 to S(7)). Single passing tones are Ch.15's passing
- * seventh (`passingSeventhContinuity`); double ones -- "from the 1 and 3,
- * or the 3 and 5, or the 5 and 7" -- are not built, since over a held bass
- * none of those gives the crystallized S(9), 1-3-7-9, and the figure does
- * not settle where the bass goes.
+ * seventh (`passingSeventhContinuity`); double ones are `doublePassingTones`.
  */
 export function triplePassingTones(scale: PitchScale, tonicMidiNote: number, rootDegree: number, resolutionCycle: 3 | 5): FiguredChord[] {
   const bass = pitchOf(scale, tonicMidiNote, rootDegree, 1);
@@ -207,6 +206,44 @@ export function triplePassingTones(scale: PitchScale, tonicMidiNote: number, roo
     { label: "S(5)", bass, upper, functions: [1, 3, 5] },
     { label: "S(11), C0", bass, upper: passing, functions: [7, 9, 11] },
     { label: resolutionCycle === 3 ? "S(6)" : "S(7)", bass: resolvedBass, upper: resolved, functions: [7, 9, 11].map(move) },
+  ];
+}
+
+/**
+ * Double passing tones (p.576, Figure 330 rendered): "the passing 7 and 9
+ * obtained by means of downward motion from the 1 and 3, or the 3 and 5,
+ * or the 5 and 7." The figure keeps the pair twice: the bass and an inner
+ * voice hold it while its doubling above steps down a degree, so the
+ * passing chord is the crystallized S(9), 1-3-7-9, on the pair's lower
+ * tone -- C: c | e c e to c | e b d; G: g | b g b to g | b f a. The S(9)
+ * then resolves by Ch.10's table (`NINTH_RESOLUTIONS`): the figure's C9
+ * goes by C7 to d | f a c, its G9 by C5 to c | b e g.
+ */
+export function doublePassingTones(
+  scale: PitchScale,
+  tonicMidiNote: number,
+  rootDegree: number,
+  from: 1 | 3 | 5,
+  cycle: "C0" | "C3" | "C5" | "C7",
+): FiguredChord[] {
+  const r = rootDegree + from - 1; // the S(9) stands on the pair's lower tone
+  const bass = pitchOf(scale, tonicMidiNote, r, 1);
+  const third = pitchOf(scale, tonicMidiNote, r, 3) + 12;
+  const pair = [1, 3].map((fn) => pitchOf(scale, tonicMidiNote, r, fn) + 24);
+  const passing = [7, 9].map((fn, i) => nearestPitch(pair[i], pitchOf(scale, tonicMidiNote, r, fn)));
+  const resolution = NINTH_RESOLUTIONS.find((x) => x.cycle === cycle)!;
+  const next = r + { C0: 0, C3: -2, C5: -4, C7: 1 }[cycle];
+  const bassFn = resolution.bass;
+  const resolvedBass = nearestPitch(bass, pitchOf(scale, tonicMidiNote, next, bassFn));
+  const resolved = [
+    nearestPitch(third, pitchOf(scale, tonicMidiNote, next, resolution.moves.third)),
+    nearestPitch(passing[0], pitchOf(scale, tonicMidiNote, next, resolution.moves.seventh)),
+    nearestPitch(passing[1], pitchOf(scale, tonicMidiNote, next, resolution.moves.ninth)),
+  ];
+  return [
+    { label: `${from} and ${from + 2} doubled`, bass, upper: [third, ...pair], functions: [3, 1, 3] },
+    { label: "S(9), passing 7 and 9", bass, upper: [third, ...passing], functions: [3, 7, 9] },
+    { label: `${resolution.result} by ${cycle}`, bass: resolvedBass, upper: resolved, functions: [resolution.moves.third, resolution.moves.seventh, resolution.moves.ninth] },
   ];
 }
 

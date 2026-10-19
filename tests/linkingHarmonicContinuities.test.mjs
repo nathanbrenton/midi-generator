@@ -113,3 +113,21 @@ test("diatonicCycleConnection: negative cycles step upward -- C-5 from C in C ma
 test("diatonicCycleConnection refuses a root that isn't a degree of the chosen key", () => {
   assert.throws(() => diatonicCycleConnection(1, 0, 5)); // C# is not in C major
 });
+
+test("form 8 (Figure 306, p.557): D7 -> E7 and A -> B by two semitones produce no chromatic step; D7 -> Eb7 would (d -> db)", async () => {
+  const { spelledChord, chromaticSteps } = await import("../src/core/linkingHarmonicContinuities.ts");
+  const { spell } = await import("../src/core/chromaticModulation.ts");
+  const D7 = spelledChord({ letter: "D", accidental: 0 }, [4, 3, 3]);
+  const E7 = spelledChord({ letter: "E", accidental: 0 }, [4, 3, 3]);
+  const Eb7 = spelledChord({ letter: "E", accidental: -1 }, [4, 3, 3]);
+  assert.deepEqual(D7.map(spell), ["D", "F#", "A", "C"]);
+  assert.deepEqual(E7.map(spell), ["E", "G#", "B", "D"]);
+  assert.deepEqual(chromaticSteps(D7, E7), []);
+  assert.deepEqual(chromaticSteps(D7, Eb7).map((s) => s.letter), ["D"]);
+  const A = spelledChord({ letter: "A", accidental: 0 }, [4, 3]);
+  const B = spelledChord({ letter: "B", accidental: 0 }, [4, 3]);
+  assert.deepEqual(chromaticSteps(A, B), []);
+  // a third away does produce one: C major -> E major (g -> g#)
+  const C = spelledChord({ letter: "C", accidental: 0 }, [4, 3]);
+  assert.deepEqual(chromaticSteps(C, spelledChord({ letter: "E", accidental: 0 }, [4, 3])).map((s) => s.letter), ["G"]);
+});

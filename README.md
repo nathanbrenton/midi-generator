@@ -1012,6 +1012,17 @@ scales" is exactly `compositionCount(12, 5)` from Book II Ch. 7 (dividing
 the 12-semitone octave into 5 ordered parts) = C(11,4) = 330 — built
 later in this project than this chapter, never connected back until now.
 
+Section E (Modulating through Chromatic Alteration, p.130) finds the
+units "that are not in common but have identical musical names (like c -
+c#)". It leads each through its altered form into the new key's next
+unit, a group x – x′ – y, and with several runs them together, using
+"the third term of a chromatic group in the last group only". The
+altered letters are taken in key-signature order
+(`chromaticAlterationGroups`, spelled by `chromaticModulation.ts`). The
+book's C major → E♭ major comes out exactly: b–b♭–a♭, e–e♭–d, a–a♭–g, or
+b–b♭–e–e♭–a–a♭–g together. Section F (identical motifs) is compositional
+guidance.
+
 ## Scales in expansion
 
 `ScalesInExpansionPanel.tsx` (`src/core/scalesInExpansion.ts`) covers
@@ -1169,15 +1180,14 @@ matching the book's own "3 permutations each"). Verified live: the
 default sequence `a2,b1,a3,b1` from axis c4 produces exactly
 `c#4-d4-c4-c#4-d4-d#4-c4`, matching hand-derivation note for note.
 
-Open question from the notation audit: Sections G-H write a pitch
-coefficient on b and c terms too — "a3P + b2P + aP + b3P + a2P + bP"
-(Figure 37), "a2T2P + bTP" and "aTP + b2T2P" (Figure 38) — which reads
-like a partial return (b moving its own nP) rather than the full return
-to the axis that Figure 19's time-only examples show. Figure 37's grid
-didn't resolve cleanly enough at high resolution to settle it, so
-`buildAxialMelody` still returns b/c fully to the axis; `notation/melody.ts`'s
-`parseAxes` keeps the b/c coefficient in its parsed form so nothing is lost
-if this is resolved later.
+Sections G-H write a pitch coefficient on b and c terms too:
+"a3P + b2P + aP + b3P + a2P + bP" (Figure 37), and "a2T2P + bTP" and
+"aTP + b2T2P" (Figure 38). The pitch-ratio graphs (Figures 33-37,
+re-rendered at p.272-273) settle what it means. b and c still return
+fully to the axis, and their P is where they start, reached by a leap.
+"a4P + bP + c3P" rises to +4, leaps to +1, falls to the axis, leaps to
+−3 and rises to it. `buildAxialMelody` honours a P on b/c that way; a
+b/c term without one starts where the previous term ended, as before.
 
 ## Book IV, Chapter 4 (no core module)
 
@@ -1752,7 +1762,12 @@ the diminished triad or seventh raised in every function
 (`parallelChromatics`); and coinciding groups, two voices from one
 function in contrary motion, ending a major third apart outward from a
 unison or a minor sixth inward from an octave (`coincidingChromaticGroup`).
-Section E's enharmonic formula is garbled in the scan and left unbuilt.
+Section E, the enharmonic treatment, is read from the rendered page
+(p.508). The formula is x → x♯ = y♭ → z (1, 3, 5, 7), or x → x♭ = y♯ →
+z. The altered tone is respelled so that it tends back, and resolves a
+semitone to any function of the third chord. The book's p.509 bass is
+c – c♯ = d♭ – c (`enharmonicGroupRoots`; the panel's "Enharmonic"
+toggle).
 
 ## Book V panels after the audit
 
@@ -1971,12 +1986,13 @@ Each precise mechanical claim is built and tested:
   `keysContaining` is also the natural primitive for Ch. 14's
   common-chord modulations, if that chapter is revisited.
 
-Not built: form 8's "selection of a root which does not produce
-chromatic steps in any voice." In this book a chromatic step keeps a
-tone's *name* (C → C#), and this project models pitch classes, not note
-spellings — a semitone can't be told apart from a diatonic one (B → C)
-without inventing a spelling system the chapter doesn't supply. Form 9's
-"contrasting forms of chromatics" is qualitative guidance.
+Form 8, "the selection of a root which does not produce chromatic steps
+in any voice," is read on spelled chords. A chromatic step keeps a tone's
+name (d → d♭), so no letter may stand in both chords with different
+accidentals (`spelledChord`, `chromaticSteps`, using the spelled notes of
+`chromaticModulation.ts`). Figure 306 (rendered) joins D7 to E7 and A to
+B by two semitones with none. Form 9's "contrasting forms of chromatics"
+is qualitative guidance.
 
 ## Pedal points (Book V, Ch. 19)
 
@@ -2043,9 +2059,11 @@ triad acquires a tripled root and loses its fifth." Triple passing tones
 are "7, 9 and 11 obtained by means of downward motion from the 1, 3 and
 5; this corresponds to a preparation of S(11) in C0" — Ch. 11's own
 preparation (`triplePassingTones`); single ones are Ch. 15's passing
-seventh. Double passing tones are left open: over a held bass, none of
-the book's three sources (1-3, 3-5, 5-7) gives the crystallized S(9),
-and the figure doesn't settle where the bass goes. Anticipations sing
+seventh. Double passing tones come from Figure 330, re-rendered: the
+pair stands twice, held below while its doubling steps down. The passing
+chord is therefore the crystallized S(9), 1-3-7-9, on the pair's lower
+tone: c | e c e → c | e b d. It resolves by Ch. 10's table, for example
+by C7 to d | f a c (`doublePassingTones`). Anticipations sing
 the next chord's function early, except on a common tone
 (`anticipations`).
 

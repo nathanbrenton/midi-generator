@@ -113,3 +113,14 @@ test("axialContinuityPermutations' arrangements concatenate into a playable cont
 test("the book's own '330, the number of all five-unit scales' matches compositionCount(12, 5) from Book II Ch.7 exactly (p.128)", () => {
   assert.equal(compositionCount(12, 5), 330);
 });
+
+test("Section E (p.130): C major to Eb major through chromatic alteration -- b-bb-ab, e-eb-d, a-ab-g; together b-bb-e-eb-a-ab-g", async () => {
+  const { chromaticAlterationGroups, spell } = await import("../src/core/melodicModulation.ts");
+  const { groups, chained } = chromaticAlterationGroups(0, -3);
+  assert.deepEqual(groups.map((g) => g.map(spell).join("-")), ["B-Bb-Ab", "E-Eb-D", "A-Ab-G"]);
+  assert.equal(chained.map(spell).join("-"), "B-Bb-E-Eb-A-Ab-G");
+  // the book's key sequence C - E, upward: f-f#-g#, c-c#-d#, g-g#-a, d-d#-e
+  const up = chromaticAlterationGroups(0, 4);
+  assert.deepEqual(up.groups.map((g) => g.map(spell).join("-")), ["F-F#-G#", "C-C#-D#", "G-G#-A", "D-D#-E"]);
+  assert.equal(up.chained.map(spell).join("-"), "F-F#-C-C#-G-G#-D-D#-E");
+});
