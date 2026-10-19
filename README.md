@@ -2377,6 +2377,72 @@ The panel has five players:
 - A phrase through any dynamic or attack scale.
 - A sonic symbol for each dial position, or the a→b modulation.
 
+## Theory of orchestration (Book XII)
+
+`OrchestrationPanel.tsx` (`src/core/orchestration.ts`). The last book
+surveys the instruments, then instrumental combination. Its Chapter 9,
+"Acoustical Basis of Orchestration," stops after two pages; the editors
+note that "the material that follows is not complete." Everything
+checkable was checked against the rendered figures. Pitches are MIDI
+numbers, and transpositions are sounding minus written.
+
+**Strings:**
+
+- Tuned in pure fifths from a, the violin's e, d and g lie +2, −2 and −4
+  cents from equal temperament (`pythagoreanStrings`).
+- The position of a note is its interval number from the open string
+  minus one, counted from the first finger. g♯ by the third finger on the
+  a-string is fourth position, and the second finger in sixth position on
+  the e-string plays the octave e.
+- Harmonic nodes k/n with k and n coprime give one harmonic and mirror
+  about the middle (`harmonicNodes`).
+- Figure 17's contact points against equal temperament come out as the
+  book grades them: 3/2 and 4/3 within 2¢, 16/9 −4¢, 5/4, 25/16 and 10/4
+  low, 8/5 and 12/5 high (`contactDeviation`).
+- The "artificial" harmonic sounds two octaves above the pressed note.
+
+**Winds:**
+
+- Every transposition the book states is in `INSTRUMENTS`.
+- Valves lower by 2, 1 and 3 semitones and by 3, 5, 4 and 6 together. The
+  trumpet's lowest notes are f♯/e/e♭ (in C/B♭/A), and the horn's written
+  middle c sounds f.
+- Figure 41's natural tones are reproduced, and the tuba's four valves
+  fill its octave gap.
+- The trombone model (seven positions, no fundamental from V on)
+  reproduces Figure 45's gap b1 c2 c♯2 d2 d♯2, Figure 46's valve notes,
+  and Figure 100's "3 + (−5) + 34" and "3 + (−1) + 38" exactly
+  (`tromboneSpan`).
+
+**Organ and Hammond:** a stop's footage gives its pitch, and the Hammond
+levers are harmonics.
+
+**Ranges:** Figures 99–101 give ranges in semitones. They agree with the
+instrument figures for the violin (52, 52, 33), 'cello (40), bass
+((31) 27, (28) 24), tuba (D1–F4, 39), saxophones (30) and reeds.
+
+**Discrepancies:**
+
+- **Viola:** Figure 101 gives 33 orchestral and 40 solo. The viola's own
+  Figure 20 and text (a twelfth above the A string, or two octaves solo)
+  give 40 and 45.
+- **'Cello solo:** Figure 101 gives 47; Figure 22 gives 45.
+- **Harp:** the book says all 36 Σ(13) can be set on the pedals because
+  none has an interval over 4 semitones. That condition holds (the largest
+  is 3), but it isn't sufficient: 35 can be set, and Σ XXX (c e♭ e g a♭ b♭
+  b) cannot (`harpPedals`).
+
+The panel has six players:
+
+- Any instrument's range as written, sounding.
+- A string's natural harmonics, the harmonics glissando, or an
+  artificial-harmonic melody.
+- Horn natural tones, trumpet valves, and the trombone with or without
+  its valve, where the gap plays as silence.
+- Harp glissandi with their pedal settings.
+- A Hammond registration.
+- The four string ranges in turn.
+
 ## Book V, Chapter 3 Section B, Chapter 4, and Chapter 5 Section A
 
 Chapter 3 Section B, the **symmetric zero cycle** (C0): chords on one
