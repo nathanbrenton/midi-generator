@@ -68,6 +68,7 @@ import InstrumentalFormsPanel from "./InstrumentalFormsPanel";
 import GeneralHarmonyPanel from "./GeneralHarmonyPanel";
 import NotePlayback from "./NotePlayback";
 import PitchFamiliesPanel from "./PitchFamiliesPanel";
+import CompositionPanel from "./CompositionPanel";
 import "./SchillingerGenerator.css";
 
 const LANE_COLORS = {
@@ -982,6 +983,8 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
       <GeneralHarmonyPanel />
 
       <PitchFamiliesPanel />
+
+      <CompositionPanel />
 
       <section className="schillinger__section schillinger__section--wide">
         <h3>Playback (melody / percussion)</h3>

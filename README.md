@@ -2304,6 +2304,79 @@ The panel lists every derivative of either scale. It plays:
 
 Each can carry the n + 1-function melody.
 
+## Theory of composition (Book XI)
+
+`CompositionPanel.tsx` (`src/core/composition.ts`). Composition here is
+planned from the whole: the form of thematic sequence, its temporal
+coefficients, the subjects and their expositions, then key-axes,
+climaxes and instrumentation. Every worked number in the book was checked
+against the rendered pages, and each rhythmic group it uses comes straight
+out of the Book I helpers (r4÷3, the fractional 4÷3, r7÷4, (3+1)²,
+r(3÷4÷7) = 12+9+3+4+8+6+6+8+4+3+9+12).
+
+**Part I** (thematic units) mostly reapplies earlier books. Two pieces
+are new:
+
+- **Harmony rhythmized by reciprocating binomials (Ch.5):** the
+  resultants of generators a unit apart always pair into binomials and
+  their reverses. Each part takes them in its own circular permutation,
+  and the balanced 3+3 of r6÷5 stays put, which reproduces Figure 19
+  exactly. A longer first term suspends; a shorter one anticipates.
+- **Scales of dynamics, tone-quality and attack (Ch.9):** five degrees
+  each give 5, 10, 10 and 1 scales of 1, 2, 3 and 5 units. The book's
+  "best" ones are the symmetric ones.
+
+**Part II** (thematic continuity):
+
+- **Ch.11:** the four groups of thematic sequence for 1–7 subjects,
+  including every progressive-symmetry form the book lists.
+- **Ch.12:** a coefficient group is laid over the appearances, recurring
+  until both close (`coordinate`). All the book's examples match.
+- **Ch.13:** a subject is its longest exposition. With 3+1+2 over
+  circular A+B+C those are A1, B2 and C3, as printed.
+- **Ch.14:**
+  - 720t in 3 minutes at t = ¼ s.
+  - 33.75/11.25/22.5/22.5 s from 3+1+2+2.
+  - r(3÷4÷7) over four subjects gives 40/30/6/8 and 24/18/22/20T.
+  - Climaxes fall at the meeting points of a ratio.
+  - With t′ the subjects come to 256t, 64t′ and 128t′ (64 s each), with
+    160, 40 and 80 attacks.
+- **Ch.15, Schillinger's own pieces:** Study in Rhythm I's roots fall
+  4+3+3+4+3+4+4+4+3+4+4 from F through the twelve printed chords.
+  Study in Rhythm II is seven circular permutations of r5÷3 in two
+  parts: 7·15·2 = 210t, fourteen bars of 15t.
+- **Ch.16, the polythematic miniature:** A grows 4+8+16 T″, B holds at
+  14 and C declines 16+8+4. That's 98 T″ in the ratio 2:3:2, 196 s.
+
+**Discrepancy:** the book prints "96·2 = 196" for that total. Its own sum
+is 98 T″, so 96 is a misprint (checked on the page).
+
+**Part III** (semantics):
+
+- **The psychological dial (Figure 57):** eight positions; reciprocal
+  pairs mirror across the vertical axis, and a listener balanced at 150°
+  needs a 210° stimulus.
+- **Ch.18, gravity:** the negative zone's scales and chords put the
+  smaller intervals below, the positive zone's above. A cell's first
+  interval against its last classifies every example in the chapter. A
+  record re-dubbed from 78 to 33.3 R.P.M. twice or three times plays at
+  about ⅕ or 1/13 speed.
+- **Ch.19:**
+  - 8+28+56+70+56+28+8 = 254 combinations of the eight patterns (255
+    with all eight).
+  - 16 relations of identity and intensity.
+  - A configurational modulation from a to b by r5÷4.
+
+The panel has five players:
+
+- Any thematic sequence under any coefficient group, one motif per
+  subject, with the longest exposition louder.
+- The Ch.16 miniature, with its periods, t′ densities, keys and
+  dynamics, plus climax positions for any ratio.
+- The binomial-rhythmized harmony.
+- A phrase through any dynamic or attack scale.
+- A sonic symbol for each dial position, or the a→b modulation.
+
 ## Book V, Chapter 3 Section B, Chapter 4, and Chapter 5 Section A
 
 Chapter 3 Section B, the **symmetric zero cycle** (C0): chords on one
