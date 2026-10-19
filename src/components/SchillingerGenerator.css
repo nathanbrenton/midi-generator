@@ -69,3 +69,9 @@
   font-size: 0.85rem;
   color: color-mix(in srgb, currentColor 70%, transparent);
 }
+
+/* A code-split panel not yet loaded (LazyPanel): roughly a panel's height, so the page shifts less as panels arrive. */
+.schillinger__placeholder {
+  min-height: 18rem;
+  opacity: 0.55;
+}

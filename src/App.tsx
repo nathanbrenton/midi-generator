@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import SchillingerGenerator from "./components/SchillingerGenerator";
 import ThreeGeneratorsPanel from "./components/ThreeGeneratorsPanel";
 import SampleAnalysisPanel from "./components/SampleAnalysisPanel";
-import MotifExplorerPage from "./pages/MotifExplorerPage";
 import AppHeader, { type AppMode, type HeaderAction } from "./components/AppHeader";
 import { useHashRoute } from "./useHashRoute";
+
+// The Motif Explorer is its own chunk, loaded when its tab is first opened.
+const MotifExplorerPage = lazy(() => import("./pages/MotifExplorerPage"));
 
 export default function App() {
   const hash = useHashRoute();
@@ -20,7 +22,11 @@ export default function App() {
   return (
     <>
       <AppHeader active={mode} action={headerAction} />
-      {mode === "motif" && <MotifExplorerPage onHeaderActionChange={setHeaderAction} />}
+      {mode === "motif" && (
+        <Suspense fallback={<main className="app" aria-busy="true" />}>
+          <MotifExplorerPage onHeaderActionChange={setHeaderAction} />
+        </Suspense>
+      )}
       {mode === "tour" && (
         <main className="app">
           <h1>Schillinger MIDI Generator</h1>

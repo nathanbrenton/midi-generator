@@ -13,6 +13,12 @@ npm install
 npm run dev
 ```
 
+The Chapter Tour code-splits its Book II–XII panels (`LazyPanel.tsx`).
+Each loads as it scrolls within reach, behind a placeholder showing its
+title, and stays mounted afterwards. The Motif Explorer loads when its tab
+is first opened. The initial bundle is about 295 kB (87 kB gzipped),
+against 586 kB for one chunk.
+
 ## Motif Explorer
 
 The main app (below) is a chapter-by-chapter tour of the books, one panel

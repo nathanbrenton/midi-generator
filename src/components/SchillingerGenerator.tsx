@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, lazy } from "react";
 import { generatorPulse, BINARY_SYNCHRONIZATION_CASES } from "../core/resultant";
 import { computeFractionedGroupings } from "../core/fractioning";
 import { computeGroupings } from "../core/grouping";
@@ -36,41 +36,44 @@ import HomogeneousContinuityPanel from "./HomogeneousContinuityPanel";
 import DistributivePowersPanel from "./DistributivePowersPanel";
 import RhythmStyleEvolutionPanel from "./RhythmStyleEvolutionPanel";
 import VariableVelocityPanel from "./VariableVelocityPanel";
-import PitchScaleEvolutionPanel from "./PitchScaleEvolutionPanel";
-import MelodicModulationPanel from "./MelodicModulationPanel";
-import ScalesInExpansionPanel from "./ScalesInExpansionPanel";
-import SymmetricScalesPanel from "./SymmetricScalesPanel";
-import GeometricalInversionsPanel from "./GeometricalInversionsPanel";
-import MelodicAxesPanel from "./MelodicAxesPanel";
-import MelodicContinuityPanel from "./MelodicContinuityPanel";
-import OrganicMelodyPanel from "./OrganicMelodyPanel";
-import DiatonicCyclesPanel from "./DiatonicCyclesPanel";
-import SymmetricHarmonyPanel from "./SymmetricHarmonyPanel";
-import VariableDoublingsPanel from "./VariableDoublingsPanel";
-import SeventhChordPanel from "./SeventhChordPanel";
-import NinthChordPanel from "./NinthChordPanel";
-import EleventhChordPanel from "./EleventhChordPanel";
-import HybridFourPartHarmonyPanel from "./HybridFourPartHarmonyPanel";
-import GeneralizedSymmetricProgressionsPanel from "./GeneralizedSymmetricProgressionsPanel";
-import ChromaticSystemPanel from "./ChromaticSystemPanel";
-import ChromaticModulationPanel from "./ChromaticModulationPanel";
-import PassingSeventhPanel from "./PassingSeventhPanel";
-import AutomaticChromaticContinuityPanel from "./AutomaticChromaticContinuityPanel";
-import HybridHarmonicContinuityPanel from "./HybridHarmonicContinuityPanel";
-import LinkingHarmonicContinuitiesPanel from "./LinkingHarmonicContinuitiesPanel";
-import PedalPointsPanel from "./PedalPointsPanel";
-import MelodicFigurationPanel from "./MelodicFigurationPanel";
-import ContrapuntalVariationsPanel from "./ContrapuntalVariationsPanel";
-import MelodizationPanel from "./MelodizationPanel";
-import HarmonizationPanel from "./HarmonizationPanel";
-import CounterpointPanel from "./CounterpointPanel";
-import InstrumentalFormsPanel from "./InstrumentalFormsPanel";
-import GeneralHarmonyPanel from "./GeneralHarmonyPanel";
 import NotePlayback from "./NotePlayback";
-import PitchFamiliesPanel from "./PitchFamiliesPanel";
-import CompositionPanel from "./CompositionPanel";
-import OrchestrationPanel from "./OrchestrationPanel";
+import LazyPanel from "./LazyPanel";
 import "./SchillingerGenerator.css";
+
+// Book II-XII panels are code-split and mounted as they scroll near (see LazyPanel).
+const PitchScaleEvolutionPanel = lazy(() => import("./PitchScaleEvolutionPanel"));
+const MelodicModulationPanel = lazy(() => import("./MelodicModulationPanel"));
+const ScalesInExpansionPanel = lazy(() => import("./ScalesInExpansionPanel"));
+const SymmetricScalesPanel = lazy(() => import("./SymmetricScalesPanel"));
+const GeometricalInversionsPanel = lazy(() => import("./GeometricalInversionsPanel"));
+const MelodicAxesPanel = lazy(() => import("./MelodicAxesPanel"));
+const MelodicContinuityPanel = lazy(() => import("./MelodicContinuityPanel"));
+const OrganicMelodyPanel = lazy(() => import("./OrganicMelodyPanel"));
+const DiatonicCyclesPanel = lazy(() => import("./DiatonicCyclesPanel"));
+const SymmetricHarmonyPanel = lazy(() => import("./SymmetricHarmonyPanel"));
+const VariableDoublingsPanel = lazy(() => import("./VariableDoublingsPanel"));
+const SeventhChordPanel = lazy(() => import("./SeventhChordPanel"));
+const NinthChordPanel = lazy(() => import("./NinthChordPanel"));
+const EleventhChordPanel = lazy(() => import("./EleventhChordPanel"));
+const HybridFourPartHarmonyPanel = lazy(() => import("./HybridFourPartHarmonyPanel"));
+const GeneralizedSymmetricProgressionsPanel = lazy(() => import("./GeneralizedSymmetricProgressionsPanel"));
+const ChromaticSystemPanel = lazy(() => import("./ChromaticSystemPanel"));
+const ChromaticModulationPanel = lazy(() => import("./ChromaticModulationPanel"));
+const PassingSeventhPanel = lazy(() => import("./PassingSeventhPanel"));
+const AutomaticChromaticContinuityPanel = lazy(() => import("./AutomaticChromaticContinuityPanel"));
+const HybridHarmonicContinuityPanel = lazy(() => import("./HybridHarmonicContinuityPanel"));
+const LinkingHarmonicContinuitiesPanel = lazy(() => import("./LinkingHarmonicContinuitiesPanel"));
+const PedalPointsPanel = lazy(() => import("./PedalPointsPanel"));
+const MelodicFigurationPanel = lazy(() => import("./MelodicFigurationPanel"));
+const ContrapuntalVariationsPanel = lazy(() => import("./ContrapuntalVariationsPanel"));
+const MelodizationPanel = lazy(() => import("./MelodizationPanel"));
+const HarmonizationPanel = lazy(() => import("./HarmonizationPanel"));
+const CounterpointPanel = lazy(() => import("./CounterpointPanel"));
+const InstrumentalFormsPanel = lazy(() => import("./InstrumentalFormsPanel"));
+const GeneralHarmonyPanel = lazy(() => import("./GeneralHarmonyPanel"));
+const PitchFamiliesPanel = lazy(() => import("./PitchFamiliesPanel"));
+const CompositionPanel = lazy(() => import("./CompositionPanel"));
+const OrchestrationPanel = lazy(() => import("./OrchestrationPanel"));
 
 const LANE_COLORS = {
   cp: { color: "#c9932f", highlight: "#e8b95c" },
@@ -923,71 +926,71 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
         {mainPlayControls}
       </section>
 
-      <PitchScaleEvolutionPanel />
+      <LazyPanel component={PitchScaleEvolutionPanel} label="Evolution of Pitch-Scale Styles (Book II, Ch. 3)" />
 
-      <MelodicModulationPanel />
+      <LazyPanel component={MelodicModulationPanel} label="Melodic Modulation and Variable Pitch Axes (Book II, Ch. 4)" />
 
-      <ScalesInExpansionPanel />
+      <LazyPanel component={ScalesInExpansionPanel} label="Pitch-Scales, the Second Group: Scales in Expansion (Book II, Ch. 5)" />
 
-      <SymmetricScalesPanel />
+      <LazyPanel component={SymmetricScalesPanel} label="Symmetrical Scales: Third and Fourth Groups (Book II, Ch. 7-8)" />
 
-      <GeometricalInversionsPanel />
+      <LazyPanel component={GeometricalInversionsPanel} label="Geometrical Inversions and Expansions (Book III, Ch. 1-2)" />
 
-      <MelodicAxesPanel />
+      <LazyPanel component={MelodicAxesPanel} label="The Axes of Melody (Book IV, Ch. 3)" />
 
-      <MelodicContinuityPanel />
+      <LazyPanel component={MelodicContinuityPanel} label="Composition of Melodic Continuity (Book IV, Ch. 5-6)" />
 
-      <OrganicMelodyPanel />
+      <LazyPanel component={OrganicMelodyPanel} label="Use of Organic Forms in Melody (Book IV, Ch. 8)" />
 
-      <DiatonicCyclesPanel />
+      <LazyPanel component={DiatonicCyclesPanel} label="Diatonic Cycles & Passing Sixth-chords (Book V, Ch. 1-2, 8)" />
 
-      <SymmetricHarmonyPanel />
+      <LazyPanel component={SymmetricHarmonyPanel} label="The Symmetric System of Harmony (Book V, Ch. 3-5)" />
 
-      <VariableDoublingsPanel />
+      <LazyPanel component={VariableDoublingsPanel} label="Variable Doublings & Inversions of S(5) (Book V, Ch. 6-7)" />
 
-      <SeventhChordPanel />
+      <LazyPanel component={SeventhChordPanel} label="The Seventh Chord (Book V, Ch. 9)" />
 
-      <NinthChordPanel />
+      <LazyPanel component={NinthChordPanel} label="The Ninth Chord (Book V, Ch. 10)" />
 
-      <EleventhChordPanel />
+      <LazyPanel component={EleventhChordPanel} label="The Eleventh Chord (Book V, Ch. 11)" />
 
-      <HybridFourPartHarmonyPanel />
+      <LazyPanel component={HybridFourPartHarmonyPanel} label="Hybrid Four-Part Harmony (Book V, Ch. 11, Section D)" />
 
-      <GeneralizedSymmetricProgressionsPanel />
+      <LazyPanel component={GeneralizedSymmetricProgressionsPanel} label="Generalization of Symmetric Progressions (Book V, Ch. 12)" />
 
-      <ChromaticSystemPanel />
+      <LazyPanel component={ChromaticSystemPanel} label="The Chromatic System of Harmony (Book V, Ch. 13)" />
 
-      <ChromaticModulationPanel />
+      <LazyPanel component={ChromaticModulationPanel} label="Modulations in the Chromatic System (Book V, Ch. 14)" />
 
-      <PassingSeventhPanel />
+      <LazyPanel component={PassingSeventhPanel} label="The Passing Seventh Generalized (Book V, Ch. 15)" />
 
-      <AutomaticChromaticContinuityPanel />
+      <LazyPanel component={AutomaticChromaticContinuityPanel} label="Automatic Chromatic Continuities (Book V, Ch. 16)" />
 
-      <HybridHarmonicContinuityPanel />
+      <LazyPanel component={HybridHarmonicContinuityPanel} label="Hybrid Harmonic Continuities (Book V, Ch. 17)" />
 
-      <LinkingHarmonicContinuitiesPanel />
+      <LazyPanel component={LinkingHarmonicContinuitiesPanel} label="Linking Harmonic Continuities (Book V, Ch. 18)" />
 
-      <PedalPointsPanel />
+      <LazyPanel component={PedalPointsPanel} label="Pedal Points (Book V, Ch. 19)" />
 
-      <MelodicFigurationPanel />
+      <LazyPanel component={MelodicFigurationPanel} label="Melodic Figuration (Book V, Ch. 20-23)" />
 
-      <ContrapuntalVariationsPanel />
+      <LazyPanel component={ContrapuntalVariationsPanel} label="Contrapuntal Variations of Harmony (Book V, Ch. 24)" />
 
-      <MelodizationPanel />
+      <LazyPanel component={MelodizationPanel} label="The Melodization of Harmony (Book VI, Ch. 1-2)" />
 
-      <HarmonizationPanel />
+      <LazyPanel component={HarmonizationPanel} label="The Harmonization of Melody (Book VI, Ch. 3)" />
 
-      <CounterpointPanel />
+      <LazyPanel component={CounterpointPanel} label="Theory of Counterpoint (Book VII)" />
 
-      <InstrumentalFormsPanel />
+      <LazyPanel component={InstrumentalFormsPanel} label="Instrumental Forms (Book VIII)" />
 
-      <GeneralHarmonyPanel />
+      <LazyPanel component={GeneralHarmonyPanel} label="General Theory of Harmony: Strata (Book IX)" />
 
-      <PitchFamiliesPanel />
+      <LazyPanel component={PitchFamiliesPanel} label="Evolution of Pitch-Families (Book X)" />
 
-      <CompositionPanel />
+      <LazyPanel component={CompositionPanel} label="Theory of Composition (Book XI)" />
 
-      <OrchestrationPanel />
+      <LazyPanel component={OrchestrationPanel} label="Theory of Orchestration (Book XII)" />
 
       <section className="schillinger__section schillinger__section--wide">
         <h3>Playback (melody / percussion)</h3>
