@@ -2236,7 +2236,8 @@ plays any form on a four-chord theme, optionally doubled an octave up.
 "groups of instruments": a score Σ of strata S, each stratum of 1-4 parts.
 The twelve-unit octave gives 11 two-part, 55 three-part and 165 four-part
 structures (C(11, parts − 1)). A seven-unit scale gives the expansions
-E0-E5, which pair off under octave inversion (E0-E5, E1-E4, E2-E3). The
+E0-E5, which pair off under octave inversion (E0-E5, E1-E4, E2-E3; in
+general E(e) with E(n−2−e), so five units pair E0-E3 and E1-E2, Figure 81). The
 book's counts all check (`sigmaCounts`):
 
 - 11 × 12 = 132 hybrid structures (42 diatonic).
@@ -2262,7 +2263,10 @@ Other parts of the book that are built:
 - **Harmony of fourths:** E2, functions 1-4-7-10, with cycles C4, C7 and
   C10 stepping 3, 6 and 9 degrees down (`fourthsCycle`, `fourthsTetrad`).
 - **Reciprocating strata:** an S(7) and its tonal inversion through one
-  cycle coincide only on V, as the book says (`reciprocatingStrata`).
+  cycle coincide only on V, as the book says (`reciprocatingStrata`). In
+  Figure 56 (rendered) the upper stratum takes the negative cycle, so the
+  strata meet on the 2nd chord under C−5 and on the 4th under C−7, where
+  the figure's arrows are. The panel follows it.
 - **Canons from strata:** 12 schemes (`canonSchemes`).
 - **Density:** phasic rotation is algebraic addition modulo θ
   (`rotatePhase`). The book's two problems come out to φ3 and φ7, and a

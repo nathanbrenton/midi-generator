@@ -33,6 +33,8 @@ test("structures in the twelve-unit octave: 11 two-part, 55 three-part, 165 four
 
 test("diatonic expansions reciprocate in octave inversion: E0-E5, E1-E4, E2-E3; diads a⇄b and const. ab", () => {
   assert.deepEqual([0, 1, 2, 3, 4, 5].map((e) => reciprocalExpansion(e)), [5, 4, 3, 2, 1, 0]);
+  // Figure 81: a five-unit scale pairs E0 with E3 and E1 with E2
+  assert.deepEqual([0, 1, 2, 3].map((e) => reciprocalExpansion(e, 5)), [3, 2, 1, 0]);
   assert.deepEqual(diadTransformations(true), ["a⇄b"]);
   assert.deepEqual(diadTransformations(false), ["a⇄b", "const. ab"]);
 });
@@ -116,4 +118,13 @@ test("resultants with alternating signs return to φ0 (Figure 140)", () => {
 test("density-groups as the book writes them", () => {
   assert.deepEqual(densityGroup(3, 3), { label: "3d3t", area: 9 });
   assert.deepEqual(densityGroup(1, 2), { label: "d2t", area: 2 });
+});
+
+test("Figure 56: with the upper stratum in C-5 the strata coincide on the 2nd chord, in C-7 on the 4th -- the dominant, an S(7)", async () => {
+  const { diatonicCycle } = await import("../src/core/diatonicHarmony.ts");
+  const same = (a, b) => [...a].sort().join() === [...b].sort().join();
+  const meet = (cycle) => diatonicCycle(cycle).findIndex((d) => { const { upper, lower } = reciprocatingStrata(MAJOR, d); return same(upper, lower); });
+  assert.equal(meet(-5), 1);
+  assert.equal(meet(-7), 3);
+  assert.equal(diatonicCycle(-5)[1], 4);
 });

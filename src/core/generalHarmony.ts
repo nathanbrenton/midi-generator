@@ -63,9 +63,13 @@ export function structureCount(parts: 2 | 3 | 4): number {
 
 export const STRUCTURE_COUNTS = { 2: structureCount(2), 3: structureCount(3), 4: structureCount(4) } as const;
 
-/** The six diatonic expansions and their reciprocal pairs in octave inversion: E0↔E5, E1↔E4, E2↔E3. */
-export function reciprocalExpansion(expansion: 0 | 1 | 2 | 3 | 4 | 5): number {
-  return 5 - expansion;
+/**
+ * Reciprocal expansions in octave inversion: an n-unit scale has expansions
+ * E0 … E(n-2), paired from the ends -- seven units E0↔E5, E1↔E4, E2↔E3;
+ * five units E0↔E3, E1↔E2 (Figure 81, rendered).
+ */
+export function reciprocalExpansion(expansion: number, units = 7): number {
+  return units - 2 - expansion;
 }
 
 /** Diad transformations (p.1068): a⇄b always; const. ab when the two structures differ diatonically. */

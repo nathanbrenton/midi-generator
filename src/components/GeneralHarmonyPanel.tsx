@@ -38,7 +38,9 @@ export default function GeneralHarmonyPanel() {
   const [fourthsCycleType, setFourthsCycleType] = useState(4);
   const [reciprocate, setReciprocate] = useState(false);
   const roots = useMemo(() => [...fourthsCycle(fourthsCycleType), 0], [fourthsCycleType]);
-  const recipRoots = useMemo(() => [...diatonicCycle(5), 0], []);
+  // Figure 56: the upper stratum in the negative cycle (C-5: C G D …), the lower reflecting it in the positive.
+  const [recipCycle, setRecipCycle] = useState<3 | 5 | 7>(5);
+  const recipRoots = useMemo(() => [...diatonicCycle(-recipCycle as -3 | -5 | -7), 0], [recipCycle]);
   const strataNotes = useMemo<NoteEvent[]>(() => {
     if (!reciprocate) {
       return roots.flatMap((d, k) =>
@@ -126,13 +128,26 @@ export default function GeneralHarmonyPanel() {
         E2 of the seven-unit scale stacks fourths, functions 1, 4, 7, 10, and moves through the cycles C4,
         C7 and C10. Reciprocating strata: an S(7) stratum and its tonal inversion about c, moving through one
         cycle with opposite signs; they "coincide in structure on the dominant... which is always an S(7)" —
-        here on V, {reciprocatingStrata(MAJOR, 4).upper.map(pcName).join("-")}.
+        here on V, {reciprocatingStrata(MAJOR, 4).upper.map(pcName).join("-")}. As in Figure 56 the upper stratum takes the
+        negative cycle: under C−5 they meet on the second chord, under C−7 on the fourth.
       </p>
       <div className="schillinger__row">
         <label>
           <input type="checkbox" checked={reciprocate} onChange={(e) => setReciprocate(e.target.checked)} />
-          Reciprocating strata (C5 above, inverted below)
+          Reciprocating strata (negative cycle above, its inversion below)
         </label>
+        {reciprocate && (
+          <label>
+            Cycle
+            <select value={recipCycle} onChange={(e) => setRecipCycle(Number(e.target.value) as 3 | 5 | 7)}>
+              {[3, 5, 7].map((c) => (
+                <option key={c} value={c}>
+                  C−{c} above, C{c} below
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         {!reciprocate && (
           <label>
             Cycle
