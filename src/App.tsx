@@ -3,6 +3,7 @@ import SchillingerGenerator from "./components/SchillingerGenerator";
 import ThreeGeneratorsPanel from "./components/ThreeGeneratorsPanel";
 import SampleAnalysisPanel from "./components/SampleAnalysisPanel";
 import AppHeader, { type AppMode, type HeaderAction } from "./components/AppHeader";
+import TourContents from "./components/TourContents";
 import { useHashRoute } from "./useHashRoute";
 
 // The Motif Explorer is its own chunk, loaded when its tab is first opened.
@@ -34,6 +35,7 @@ export default function App() {
             Generates rhythm from Joseph Schillinger's interference of periodicities and
             melody from his symmetric pitch scales.
           </p>
+          <TourContents />
           <SampleAnalysisPanel />
           <SchillingerGenerator>
             <ThreeGeneratorsPanel />

@@ -19,6 +19,13 @@ title, and stays mounted afterwards. The Motif Explorer loads when its tab
 is first opened. The initial bundle is about 295 kB (87 kB gzipped),
 against 586 kB for one chunk.
 
+A collapsible **Contents** at the top of the tour (`TourContents.tsx`)
+lists every section book by book and jumps to it. Entries match section
+titles, so a jump works before the target's panel has loaded. It then
+holds the section in place while panels arrive, and stops as soon as the
+reader scrolls. The entries are buttons, not links, because the hash is
+the tab route.
+
 ## Motif Explorer
 
 The main app (below) is a chapter-by-chapter tour of the books, one panel
