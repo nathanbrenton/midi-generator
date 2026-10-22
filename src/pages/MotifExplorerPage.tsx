@@ -52,7 +52,8 @@ function allRestVariations(durations: readonly number[]): number[][] {
   const variations: number[][] = [];
   for (let restCount = 0; restCount <= durations.length; restCount++) {
     if (variations.length >= MAX_REST_VARIATIONS) break;
-    variations.push(...restCombinations(durations, restCount));
+    // The cap applies inside each count too: one C(n, k) alone can be in the millions.
+    variations.push(...restCombinations(durations, restCount, MAX_REST_VARIATIONS - variations.length));
   }
   return variations;
 }

@@ -101,3 +101,14 @@ test("restCombinations throws for an out-of-range restCount", () => {
   assert.throws(() => restCombinations([1, 2, 3], -1));
   assert.throws(() => restCombinations([1, 2, 3], 4));
 });
+
+test("restCombinations stops at a limit, and restCombinationCount gives C(n, k) -- a 40-segment pattern with 20 rests has 137,846,528,820", async () => {
+  const { restCombinations, restCombinationCount } = await import("../src/core/sampleAnalysis.ts");
+  assert.equal(restCombinationCount(4, 2), 6);
+  assert.equal(restCombinations([2, 1, 1, 2], 2).length, 6);
+  assert.equal(restCombinationCount(40, 20), 137846528820);
+  const t = performance.now();
+  const first = restCombinations(Array.from({ length: 40 }, () => 1), 20, 16);
+  assert.equal(first.length, 16);
+  assert.ok(performance.now() - t < 200);
+});

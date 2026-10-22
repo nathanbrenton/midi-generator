@@ -83,8 +83,14 @@ export function buildNoteEventsFromSignedSegments(
   return events;
 }
 
-/** Every way of choosing exactly `restCount` of the given durations' positions to be rests, holding order and magnitude fixed -- "every combination of rests" at a given rest count. */
-export function restCombinations(durations: readonly number[], restCount: number): number[][] {
+/**
+ * Every way of choosing exactly `restCount` of the given durations'
+ * positions to be rests, holding order and magnitude fixed -- "every
+ * combination of rests" at a given rest count. There are C(n, k) of them
+ * (`restCombinationCount`), which a long uploaded pattern makes enormous,
+ * so `limit` stops after that many.
+ */
+export function restCombinations(durations: readonly number[], restCount: number, limit = Infinity): number[][] {
   if (restCount < 0 || restCount > durations.length) {
     throw new Error(`restCount must be between 0 and ${durations.length}`);
   }
@@ -92,11 +98,12 @@ export function restCombinations(durations: readonly number[], restCount: number
   const results: number[][] = [];
 
   function backtrack(start: number, chosen: number[]): void {
+    if (results.length >= limit) return;
     if (chosen.length === restCount) {
       results.push(magnitudes.map((value, i) => (chosen.includes(i) ? -value : value)));
       return;
     }
-    for (let i = start; i <= magnitudes.length - (restCount - chosen.length); i++) {
+    for (let i = start; i <= magnitudes.length - (restCount - chosen.length) && results.length < limit; i++) {
       chosen.push(i);
       backtrack(i + 1, chosen);
       chosen.pop();
@@ -104,4 +111,11 @@ export function restCombinations(durations: readonly number[], restCount: number
   }
   backtrack(0, []);
   return results;
+}
+
+/** C(n, k): how many rest combinations `restCombinations` has in all. */
+export function restCombinationCount(length: number, restCount: number): number {
+  let total = 1;
+  for (let i = 1; i <= restCount; i++) total = (total * (length - restCount + i)) / i;
+  return Math.round(total);
 }

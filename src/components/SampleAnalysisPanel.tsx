@@ -5,6 +5,7 @@ import {
   findSmallestPeriod,
   buildNoteEventsFromSignedSegments,
   restCombinations,
+  restCombinationCount,
 } from "../core/sampleAnalysis";
 import { findMatchingCases, type PatternMatch } from "../core/rhythmAnalysis";
 import { generalPermutations, circularPermutations, distinctPermutationCount } from "../core/permutations";
@@ -105,11 +106,16 @@ export default function SampleAnalysisPanel() {
     if (variationMode === "circular") return circularPermutations(archetype);
     // Only the shown lanes are built: a long archetype has millions of orders.
     if (variationMode === "general") return generalPermutations(archetype, MAX_VARIATION_LANES);
-    return restCombinations(archetype, Math.min(restCount, archetype.length));
+    return restCombinations(archetype, Math.min(restCount, archetype.length), MAX_VARIATION_LANES);
   }, [archetype, variationMode, restCount]);
 
   const variations = allVariations.slice(0, MAX_VARIATION_LANES);
-  const variationCount = variationMode === "general" ? distinctPermutationCount(archetype) : allVariations.length;
+  const variationCount =
+    variationMode === "general"
+      ? distinctPermutationCount(archetype)
+      : variationMode === "rests"
+        ? restCombinationCount(archetype.length, Math.min(restCount, archetype.length))
+        : allVariations.length;
   const truncated = variationCount > variations.length;
 
   useEffect(() => {
