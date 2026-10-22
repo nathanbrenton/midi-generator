@@ -738,9 +738,31 @@ dropped where the book has it rising by thirds.
   `{label, color, highlight, segments}` lanes, so it has no dependency on
   the core modules — any `Resultant`-shaped data can be turned into a lane.
 
-Developed **desktop-first** — a 2-column grid at a 56rem max-width, unlike
-`personal-site`'s mobile-first convention. Mobile support is deliberately
-deferred to a later pass.
+The rest of `src/core/` follows the same rule: plain TypeScript with no
+UI or framework dependency, each module importing only other core
+modules. By book:
+
+| Book | Core modules |
+| --- | --- |
+| I Rhythm | `resultant`, `grouping`, `fractioning`, `groupsByPairs`, `threeGenerators`, `instrumentalInterference`, `timeStructureCoordination`, `permutations`, `higherOrderPermutations`, `homogeneousContinuity`, `distributivePowers`, `rhythmStyleEvolution`, `variableVelocity` |
+| II Pitch-scales | `scales`, `firstGroupScales`, `pitchScaleEvolution`, `melodicModulation`, `scalesInExpansion`, `symmetricScales`, `pitchClassification` |
+| III Geometrical projections | `geometricalInversions`, `geometricalExpansions` |
+| IV Melody | `melodicAxes`, `melodicContinuity`, `organicMelody` |
+| V Special harmony | `diatonicHarmony`, `symmetricHarmony`, `variableDoublings`, `passingFourthSixthChords`, `seventhChords`, `ninthChords`, `eleventhChords`, `hybridFourPartHarmony`, `generalizedSymmetricProgressions`, `chromaticSystem`, `chromaticModulation`, `passingSeventh`, `automaticChromaticContinuity`, `hybridHarmonicContinuity`, `linkingHarmonicContinuities`, `pedalPoints`, `melodicFiguration`, `contrapuntalVariations` |
+| VI Harmony and melody | `melodization`, `melodicAttackGroups`, `masterStructures`, `harmonization` |
+| VII Counterpoint | `counterpoint`, `canonAndFugue` |
+| VIII Instrumental forms | `instrumentalForms` |
+| IX General harmony | `generalHarmony` |
+| X Pitch-families | `pitchFamilies` |
+| XI Composition | `composition` |
+| XII Orchestration | `orchestration` |
+| Notation | `notation/` (each book's symbols, formatted and parsed) |
+| Shared | `melody`, `midi`, `midiImport`, `quantize`, `timeSignature`, `rhythmAnalysis`, `sampleAnalysis`, `percussion`, `technique` |
+
+The layout started desktop-first, a 2-column grid at a 56rem max-width.
+Every panel has since been checked at phone width (375px, no horizontal
+scrolling). Rows wrap, and selects and text inputs are capped at the
+row's width.
 
 ## Piano-roll preview
 
