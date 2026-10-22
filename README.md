@@ -1942,10 +1942,12 @@ a fresh Ch. 3 symmetric progression's starting root (`symmetricTonics`
 Honest scope note: which specific diatonic cycle, chromatic operation, or
 symmetric structure to actually choose for a real continuity is left to
 "preferential selection" by the book itself — not modeled as a forced
-default. The full `Hy = di3H + ch6H + sy3H` shape (12 chords across three
-types) isn't assembled end-to-end here; the panel demonstrates the join
-rule at one boundary, which is the chapter's one genuinely new, checkable
-idea.
+default. The panel demonstrates the join rule at one boundary, which is
+the chapter's one genuinely new, checkable idea. Its planning section
+also realizes a whole di/ch/sy plan end to end and plays it. Each token
+is a group of three chords continuing from the last: di as I-VI-IV on
+the last root, ch as the chromatic group above, sy as three tonics. This
+is a demonstration of the plan rule, not one of the book's figures.
 
 ## Linking harmonic continuities (Book V, Ch. 18)
 
