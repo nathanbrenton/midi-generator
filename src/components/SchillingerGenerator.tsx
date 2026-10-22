@@ -910,7 +910,7 @@ export default function SchillingerGenerator({ children }: { children?: React.Re
                 min={1}
                 max={4}
                 value={span}
-                onChange={(e) => setSpan(Math.max(1, Number(e.target.value)))}
+                onChange={(e) => setSpan(Math.min(4, Math.max(1, Number(e.target.value) || 1)))}
               />
             </label>
           )}
