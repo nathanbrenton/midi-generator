@@ -148,3 +148,14 @@ test("generalPermutationsOf preserves each item's own identity/reference (works 
   assert.ok(rows.some((row) => row[0] === a && row[1] === b));
   assert.ok(rows.some((row) => row[0] === b && row[1] === a));
 });
+
+test("generalPermutations with a limit stops early; distinctPermutationCount is n! over the repeats' factorials", async () => {
+  const { generalPermutations, distinctPermutationCount } = await import("../src/core/permutations.ts");
+  assert.deepEqual(generalPermutations([1, 2, 3], 2), [[1, 2, 3], [1, 3, 2]]);
+  assert.equal(generalPermutations([3, 1, 2, 2]).length, distinctPermutationCount([3, 1, 2, 2])); // 12
+  assert.equal(distinctPermutationCount([2, 1, 1, 2]), 6);
+  assert.equal(distinctPermutationCount(Array.from({ length: 16 }, (_, i) => i)), 20922789888000);
+  const t = performance.now();
+  assert.equal(generalPermutations(Array.from({ length: 16 }, (_, i) => i), 16).length, 16); // would be 16! without the limit
+  assert.ok(performance.now() - t < 200);
+});

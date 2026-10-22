@@ -69,3 +69,15 @@ test("strata: never an open position above a close; couplings outward (p.1006, 1
   assert.deepEqual(outwardCouplings(72, [12, 24], "melody"), [84, 96]);
   assert.deepEqual(outwardCouplings(36, [12], "bass"), [24]);
 });
+
+test("splitSequences builds distinct orders directly: 3a+3b+3c+3d has 369,600, and the first 500 come quickly", () => {
+  assert.equal(multinomial([3, 3, 3, 3]), 369600);
+  const t = performance.now();
+  const first = splitSequences([3, 3, 3, 3], false, 500);
+  assert.equal(first.length, 500);
+  assert.equal(first[0], "aaabbbcccddd");
+  assert.ok(performance.now() - t < 500, "no factorial blow-up");
+  // unchanged for small cases: 2a + b gives aab, aba, baa
+  assert.deepEqual(splitSequences([2, 1]), ["aab", "aba", "baa"]);
+  assert.equal(splitSequences([10, 1, 1]).length, multinomial([10, 1, 1])); // 132, once 12! work
+});

@@ -7,7 +7,7 @@ import {
   restCombinations,
 } from "../core/sampleAnalysis";
 import { findMatchingCases, type PatternMatch } from "../core/rhythmAnalysis";
-import { generalPermutations, circularPermutations } from "../core/permutations";
+import { generalPermutations, circularPermutations, distinctPermutationCount } from "../core/permutations";
 import { buildMidiFile } from "../core/midi";
 import type { NoteEvent } from "../core/melody";
 import SchillingerPianoRoll, { type PianoRollLane } from "./SchillingerPianoRoll";
@@ -103,12 +103,14 @@ export default function SampleAnalysisPanel() {
   const allVariations = useMemo(() => {
     if (archetype.length === 0) return [];
     if (variationMode === "circular") return circularPermutations(archetype);
-    if (variationMode === "general") return generalPermutations(archetype);
+    // Only the shown lanes are built: a long archetype has millions of orders.
+    if (variationMode === "general") return generalPermutations(archetype, MAX_VARIATION_LANES);
     return restCombinations(archetype, Math.min(restCount, archetype.length));
   }, [archetype, variationMode, restCount]);
 
   const variations = allVariations.slice(0, MAX_VARIATION_LANES);
-  const truncated = allVariations.length > variations.length;
+  const variationCount = variationMode === "general" ? distinctPermutationCount(archetype) : allVariations.length;
+  const truncated = variationCount > variations.length;
 
   useEffect(() => {
     setSelectedVariationIndex(0);
@@ -338,7 +340,7 @@ export default function SampleAnalysisPanel() {
             </div>
             <SchillingerPianoRoll lanes={variationLanes} cycleLength={cycleLength} timeSignature={timeSignature} />
             <div className="schillinger__readout">
-              {allVariations.length} variation{allVariations.length === 1 ? "" : "s"}
+              {variationCount.toLocaleString()} variation{variationCount === 1 ? "" : "s"}
               {truncated && ` (showing first ${variations.length})`}
             </div>
             <div className="schillinger__row">

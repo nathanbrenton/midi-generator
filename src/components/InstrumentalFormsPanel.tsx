@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { attackFormCounts, distributions, coefficientSplits, splitSequences, arpeggiate, strataAllowed } from "../core/instrumentalForms";
+import { attackFormCounts, distributions, coefficientSplits, splitSequences, arpeggiate, strataAllowed, multinomial } from "../core/instrumentalForms";
 import { diatonicCycle, S5_POSITIONS, voiceLeadProgression } from "../core/diatonicHarmony";
 import { intervalCellScale } from "../core/scales";
 import type { NoteEvent } from "../core/melody";
@@ -21,7 +21,9 @@ export default function InstrumentalFormsPanel() {
   const table = useMemo(() => distributions(attacks, parts), [attacks, parts]);
   const splits = useMemo(() => coefficientSplits(attacks, parts), [attacks, parts]);
   const split = splits[Math.min(splitIndex, splits.length - 1)] ?? [];
-  const sequences = useMemo(() => (split.length ? splitSequences(split, circular) : []), [split, circular]);
+  // Only the listed forms are built: the general ones for 12 attacks run into the hundreds of thousands.
+  const sequences = useMemo(() => (split.length ? splitSequences(split, circular, 500) : []), [split, circular]);
+  const sequenceCount = split.length ? (circular ? split.reduce((a, b) => a + b, 0) : multinomial(split)) : 0;
   const sequence = sequences[Math.min(sequenceIndex, sequences.length - 1)] ?? "";
 
   // The theme: four chords through C5, each broken by the chosen sequence; the parts a, b, c, d from the bottom.
@@ -104,7 +106,7 @@ export default function InstrumentalFormsPanel() {
         A = {attacks}a over {parts} parts: {counts.general.toLocaleString()} general, {counts.circular.toLocaleString()} circular
         forms — {table.map((d) => `${d.form.join("+")}: ${d.general.toLocaleString()}`).join(" · ")}
         <br />
-        Playing {sequence} on C, F, B°, C ({sequences.length.toLocaleString()} forms of these coefficients)
+        Playing {sequence} on C, F, B°, C ({sequenceCount.toLocaleString()} forms of these coefficients{sequenceCount > sequences.length ? `, the first ${sequences.length} listed` : ""})
         <br />
         Strata from the bottom: open under close {strataAllowed(["open", "close"]) ? "allowed" : "not allowed"}; close under open{" "}
         {strataAllowed(["close", "open"]) ? "allowed" : "never"} ("there must never be an open position above a close").

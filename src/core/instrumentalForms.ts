@@ -33,7 +33,7 @@
  * (`strataAllowed`, `outwardCouplings`).
  */
 
-import { generalPermutationsOf } from "./permutations.ts";
+import { generalPermutations } from "./permutations.ts";
 
 const factorial = (n: number): number => (n <= 1 ? 1 : n * factorial(n - 1));
 const choose = (n: number, k: number): number => (k < 0 || k > n ? 0 : factorial(n) / (factorial(k) * factorial(n - k)));
@@ -77,11 +77,16 @@ export function attackFormCounts(attacks: number, parts: number): { general: num
 
 const LETTERS = ["a", "b", "c", "d", "e", "f"];
 
-/** The sequences of one split: every distinct order (general), or the rotations of the grouped form (circular). */
-export function splitSequences(coefficients: readonly number[], circular = false): string[] {
-  const grouped = coefficients.flatMap((k, i) => Array.from({ length: k }, () => LETTERS[i]));
-  if (circular) return grouped.map((_, r) => [...grouped.slice(r), ...grouped.slice(0, r)].join(""));
-  return [...new Set(generalPermutationsOf(grouped).map((p) => p.join("")))];
+/**
+ * The sequences of one split: every distinct order (general), or the
+ * rotations of the grouped form (circular). The general orders are
+ * generated distinct -- their number is the multinomial A!/(k1! k2! ...),
+ * e.g. 369,600 for 3a + 3b + 3c + 3d -- and `limit` caps how many are built.
+ */
+export function splitSequences(coefficients: readonly number[], circular = false, limit = Infinity): string[] {
+  const grouped = coefficients.flatMap((k, i) => Array.from({ length: k }, () => i));
+  if (circular) return grouped.map((_, r) => [...grouped.slice(r), ...grouped.slice(0, r)].map((i) => LETTERS[i]).join(""));
+  return generalPermutations(grouped, limit).map((p) => p.map((i) => LETTERS[i]).join(""));
 }
 
 /** Elements of the second order in S = 3p: one attack to two simultaneous parts -- b/a, c/a, c/b (p.928). */

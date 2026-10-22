@@ -22,17 +22,26 @@
  * rotations of the group as given, regardless of repeated values.
  */
 
-/** Every distinct reordering of `values` (n! divided by repeated-value factorials, matching the book's own reduced counts). */
-export function generalPermutations(values: readonly number[]): number[][] {
+/**
+ * Every distinct reordering of `values` (n! divided by repeated-value
+ * factorials, matching the book's own reduced counts), in lexicographic
+ * order. Duplicates are pruned as the tree is walked, so the work is the
+ * number of distinct orders, not n!. `limit` stops after that many rows --
+ * for callers that only show the first few of a count that can run into
+ * the millions (see `distinctPermutationCount` for the total).
+ */
+export function generalPermutations(values: readonly number[], limit = Infinity): number[][] {
   const results: number[][] = [];
   const remaining = [...values].sort((a, b) => a - b);
 
   function backtrack(current: number[]): void {
+    if (results.length >= limit) return;
     if (remaining.length === 0) {
       results.push([...current]);
       return;
     }
     for (let i = 0; i < remaining.length; i++) {
+      if (results.length >= limit) return;
       if (i > 0 && remaining[i] === remaining[i - 1]) continue; // skip duplicate branches
       const value = remaining.splice(i, 1)[0];
       current.push(value);
@@ -44,6 +53,18 @@ export function generalPermutations(values: readonly number[]): number[][] {
 
   backtrack([]);
   return results;
+}
+
+/** How many distinct reorderings `values` has: n! over the factorial of each value's multiplicity. */
+export function distinctPermutationCount(values: readonly unknown[]): number {
+  const counts = new Map<unknown, number>();
+  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
+  let total = 1;
+  let n = 0;
+  for (const k of counts.values()) {
+    for (let i = 1; i <= k; i++) total = (total * ++n) / i;
+  }
+  return Math.round(total);
 }
 
 /** The n cyclic rotations of `values` as given -- always exactly `values.length` rows, regardless of repeated values. */
