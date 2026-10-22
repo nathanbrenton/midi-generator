@@ -354,3 +354,18 @@ test("cycleBetween names the cycle between two roots, the inverse of cycleDegree
   assert.equal(cycleBetween(0, 3 * cycleDegreeStep(3)), 7);
   assert.equal(cycleBetween(0, 2 * cycleDegreeStep(5)), -7);
 });
+
+test("Section F (p.361-362): the negative form reads a positive progression backwards -- roots in C-3, and the clockwise motion becomes counterclockwise", async () => {
+  const { voiceLeadProgression, negativeVoiceLeadProgression, diatonicCycle } = await import("../src/core/diatonicHarmony.ts");
+  const { intervalCellScale } = await import("../src/core/scales.ts");
+  const MAJOR = intervalCellScale([2, 2, 1, 2, 2, 2, 1]);
+  const negativeRoots = diatonicCycle(-3); // C E G B D F A
+  const neg = negativeVoiceLeadProgression(MAJOR, 60, negativeRoots, "clockwise");
+  const pos = voiceLeadProgression(MAJOR, 60, [...negativeRoots].reverse(), "clockwise");
+  assert.deepEqual(neg, [...pos].reverse());
+  // the positive progression's roots run C3 (a third down each step); read back they run C-3
+  const pc = (v) => ((v.root % 12) + 12) % 12;
+  assert.deepEqual(neg.map(pc), [0, 4, 7, 11, 2, 5, 9]);
+  // clockwise: the root of one chord becomes the third of the next; backwards, a third becomes the next root
+  for (let i = 0; i + 1 < neg.length; i++) assert.equal(neg[i].third, neg[i + 1].root, `chord ${i}`);
+});

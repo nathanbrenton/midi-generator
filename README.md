@@ -1370,8 +1370,15 @@ C=60 in the natural major scale, stepping down by thirds twice gives A
 (57) then F (53), matching the book's own example exactly, verified
 again live in the browser. `negativeStackedTriad` is the exact mirror of
 `stackedTriad` (offsets 0,-2,-4 instead of 0,+2,+4). Negative-form
-voice-leading isn't yet built, so the panel's voice-leading option is
-only available for the positive form.
+voice-leading follows the book's own principle: "any positive
+progression… becomes negative when read backwards" (p.361-362).
+`negativeVoiceLeadProgression` voice-leads the positive chords with the
+same pitches (the negative triad on c, c–a–f, is the positive one on f)
+over the roots in reverse, then reads the result backwards. The roots
+then run the negative cycle, and each clockwise step (root → next third)
+reads back as counterclockwise, which is why "the C and O transformations
+correspond". The panel's voice-leading now works in both forms; passing
+sixths stay positive-only.
 
 **Chapter 8, Section A (Groups with Passing Sixth-chords, p.415-416)**
 jumped ahead of Ch. 3-7's own numbering since it builds directly on this

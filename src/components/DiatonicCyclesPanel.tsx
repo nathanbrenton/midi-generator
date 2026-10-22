@@ -6,6 +6,7 @@ import {
   negativeStackedTriad,
   negativeFormCycle,
   voiceLeadProgression,
+  negativeVoiceLeadProgression,
   buildPassingSixthGroups,
   passingSixthContinuity,
   voicingPosition,
@@ -102,18 +103,28 @@ export default function DiatonicCyclesPanel() {
   const voiceLedProgression = useMemo(
     // A passing third needs clockwise between the S(5) chords around it (p.415, 418).
     () =>
-      voiceLeadProgression(
-        MAJOR_SCALE,
-        root,
-        rootDegrees,
-        passingSixths ? "clockwise" : direction === "binomial" ? ["clockwise", "counterclockwise"] : direction,
-        POSITION_OPTIONS[positionIndex].position,
-      ),
-    [root, rootDegrees, direction, passingSixths, positionIndex],
+      form === "negative"
+        ? // Section F: a negative triad on r (r, -3, -5) is the positive triad four degrees below; the
+          // progression is the positive one read backwards (p.361-362).
+          negativeVoiceLeadProgression(
+            MAJOR_SCALE,
+            root,
+            rootDegrees.map((d) => d - 4),
+            direction === "binomial" ? ["clockwise", "counterclockwise"] : direction,
+            POSITION_OPTIONS[positionIndex].position,
+          )
+        : voiceLeadProgression(
+            MAJOR_SCALE,
+            root,
+            rootDegrees,
+            passingSixths ? "clockwise" : direction === "binomial" ? ["clockwise", "counterclockwise"] : direction,
+            POSITION_OPTIONS[positionIndex].position,
+          ),
+    [root, rootDegrees, direction, passingSixths, positionIndex, form],
   );
   const withPassingSixths = useMemo(
-    () => (passingSixths ? buildPassingSixthGroups(voiceLedProgression) : voiceLedProgression),
-    [passingSixths, voiceLedProgression],
+    () => (passingSixths && form === "positive" ? buildPassingSixthGroups(voiceLedProgression) : voiceLedProgression),
+    [passingSixths, voiceLedProgression, form],
   );
 
   // Ch.8 Section G: a self-contained 3-chord embellishment of the tonic
@@ -308,7 +319,7 @@ export default function DiatonicCyclesPanel() {
             onChange={(e) => {
               const next = e.target.value as "positive" | "negative";
               setForm(next);
-              if (next === "negative") setVoiceLead(false);
+              if (next === "negative") setPassingSixths(false);
             }}
           >
             <option value="positive">Positive (built upward)</option>
@@ -319,7 +330,6 @@ export default function DiatonicCyclesPanel() {
           <input
             type="checkbox"
             checked={voiceLead}
-            disabled={form === "negative"}
             onChange={(e) => setVoiceLead(e.target.checked)}
           />
           Voice-led (4-part: bass + 3 transformed upper voices)
@@ -353,7 +363,7 @@ export default function DiatonicCyclesPanel() {
         )}
         {voiceLead && (
           <label>
-            <input type="checkbox" checked={passingSixths} onChange={(e) => setPassingSixths(e.target.checked)} />
+            <input type="checkbox" checked={passingSixths} disabled={form === "negative"} onChange={(e) => setPassingSixths(e.target.checked)} />
             Passing sixth-chords (Ch. 8): G6 = S(5)+S(6)③+S(5)+... (clockwise)
           </label>
         )}

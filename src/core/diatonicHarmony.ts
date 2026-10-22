@@ -86,9 +86,13 @@
  * minor third below C) then F (53, a perfect fifth below C), exactly
  * matching the book's own example. This is the exact mirror of the
  * positive `stackedTriad` (offsets 0,+2,+4), just with offsets 0,-2,-4.
- * Negative-form voice-leading ("if everything is read downward, the C and
- * O transformations correspond" -- i.e. clockwise/counterclockwise swap
- * meaning) is a natural next step, not yet built.
+ * Negative-form voice-leading: "any positive progression... becomes
+ * negative when read backwards. All the principles of structures and
+ * motion involved are therefore reversible" (p.361-362) --
+ * `negativeVoiceLeadProgression` voice-leads the roots in reverse and
+ * reads the result backwards; read backwards, a clockwise step (root to
+ * third) is a counterclockwise one (third to root), so "the C and O
+ * transformations correspond".
  *
  * Chapter 8, Section A (Groups with Passing Sixth-chords, p.415-416): "A
  * group with a passing S(6) is a pre-set combination of three chords:
@@ -403,6 +407,23 @@ export function voiceLeadProgression(
     progression.push(current);
   }
   return progression;
+}
+
+/**
+ * Section F, the negative form's voice-leading: the positive progression of
+ * the same roots in reverse order, read backwards. The roots then run the
+ * negative cycle (C3 forward is C-3 backward), and each transformation
+ * turns into its mirror: a progression voice-led clockwise in the positive
+ * form is counterclockwise read back.
+ */
+export function negativeVoiceLeadProgression(
+  scale: PitchScale,
+  rootMidiNote: number,
+  rootDegrees: readonly number[],
+  direction: TransformDirection | readonly TransformDirection[],
+  startPosition?: S5Position,
+): Voicing[] {
+  return voiceLeadProgression(scale, rootMidiNote, [...rootDegrees].reverse(), direction, startPosition).reverse();
 }
 
 /**

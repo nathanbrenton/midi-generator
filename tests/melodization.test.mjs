@@ -80,3 +80,10 @@ test("compound axes a + b and b + a: up then down, down then up (Figure 6)", () 
   for (let i = 1; i < 4; i++) assert.ok(ab[i] > ab[i - 1]);
   for (let i = 5; i < 8; i++) assert.ok(ab[i] < ab[i - 1]);
 });
+
+test("Figure 5 (p.623, rendered): Table I exactly -- S(5) 1,3,5 + 7,13; S(7) 1,3,5,7 + 9,13; S(9) 1,3,7,9 + 5,11,13; S(11) 1,7,9,11 + 5,13; S(13) 1,7,9,13 + 5,11 and 1,7,11,13 + 5,9", () => {
+  assert.deepEqual(
+    MELODIZATION_TABLE.map((r) => `${r.tension} ${r.harmony.join(",")} + ${r.melody.join(",")}`),
+    ["S(5) 1,3,5 + 7,13", "S(7) 1,3,5,7 + 9,13", "S(9) 1,3,7,9 + 5,11,13", "S(11) 1,7,9,11 + 5,13", "S(13) 1,7,9,13 + 5,11", "S(13) 1,7,11,13 + 5,9"],
+  );
+});
