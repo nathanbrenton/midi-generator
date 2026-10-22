@@ -76,7 +76,14 @@ export default function NotePlayback({ notes, lengthUnits, fileName, defaultBpm 
     scheduleLoopPass(++playTokenRef.current);
   }
 
-  useEffect(() => () => void audioContextRef.current?.close(), []);
+  // Stop the loop as well as the sound on unmount: a pending pass would otherwise keep rescheduling on a closed context.
+  useEffect(
+    () => () => {
+      playTokenRef.current += 1;
+      audioContextRef.current?.close();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!isPlaying || !audioContextRef.current) return;

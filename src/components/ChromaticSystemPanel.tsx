@@ -163,6 +163,8 @@ export default function ChromaticSystemPanel() {
 
   useEffect(() => {
     return () => {
+      // Stop the loop as well as the sound: a pending pass would otherwise keep rescheduling on a closed context.
+      playTokenRef.current += 1;
       audioContextRef.current?.close();
     };
   }, []);
