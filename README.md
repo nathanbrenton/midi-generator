@@ -1445,6 +1445,125 @@ dependence on C specifically (which caught a real bug in the test itself —
 a mismatched scale-anchor argument — before it could hide a real one in
 the implementation). 7 new tests, all passing.
 
+## Book V, Chapter 3 Section B, Chapter 4, and Chapter 5 Section A
+
+Chapter 3 Section B, the **symmetric zero cycle** (C0): chords on one
+common root with variable positions and structures. The structural
+group's coefficients decide the positions — "a structure with a
+coefficient greater than one changes its positions until the next
+structure appears. The change of structure requires the preservation of
+the position" (p.391): 3S1 + S3 + 2S2 = S1 + S1 + S1 + S3 + S2 + S2,
+positions var. var. const. const. var. (`expandStructuralGroup`,
+`zeroCyclePositions`). `symmetricZeroCycle` voices it with Ch. 2's
+positions and transformations on the one root — by default Figure 46's
+own opening, c-g-e from the top, counterclockwise to g-e-c.
+
+Chapter 4, the **diatonic-symmetric system (Type II)**: roots from one
+scale of the First Group, moved by a group of tonal cycles with
+coefficients, carrying a pre-selected structural group "not affected by
+the intonation of scale formed by the root-tones" (p.393).
+`diatonicSymmetricProgression` reproduces Figure 47 exactly: in
+c-d-e-f-g-a-b♭, 2C7 + C3 + C5 gives c d e c f g a f b♭ c d b♭ e f g e a
+b♭ c a d e f d g a b♭ g (28 roots, back to c), each carrying S1 — so e
+major brings in a g♯ the scale doesn't have, the "new accidentals" the
+chapter describes. (The figure's root motion is one more confirmation
+that positive cycles run downward.)
+
+Chapter 5 (The Symmetric System of Harmony, Type III), Section A "Two
+Tonics": the panel's "scale" mode adds `symmetricHarmonyScale`. Its own
+tonic-count table ("root 2 represents two tonics, cube-root 2 represents
+three...") is exactly Book II Ch. 7's own tonic systems, reused directly
+via `symmetricTonics`. The genuinely new finding, decoded by rendering
+the actual page since OCR mangled the formula notation into noise: "the
+upper voice of harmony produces the scale... c-db-e-f#-g-a#" from a
+2-tonic system using the major structure at each tonic turns out to be
+exactly the *sorted union of pitch classes* across every tonic's own
+triad — confirmed against both of the book's own worked examples (major
+gives c-db-e-f#-g-a#/bb; minor gives c-db-eb-f#-g-a), and verified again
+live in the browser, byte for byte. The audit added the progressions
+themselves: `symmetricRoots` gives the roots and their cycles as p.396
+tabulates them (two tonics C-F♯-C by C5 and C-5; three C-A♭-E by C3;
+four C-A-F♯-E♭ by C3; six C-D-E-F♯-A♭-B♭ by C7; each negative form
+reversed), and `symmetricProgression` voices them with one
+transformation, the structural group running alongside the tonics ("S
+changes with each tonic"; 9 structures over 2 tonics interfere into 18
+chords, p.398). The recurrence-cycle statements of Sections A-C turn out
+to be one formula, `recurrenceCycles` = lcm(period, tonics) / tonics,
+where clockwise and counterclockwise return the voices to their
+functions every 3 chords and const. 3 every 2: two tonics give a
+"triple recurrence-cycle" for both rotations and a closed system for
+const. 3, three tonics closed and two cycles, four tonics three cycles
+and closed — each checked against the actual voicings as well. And with
+S1 const., the upper voice of the two-tonic progression does trace
+c-d♭-e-f♯-g-a♯, as does every other voice (p.397). **The exact
+root-motion cycle labels connecting consecutive tonics are now filled
+in** (`SYMMETRIC_CYCLE_FOR_TONIC_COUNT`, shown in the panel's readout) —
+Book V Ch. 10 Section B (p.464) states them directly in clean typeset
+text, no figure-reading needed: "symmetric roots correspond to the
+respective cycles: C5, to root-2 [2 tonics]; C3, to cube-root-2 and
+4th-root-2 [3 and 4 tonics]; C7, to 6th-root-2 and 12th-root-2 [6 and 12
+tonics]" — reusing Ch. 2's diatonic C3/C5/C7 vocabulary directly.
+
+## Variable doublings and inversions of S(5) (Book V, Ch. 6-7)
+
+With the root always held in the bass, one of a chord's three functions
+(root/third/fifth) can be additionally doubled among the upper three
+voices — Schillinger's own comparative table (p.401): S(5)① keeps all
+three functions distinct up top (`1,3,5`); S(5)③ doubles the third
+instead, so the root disappears from the upper voices entirely (`3,3,5`);
+S(5)⑤ doubles the fifth (`3,5,5`). "Only three positions are possible" for
+③ and ⑤ — confirmed by rendering the actual page (p.401, Figure 57) since
+the doubling notation didn't survive OCR — is exactly `generalPermutations`
+(Ch. 9) applied to a 3-element multiset with one repeated pair (3!/2!=3);
+S(5)① gets the full six, since its three functions are distinct, matching
+the figure's own six-column layout. `src/core/variableDoublings.ts`:
+`VARIABLE_DOUBLING_FORMS`, `doublingPositions`/`positionCount`, and
+`buildDoublingVoicing`.
+
+**Chapter 7 (Inversions of the S(5) Chord)** generalizes the same
+machinery to S(6), the first inversion — "the only condition under which
+S(5) becomes an S(6) is when the third (3) appears in the bass" (p.406).
+The doubling notation carries over unchanged, but since the bass now
+removes a "3" from the full 4-voice chord instead of a "1", the
+position-count pairing *flips*: S(6)① and S(6)⑤ get only 3 positions each
+("systematized through... the doubled function appears above / surrounds /
+below the remaining function" — the same three orderings, just newly
+named), while S(6)③ gets the full 6, matching the book's own six-column
+layout for it (confirmed by rendering p.406-407 at high resolution — the
+OCR badly mangled the circled-number notation here). The book's own claim
+that "S(6)① is identical with S(5)① positions, except that the bass has
+constant 3" checks out exactly: it's literally S(5)①'s own four pitches
+(`{1,1,3,5}`) with a 3 moved into the bass instead of a 1.
+`upperVoiceFunctions(doubledFunction, bassFunction)` captures this as one
+general rule — "the full 4-function chord minus whatever sits in the
+bass" — from which both `VARIABLE_DOUBLING_FORMS` (Ch. 6, bass=root) and
+`INVERSION_DOUBLING_FORMS` (Ch. 7, bass=third) are derived.
+
+**Honest scope limit**: both chapters' figures also draw *specific*
+registral spacings for each position (including "black note"
+unison-vs-octave variants and the clockwise/counterclockwise six-way
+split itself) that didn't resolve unambiguously even at high render
+resolution — not reproduced here. `buildDoublingVoicing` stacks each
+position's functions upward from the bass in plain close position
+instead, a reasonable but independent implementation choice, not a
+transcription of either chapter's specific voicings.
+The transformation tables between doubling and inversion forms (Ch. 6
+Figures 58-62, Ch. 7 Figures 68-69) are now built, as function maps:
+rendered at higher resolution, all seven tables follow one rule —
+voices that share a function (an upper voice doubling the bass
+included) must take different functions in the next chord, i.e. no
+octaves moving into octaves (`doublingTransformations`). That rule
+reproduces every printed map, and with it the book's remark that
+"there always are three transformations when S(5)① participates and
+only one when it does not." Applied to S(5)① itself it allows Ch. 2's
+clockwise, counterclockwise and const. 3 plus a fourth (1↔3, 5 held)
+the book never uses. Ch. 7's Figures 77-78 (diatonic
+doubling-preference tables keyed by scale degree) and its Section B
+(continuity forms alternating S(5)/S(6), built from Book I's own growth
+series) are compositional/stylistic guidance rather than deterministic
+formulas, so they aren't built either — same treatment as every other
+"compositional guidance" section scoped out project-wide.
+
 ## The seventh chord (Book V, Ch. 9, Section A)
 
 `SeventhChordPanel.tsx` (`src/core/seventhChords.ts`). A seventh-chord
@@ -2487,125 +2606,6 @@ The panel has six players:
 - A Hammond registration.
 - The four string ranges in turn.
 
-## Book V, Chapter 3 Section B, Chapter 4, and Chapter 5 Section A
-
-Chapter 3 Section B, the **symmetric zero cycle** (C0): chords on one
-common root with variable positions and structures. The structural
-group's coefficients decide the positions — "a structure with a
-coefficient greater than one changes its positions until the next
-structure appears. The change of structure requires the preservation of
-the position" (p.391): 3S1 + S3 + 2S2 = S1 + S1 + S1 + S3 + S2 + S2,
-positions var. var. const. const. var. (`expandStructuralGroup`,
-`zeroCyclePositions`). `symmetricZeroCycle` voices it with Ch. 2's
-positions and transformations on the one root — by default Figure 46's
-own opening, c-g-e from the top, counterclockwise to g-e-c.
-
-Chapter 4, the **diatonic-symmetric system (Type II)**: roots from one
-scale of the First Group, moved by a group of tonal cycles with
-coefficients, carrying a pre-selected structural group "not affected by
-the intonation of scale formed by the root-tones" (p.393).
-`diatonicSymmetricProgression` reproduces Figure 47 exactly: in
-c-d-e-f-g-a-b♭, 2C7 + C3 + C5 gives c d e c f g a f b♭ c d b♭ e f g e a
-b♭ c a d e f d g a b♭ g (28 roots, back to c), each carrying S1 — so e
-major brings in a g♯ the scale doesn't have, the "new accidentals" the
-chapter describes. (The figure's root motion is one more confirmation
-that positive cycles run downward.)
-
-Chapter 5 (The Symmetric System of Harmony, Type III), Section A "Two
-Tonics": the panel's "scale" mode adds `symmetricHarmonyScale`. Its own
-tonic-count table ("root 2 represents two tonics, cube-root 2 represents
-three...") is exactly Book II Ch. 7's own tonic systems, reused directly
-via `symmetricTonics`. The genuinely new finding, decoded by rendering
-the actual page since OCR mangled the formula notation into noise: "the
-upper voice of harmony produces the scale... c-db-e-f#-g-a#" from a
-2-tonic system using the major structure at each tonic turns out to be
-exactly the *sorted union of pitch classes* across every tonic's own
-triad — confirmed against both of the book's own worked examples (major
-gives c-db-e-f#-g-a#/bb; minor gives c-db-eb-f#-g-a), and verified again
-live in the browser, byte for byte. The audit added the progressions
-themselves: `symmetricRoots` gives the roots and their cycles as p.396
-tabulates them (two tonics C-F♯-C by C5 and C-5; three C-A♭-E by C3;
-four C-A-F♯-E♭ by C3; six C-D-E-F♯-A♭-B♭ by C7; each negative form
-reversed), and `symmetricProgression` voices them with one
-transformation, the structural group running alongside the tonics ("S
-changes with each tonic"; 9 structures over 2 tonics interfere into 18
-chords, p.398). The recurrence-cycle statements of Sections A-C turn out
-to be one formula, `recurrenceCycles` = lcm(period, tonics) / tonics,
-where clockwise and counterclockwise return the voices to their
-functions every 3 chords and const. 3 every 2: two tonics give a
-"triple recurrence-cycle" for both rotations and a closed system for
-const. 3, three tonics closed and two cycles, four tonics three cycles
-and closed — each checked against the actual voicings as well. And with
-S1 const., the upper voice of the two-tonic progression does trace
-c-d♭-e-f♯-g-a♯, as does every other voice (p.397). **The exact
-root-motion cycle labels connecting consecutive tonics are now filled
-in** (`SYMMETRIC_CYCLE_FOR_TONIC_COUNT`, shown in the panel's readout) —
-Book V Ch. 10 Section B (p.464) states them directly in clean typeset
-text, no figure-reading needed: "symmetric roots correspond to the
-respective cycles: C5, to root-2 [2 tonics]; C3, to cube-root-2 and
-4th-root-2 [3 and 4 tonics]; C7, to 6th-root-2 and 12th-root-2 [6 and 12
-tonics]" — reusing Ch. 2's diatonic C3/C5/C7 vocabulary directly.
-
-## Variable doublings and inversions of S(5) (Book V, Ch. 6-7)
-
-With the root always held in the bass, one of a chord's three functions
-(root/third/fifth) can be additionally doubled among the upper three
-voices — Schillinger's own comparative table (p.401): S(5)① keeps all
-three functions distinct up top (`1,3,5`); S(5)③ doubles the third
-instead, so the root disappears from the upper voices entirely (`3,3,5`);
-S(5)⑤ doubles the fifth (`3,5,5`). "Only three positions are possible" for
-③ and ⑤ — confirmed by rendering the actual page (p.401, Figure 57) since
-the doubling notation didn't survive OCR — is exactly `generalPermutations`
-(Ch. 9) applied to a 3-element multiset with one repeated pair (3!/2!=3);
-S(5)① gets the full six, since its three functions are distinct, matching
-the figure's own six-column layout. `src/core/variableDoublings.ts`:
-`VARIABLE_DOUBLING_FORMS`, `doublingPositions`/`positionCount`, and
-`buildDoublingVoicing`.
-
-**Chapter 7 (Inversions of the S(5) Chord)** generalizes the same
-machinery to S(6), the first inversion — "the only condition under which
-S(5) becomes an S(6) is when the third (3) appears in the bass" (p.406).
-The doubling notation carries over unchanged, but since the bass now
-removes a "3" from the full 4-voice chord instead of a "1", the
-position-count pairing *flips*: S(6)① and S(6)⑤ get only 3 positions each
-("systematized through... the doubled function appears above / surrounds /
-below the remaining function" — the same three orderings, just newly
-named), while S(6)③ gets the full 6, matching the book's own six-column
-layout for it (confirmed by rendering p.406-407 at high resolution — the
-OCR badly mangled the circled-number notation here). The book's own claim
-that "S(6)① is identical with S(5)① positions, except that the bass has
-constant 3" checks out exactly: it's literally S(5)①'s own four pitches
-(`{1,1,3,5}`) with a 3 moved into the bass instead of a 1.
-`upperVoiceFunctions(doubledFunction, bassFunction)` captures this as one
-general rule — "the full 4-function chord minus whatever sits in the
-bass" — from which both `VARIABLE_DOUBLING_FORMS` (Ch. 6, bass=root) and
-`INVERSION_DOUBLING_FORMS` (Ch. 7, bass=third) are derived.
-
-**Honest scope limit**: both chapters' figures also draw *specific*
-registral spacings for each position (including "black note"
-unison-vs-octave variants and the clockwise/counterclockwise six-way
-split itself) that didn't resolve unambiguously even at high render
-resolution — not reproduced here. `buildDoublingVoicing` stacks each
-position's functions upward from the bass in plain close position
-instead, a reasonable but independent implementation choice, not a
-transcription of either chapter's specific voicings.
-The transformation tables between doubling and inversion forms (Ch. 6
-Figures 58-62, Ch. 7 Figures 68-69) are now built, as function maps:
-rendered at higher resolution, all seven tables follow one rule —
-voices that share a function (an upper voice doubling the bass
-included) must take different functions in the next chord, i.e. no
-octaves moving into octaves (`doublingTransformations`). That rule
-reproduces every printed map, and with it the book's remark that
-"there always are three transformations when S(5)① participates and
-only one when it does not." Applied to S(5)① itself it allows Ch. 2's
-clockwise, counterclockwise and const. 3 plus a fourth (1↔3, 5 held)
-the book never uses. Ch. 7's Figures 77-78 (diatonic
-doubling-preference tables keyed by scale degree) and its Section B
-(continuity forms alternating S(5)/S(6), built from Book I's own growth
-series) are compositional/stylistic guidance rather than deterministic
-formulas, so they aren't built either — same treatment as every other
-"compositional guidance" section scoped out project-wide.
-
 ## Percussion mapping
 
 Each of those five structural components can be assigned to a General
@@ -2836,21 +2836,29 @@ multi-track `.mid` file you can drag into a DAW, `midi-drum-composer`, or
 ## Tests
 
 ```bash
-npm test
+npm test          # node --test, every file in tests/
+npx tsc --noEmit  # type-check
+npm run build     # production build (code-split; see "Run it standalone")
 ```
 
-Covers the resultant math against all 19 published binary-synchronization
-cases and their fractioned expansions, coincidence-point detection,
-three-generator resultants, grouping bar math (plain, fractioned, and
-pairs), Expansion/Contraction/Balance against the book's own worked
-examples, time-signature option derivation, MIDI round-tripping (writer →
-reader, including running status and multi-voice track selection), cyclic
-pattern search (including the sousta example against all 19 cases), pitch
-group/interval classification, the symmetric scale divisions
-(augmented/diminished/whole-tone/chromatic) and uneven-division remainder
-spreading, interval-cell tiling and octave clipping, melody/contour
-assembly and strata harmonization, and the exported `.mid` file's byte
-structure (header, format, track count, `MTrk` framing).
+The suite (775 tests in 80+ files) checks every core module against the
+book's own worked numbers. Each value was read from the rendered page
+where the scanned text was unreliable. Examples include:
+
+- the 19 binary-synchronization cases;
+- the Σ(13) table;
+- the counting tables of Book VIII;
+- the trombone's ranges in Figure 100;
+- the 98T″ miniature of Book XI.
+
+Where the book itself is wrong, the tests assert the correct value and
+say so in the test name. The README sections for Books VIII-XII list
+those discrepancies.
+
+The suite also covers the infrastructure: MIDI writing and reading
+(header, track framing, running status, multi-voice track selection,
+skipping the drum channel) and quantization. `coverage.test.mjs` tests
+helpers otherwise exercised only through the panels.
 
 ## Reference material
 
