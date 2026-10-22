@@ -2841,7 +2841,7 @@ npx tsc --noEmit  # type-check
 npm run build     # production build (code-split; see "Run it standalone")
 ```
 
-The suite (775 tests in 80+ files) checks every core module against the
+The suite (775 tests in 69 files) checks every core module against the
 book's own worked numbers. Each value was read from the rendered page
 where the scanned text was unreliable. Examples include:
 
